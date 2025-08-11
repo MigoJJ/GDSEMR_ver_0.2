@@ -1,6 +1,6 @@
 // IttiaApp.java
 package com.emr.gds;
-import javafx.application.Application;
+import javafx.application.Application;	
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -78,7 +78,7 @@ public class IttiaApp extends Application {
         // ==== Bottom (quick snippets) ====
         root.setBottom(buttonAction.buildBottomBar());
         
-        Scene scene = new Scene(root, 1400, 840);
+        Scene scene = new Scene(root, 1400, 800);
         stage.setScene(scene);
         stage.show();
         
@@ -231,10 +231,12 @@ public class IttiaApp extends Application {
         ta.setText(Formatter.autoFormat(ta.getText()));
     }
     
+ // in IttiaApp.java
+
     public void copyAllToClipboard() {
         StringJoiner sj = new StringJoiner("\n\n");
-        
-        // Problems -> bullet list
+
+        // Problems -> bullet list (This part is unchanged)
         ObservableList<String> problems = problemAction.getProblems();
         if (!problems.isEmpty()) {
             StringBuilder pb = new StringBuilder();
@@ -244,11 +246,15 @@ public class IttiaApp extends Application {
             for (String p : problems) pb.append("- ").append(p).append("\n");
             sj.add(pb.toString().trim());
         }
-        
-        // Areas
+
+        // Areas - with duplicate line removal for each area
         for (int i = 0; i < areas.size(); i++) {
-            String txt = areas.get(i).getText().trim();
-            if (!txt.isEmpty()) {
+            String rawText = areas.get(i).getText();
+            
+            // Get the text with duplicate lines removed
+            String uniqueText = getUniqueLines(rawText);
+
+            if (!uniqueText.isEmpty()) {
                 String title;
                 if (i < TEXT_AREA_TITLES.length) {
                     title = TEXT_AREA_TITLES[i];
@@ -256,15 +262,41 @@ public class IttiaApp extends Application {
                 } else {
                     title = "Area " + (i + 1);
                 }
-                sj.add("# " + title + "\n" + txt);
+                // Add the processed, unique text to the final output
+                sj.add("# " + title + "\n" + uniqueText);
             }
         }
-        
+
         String result = Formatter.finalizeForEMR(sj.toString());
         ClipboardContent cc = new ClipboardContent();
         cc.putString(result);
         Clipboard.getSystemClipboard().setContent(cc);
         showToast("Copied all content to clipboard");
+    }
+    
+    /**
+     * Helper method to process a block of text, removing duplicate lines.
+     * It preserves the order of the first occurrence of each line.
+     *
+     * @param text The input text, potentially with multiple lines.
+     * @return A string containing only the unique lines from the input.
+     */
+    private String getUniqueLines(String text) {
+        if (text == null || text.isBlank()) {
+            return "";
+        }
+
+        // Use a LinkedHashSet to maintain insertion order while ensuring uniqueness.
+        Set<String> uniqueLines = new LinkedHashSet<>();
+
+        // Process each line: trim it, and if not empty, add to the set.
+        text.lines()
+            .map(String::trim)
+            .filter(line -> !line.isEmpty())
+            .forEach(uniqueLines::add);
+
+        // Join the unique lines back together with a newline separator.
+        return String.join("\n", uniqueLines);
     }
     
     // 수정된 getFocusedArea() 메소드
@@ -331,6 +363,22 @@ public class IttiaApp extends Application {
             lastFocusedArea = areas.get(idx);  // 추가: 포커스 변경 시 저장
         }
     }
+    
+ // Add this inside IttiaApp.java
+    public void clearAllText() {
+        // Clear all center text areas
+        for (TextArea ta : areas) {
+            ta.clear();
+        }
+
+        // Clear scratchpad in the West panel
+        if (problemAction != null) {
+            problemAction.clearScratchpad(); // we'll add this method in ListProblemAction
+        }
+
+        showToast("All text cleared");
+    }
+
     
     private void showToast(String message) {
         // Simple modal alert; replace with non-blocking snackbar if preferred

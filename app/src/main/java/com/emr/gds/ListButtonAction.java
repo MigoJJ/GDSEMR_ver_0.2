@@ -34,10 +34,13 @@ public class ListButtonAction {
 
         Button btnFormat = new Button("Auto Format (Ctrl+Shift+F)");
         btnFormat.setOnAction(e -> app.formatCurrentArea());
-
+        
         Button btnCopyAll = new Button("Copy All (Ctrl+Shift+C)");
         btnCopyAll.setOnAction(e -> app.copyAllToClipboard());
 
+        Button btnClearAll = new Button("CE");
+        btnClearAll.setOnAction(e -> app.clearAllText());
+        
      // START: ADD THIS CODE
         Button btnManageDb = new Button("Manage Abbrs...");
         btnManageDb.setOnAction(e -> {
@@ -61,12 +64,13 @@ public class ListButtonAction {
         Label hint = new Label("Focus area: Ctrl+1..Ctrl+0 | Double-click problem to insert");
 
         ToolBar tb = new ToolBar(
-                btnInsertTemplate,
                 templatesMenu,
+                btnInsertTemplate,
                 new Separator(),
                 btnFormat,
                 btnCopyAll,
                 btnManageDb, // Add the new button here
+                btnClearAll,
                 spacer,
                 hint
         );

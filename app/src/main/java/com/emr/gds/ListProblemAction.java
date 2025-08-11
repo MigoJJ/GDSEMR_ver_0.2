@@ -18,10 +18,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
+import javafx.scene.control.TextArea;
 
 public class ListProblemAction {
 
     private final IttiaApp app;
+    private TextArea scratchpad;
     
     // Database connection for the problem list
     private Connection dbConn;
@@ -170,7 +172,7 @@ public class ListProblemAction {
         this.scratchpadArea = new TextArea();
         scratchpadArea.setPromptText("Scratchpad... (auto-updated from center areas)");
         scratchpadArea.setWrapText(true);
-        scratchpadArea.setPrefRowCount(8);
+        scratchpadArea.setPrefRowCount(16);
         scratchpadArea.setEditable(true);
 
         // --- Assemble the VBox ---
@@ -221,6 +223,14 @@ public class ListProblemAction {
         }
     }
 
+    public void clearScratchpad() {
+        if (scratchpad != null) {
+            scratchpad.clear();
+        }
+    }
+
+    
+    
     public ObservableList<String> getProblems() {
         return problems;
     }
