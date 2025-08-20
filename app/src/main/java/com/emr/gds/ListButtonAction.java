@@ -86,11 +86,22 @@ public class ListButtonAction {
         Button b5 = quickSnippetButton("Plan", TemplateLibrary.SNIPPET_PLAN.body());
         Button b6 = quickSnippetButton("F/U", TemplateLibrary.SNIPPET_FOLLOWUP.body());
         Button b7 = quickSnippetButton("Signature", TemplateLibrary.SNIPPET_SIGNATURE.body());
+        Button b8 = new Button("DM F/U");
+     // inside buildTopBar()
+        b8.setOnAction(e -> openDMFU());
 
-        ToolBar tb = new ToolBar(b1, b2, b3, b4, b5, b6, b7);
+        ToolBar tb = new ToolBar(b1, b2, b3, b4, b5, b6, b7,b8);
         tb.setPadding(new Insets(8, 0, 0, 0));
         return tb;
     }
+    
+    public void openDMFU() {
+        // 'app' is your IttiaApp reference passed in constructor
+        // 'abbrevMap' you already pass into ListButtonAction(...) in IttiaApp
+        FU_DM win = new FU_DM(app, abbrevMap);
+        win.show();
+    }
+
 
     private Button quickSnippetButton(String title, String snippet) {
         Button b = new Button(title);
