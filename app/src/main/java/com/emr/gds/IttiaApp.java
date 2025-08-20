@@ -454,4 +454,8 @@ public class IttiaApp extends Application {
     public static void main(String[] args) {
         launch(args);
     }
+
+    public List<TextArea> getTextAreas() {
+		return this.areas;
+	}
 }
