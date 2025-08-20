@@ -1,0 +1,122 @@
+### IttiaApp.java 코드 분석 및 한글 설명
+
+`IttiaApp.java`는 JavaFX를 사용한 전자 의료 기록(EMR) 프로토타입 애플리케이션입니다. 이 애플리케이션은 의료 기록을 작성하고 관리하기 위한 GUI를 제공하며, 여러 텍스트 영역, 데이터베이스 연동, 약어 확장 기능, 템플릿 삽입, 클립보드 복사 등의 기능을 포함합니다. 아래는 코드의 주요 구성 요소와 동작을 한글로 설명한 내용입니다.
+
+---
+
+#### **1. 클래스 개요**
+- **클래스 이름**: `IttiaApp`
+- **상속**: `javafx.application.Application`
+- **주요 목적**: 의료 기록 입력을 위한 사용자 인터페이스를 제공하고, SQLite 데이터베이스를 사용하여 약어 데이터를 관리하며, 텍스트 입력 및 포맷팅, 클립보드 복사 등의 기능을 구현합니다.
+
+#### **2. 주요 구성 요소**
+##### **2.1. 인스턴스 변수**
+- `List<TextArea> areas`: 10개의 텍스트 영역을 저장하는 리스트.
+- `TextArea lastFocusedArea`: 마지막으로 포커스된 텍스트 영역을 추적.
+- `ListProblemAction problemAction`: 문제 목록을 관리하는 클래스 (별도로 구현됨).
+- `ListButtonAction buttonAction`: 버튼 동작을 관리하는 클래스 (별도로 구현됨).
+- `Connection dbConn`: SQLite 데이터베이스 연결 객체.
+- `Map<String, String> abbrevMap`: 약어와 풀 텍스트를 매핑하는 HashMap.
+
+##### **2.2. 상수**
+- `TEXT_AREA_TITLES`: 텍스트 영역의 제목 배열 (예: "CC>", "PI>", "ROS>" 등).
+  - 각 제목은 의료 기록의 특정 섹션(예: Chief Complaint, Past Medical History 등)을 나타냄.
+
+##### **2.3. 주요 메서드**
+###### **2.3.1. `start(Stage stage)`**
+- JavaFX 애플리케이션의 진입점으로, UI를 초기화하고 화면을 구성합니다.
+- **동작**:
+  - 창 제목을 "GDSEMR ITTIA – EMR Prototype (JavaFX)"로 설정.
+  - 약어 데이터베이스를 초기화(`initAbbrevDatabase`).
+  - `BorderPane`을 사용하여 상단 바, 좌측 문제 목록, 중앙 텍스트 영역, 하단 바를 배치.
+  - `Scene`을 생성하고 창 크기를 1400x800으로 설정.
+  - 첫 번째 텍스트 영역에 포커스를 설정.
+  - 전역 키보드 단축키를 설치(`installGlobalShortcuts`).
+
+###### **2.3.2. `initAbbrevDatabase()`**
+- SQLite 데이터베이스를 초기화하고 약어 데이터를 로드합니다.
+- **동작**:
+  - SQLite JDBC 드라이버를 로드.
+  - `abbreviations.db` 파일에 연결.
+  - `abbreviations` 테이블을 생성하고, 샘플 데이터(`c` → `hypercholesterolemia`, `to` → `hypothyroidism`)를 삽입.
+  - 테이블 데이터를 `abbrevMap`에 로드.
+
+###### **2.3.3. `buildCenterAreas()`**
+- 중앙에 5x2 그리드 형태로 10개의 텍스트 영역을 생성합니다.
+- **동작**:
+  - 각 `TextArea`는 Monospaced 폰트, 8행, 40열로 설정.
+  - 제목은 `TEXT_AREA_TITLES` 배열에서 가져오며, 배열 길이를 초과하면 "Area N"으로 설정.
+  - 포커스 및 텍스트 변경 이벤트 리스너를 추가.
+  - **약어 확장 기능**: 스페이스 키 입력 시, `:`로 시작하는 단어를 감지하고 `abbrevMap`에서 해당 약어를 찾아 확장 (예: `:c` → `hypercholesterolemia`).
+  - 특수 문자를 필터링하는 `TextFormatter`를 적용.
+  - 텍스트 영역을 `areas` 리스트에 추가하고 그리드에 배치.
+
+###### **2.3.4. 텍스트 및 클립보드 관련 메서드**
+- `insertTemplateIntoFocusedArea(TemplateLibrary t)`: 템플릿을 현재 포커스된 텍스트 영역에 삽입.
+- `insertLineIntoFocusedArea(String line)`: 한 줄 텍스트를 삽입.
+- `insertBlockIntoFocusedArea(String block)`: 텍스트 블록을 삽입.
+- `formatCurrentArea()`: 현재 텍스트 영역의 내용을 자동 포맷팅.
+- `copyAllToClipboard()`: 모든 텍스트 영역과 문제 목록을 포맷팅하여 클립보드에 복사.
+  - 문제 목록과 각 텍스트 영역의 고유 라인을 `# 섹션 제목` 형식으로 정리.
+  - `Formatter.finalizeForEMR`로 최종 포맷팅.
+- `clearAllText()`: 모든 텍스트 영역과 문제 목록을 초기화.
+
+###### **2.3.5. 단축키 관련**
+- `installGlobalShortcuts(Scene scene)`:
+  - `Ctrl+I`: HPI 템플릿 삽입.
+  - `Ctrl+Shift+F`: 현재 텍스트 영역 포맷팅.
+  - `Ctrl+Shift+C`: 모든 내용을 클립보드에 복사.
+  - `Ctrl+1` ~ `Ctrl+9`, `Ctrl+0`: 특정 텍스트 영역으로 포커스 이동.
+
+###### **2.3.6. 유틸리티 메서드**
+- `getFocusedArea()`: 현재 포커스된 텍스트 영역 반환 (없으면 마지막 포커스된 영역 또는 첫 번째 영역 반환).
+- `showToast(String message)`: 간단한 정보 메시지 팝업 표시.
+- `filterControlChars()`: 텍스트 입력에서 제어 문자를 필터링.
+- `getUniqueLines(String text)`: 텍스트에서 중복 라인을 제거하고 고유 라인만 반환.
+
+###### **2.3.7. `Formatter` 내부 클래스**
+- `autoFormat(String raw)`: 텍스트를 정리하고, 불필요한 공백 및 목록 기호를 표준화 (`- `).
+- `finalizeForEMR(String raw)`: EMR용 최종 포맷팅 (헤더 공백 추가, 연속 줄바꿈 정리).
+
+###### **2.3.8. `normalizeLine(String s)`**
+- 문자열을 정규화하여 공백을 단일 공백으로 변환하고 앞뒤 공백을 제거.
+
+#### **3. 주요 기능**
+1. **텍스트 입력 및 약어 확장**:
+   - 사용자가 텍스트 영역에서 `:약어`를 입력하고 스페이스를 누르면 약어가 풀 텍스트로 확장됩니다.
+   - 예: `:c` → `hypercholesterolemia`, `:cd` → 현재 날짜.
+2. **템플릿 삽입**:
+   - 단축키(`Ctrl+I`)로 미리 정의된 템플릿을 삽입.
+3. **문제 목록 관리**:
+   - 좌측 패널에서 문제 목록을 관리하고, 텍스트 입력 시 스크래치패드에 업데이트.
+4. **클립보드 복사**:
+   - 모든 텍스트와 문제 목록을 포맷팅하여 클립보드에 복사.
+5. **포맷팅**:
+   - 텍스트를 자동으로 정리하고 EMR 형식에 맞게 조정.
+6. **단축키**:
+   - 빠른 작업을 위해 다양한 단축키 제공.
+
+#### **4. 동작 흐름**
+1. 애플리케이션 시작 → 데이터베이스 초기화 → UI 구성.
+2. 사용자가 텍스트 영역에 입력 → 약어 확장, 텍스트 변경 감지.
+3. 단축키로 템플릿 삽입, 포맷팅, 클립보드 복사 등의 작업 수행.
+4. 문제 목록과 텍스트 영역의 내용을 통합하여 EMR 형식으로 출력 가능.
+
+#### **5. 기술적 특징**
+- **JavaFX**: GUI 프레임워크로, BorderPane과 GridPane을 사용하여 레이아웃 구성.
+- **SQLite**: 경량 데이터베이스로 약어 데이터를 저장.
+- **이벤트 처리**: 텍스트 입력, 포커스 변경, 키보드 단축키를 이벤트 리스너로 처리.
+- **텍스트 포맷팅**: 사용자 입력을 정리하고 EMR 형식으로 변환.
+
+#### **6. 한계 및 개선 가능성**
+- **데이터베이스 경로**: `user.dir`에 의존하므로 배포 시 경로 문제가 발생할 수 있음.
+- **에러 처리**: 데이터베이스 연결 실패 시 사용자에게 알리는 UI가 미흡.
+- **확장성**: 약어 데이터가 고정적이며, 동적 추가/편집 기능이 없음.
+- **의존 클래스**: `ListProblemAction`, `ListButtonAction`이 코드에 없어 전체 동작 확인 불가.
+
+#### **7. 결론**
+`IttiaApp`은 의료 기록 입력을 간소화하기 위한 JavaFX 기반 EMR 프로토타입입니다. 약어 확장, 템플릿 삽입, 클립보드 복사 등의 기능을 통해 의료 기록 작성을 효율화하며, SQLite를 활용해 데이터를 관리합니다. 단축키와 포맷팅 기능으로 사용자 편의성을 높였으나, 데이터베이스 경로 관리와 에러 처리 개선이 필요합니다.
+
+---
+
+이 설명은 코드의 구조와 기능을 간략히 정리한 것으로, 추가적인 세부 분석이 필요하면 특정 메서드나 기능을 지정해 주시면 더 깊이 설명드리겠습니다!
