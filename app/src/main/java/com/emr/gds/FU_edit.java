@@ -201,8 +201,8 @@ public class FU_edit extends JFrame {
      }
  }
  private static class DatabaseManager {
-     private static final String DB_URL = "jdbc:sqlite:emr_templates.db"; // Assumes DB is in the root directory
-     private Connection connect() {
+
+	 private static final String DB_URL = "jdbc:sqlite:" + System.getProperty("user.dir") + "/src/main/resources/database/emr_templates.db";     private Connection connect() {
          try {
              return DriverManager.getConnection(DB_URL);
          } catch (SQLException e) { System.err.println(e.getMessage()); return null; }
