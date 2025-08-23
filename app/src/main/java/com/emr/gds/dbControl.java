@@ -17,8 +17,8 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -49,31 +49,49 @@ public class dbControl {
         stage.initModality(Modality.WINDOW_MODAL);
         stage.initOwner(ownerStage);
         stage.setTitle("Abbreviations Database Manager");
+        stage.setMinWidth(450);
+        stage.setMinHeight(450);
 
-        GridPane grid = new GridPane();
-        grid.setPadding(new Insets(10));
-        grid.setHgap(10);
-        grid.setVgap(10);
-
-        // UI elements for CRUD
+        // --- UI Elements ---
         TextField shortField = new TextField();
-        shortField.setPromptText("Short");
+        shortField.setPromptText("Short Form");
         TextField fullField = new TextField();
-        fullField.setPromptText("Full");
+        fullField.setPromptText("Full Expansion");
 
         Button findButton = new Button("Find");
         Button addButton = new Button("Add");
         Button editButton = new Button("Edit");
         Button deleteButton = new Button("Delete");
-        Button refreshButton = new Button("Refresh List");
+        Button refreshButton = new Button("Refresh");
 
-        // List View for displaying current abbreviations
         ListView<String> abbrevListView = new ListView<>();
         updateListView(abbrevListView);
 
-        // Populate fields when an item is selected
+        // --- Layout using VBox for simplicity and better alignment ---
+        VBox root = new VBox(10);
+        root.setPadding(new Insets(15));
+
+        HBox inputFields = new HBox(10, shortField, fullField);
+        HBox actionButtons = new HBox(10, findButton, addButton, editButton, deleteButton, refreshButton);
+
+        root.getChildren().addAll(
+                new Label("Abbreviations List:"),
+                abbrevListView,
+                inputFields,
+                actionButtons
+        );
+        
+        // --- Logic and Event Handlers ---
+
+        // **IMPROVEMENT**: Disable Edit/Delete buttons when nothing is selected.
+        editButton.disableProperty().bind(abbrevListView.getSelectionModel().selectedItemProperty().isNull());
+        deleteButton.disableProperty().bind(abbrevListView.getSelectionModel().selectedItemProperty().isNull());
+
+        // Populate text fields when an item is selected from the list.
         abbrevListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal != null) {
+            if (newVal == null) {
+                clearFields(shortField, fullField);
+            } else {
                 String[] parts = newVal.split(" -> ", 2);
                 if (parts.length == 2) {
                     shortField.setText(parts[0]);
@@ -82,19 +100,23 @@ public class dbControl {
             }
         });
 
-        // Add actions to buttons
         addButton.setOnAction(e -> {
-            String shortText = shortField.getText().trim();
-            String fullText = fullField.getText().trim();
-            add(shortText, fullText);
+            add(shortField.getText().trim(), fullField.getText().trim());
             updateListView(abbrevListView);
             clearFields(shortField, fullField);
         });
 
+        // **CRITICAL FIX**: Edit logic is now based on the selected item's original key.
         editButton.setOnAction(e -> {
-            String shortText = shortField.getText().trim();
-            String fullText = fullField.getText().trim();
-            edit(shortText, fullText);
+            String selectedItem = abbrevListView.getSelectionModel().getSelectedItem();
+            if (selectedItem == null) return;
+
+            String originalShortText = selectedItem.split(" -> ", 2)[0];
+            String newShortText = shortField.getText().trim();
+            String newFullText = fullField.getText().trim();
+            
+            // This updated 'edit' call can now handle changes to the key itself.
+            edit(originalShortText, newShortText, newFullText);
             updateListView(abbrevListView);
         });
 
@@ -109,29 +131,34 @@ public class dbControl {
 
         findButton.setOnAction(e -> {
             String shortText = shortField.getText().trim();
-            find(shortText);
+            if (shortText.isEmpty()) return;
+
+            for (String item : abbrevListView.getItems()) {
+                if (item.startsWith(shortText + " ->")) {
+                    abbrevListView.getSelectionModel().select(item);
+                    abbrevListView.scrollTo(item);
+                    break;
+                }
+            }
         });
 
         refreshButton.setOnAction(e -> {
             updateListView(abbrevListView);
             clearFields(shortField, fullField);
         });
+        
+        // **IMPROVEMENT**: Notify the main application when the dialog is closed.
+        stage.setOnHidden(e -> {
+            if (parentApp != null) {
+                // Assuming your IttiaApp class has a method to refresh its data/UI.
+                // parentApp.refreshData(); 
+                System.out.println("Dialog closed. Notifying main application to refresh.");
+            }
+        });
 
-        // Layout the UI
-        HBox inputFields = new HBox(10, shortField, fullField);
-        HBox buttons = new HBox(10, addButton, editButton, deleteButton, findButton);
-
-        grid.add(new Label("Abbreviations List:"), 0, 0);
-        grid.add(abbrevListView, 0, 1, 2, 1);
-        grid.add(inputFields, 0, 2, 2, 1);
-        grid.add(buttons, 0, 3);
-        grid.add(refreshButton, 1, 3);
-
-        // CHANGE THIS LINE to increase the window size
-        Scene scene = new Scene(grid, 700, 500); // Formerly 500, 400
-
+        Scene scene = new Scene(root);
         stage.setScene(scene);
-        stage.show();
+        stage.showAndWait(); // Use showAndWait to block owner until this dialog is closed.
     }
 
     /**
@@ -147,10 +174,13 @@ public class dbControl {
         try (PreparedStatement pstmt = dbConn.prepareStatement(sql)) {
             pstmt.setString(1, shortText);
             pstmt.setString(2, fullText);
-            pstmt.executeUpdate();
-            // Also update the in-memory map
-            abbrevMap.put(shortText, fullText);
-            showAlert("Success", "Abbreviation added.", Alert.AlertType.INFORMATION);
+            int rowsAffected = pstmt.executeUpdate();
+            if (rowsAffected > 0) {
+                abbrevMap.put(shortText, fullText);
+                showAlert("Success", "Abbreviation added.", Alert.AlertType.INFORMATION);
+            } else {
+                showAlert("Warning", "Abbreviation '" + shortText + "' already exists.", Alert.AlertType.WARNING);
+            }
         } catch (SQLException e) {
             showAlert("Database Error", "Failed to add abbreviation: " + e.getMessage(), Alert.AlertType.ERROR);
         }
@@ -158,23 +188,27 @@ public class dbControl {
 
     /**
      * Edits an existing abbreviation in the database and map.
+     * This version can handle changes to the primary key ('short' text).
      */
-    private void edit(String shortText, String fullText) {
-        if (shortText.isEmpty() || fullText.isEmpty()) {
+    private void edit(String originalShort, String newShort, String newFull) {
+        if (newShort.isEmpty() || newFull.isEmpty()) {
             showAlert("Error", "Both fields must be filled.", Alert.AlertType.ERROR);
             return;
         }
 
-        String sql = "UPDATE abbreviations SET full = ? WHERE short = ?";
+        String sql = "UPDATE abbreviations SET short = ?, full = ? WHERE short = ?";
         try (PreparedStatement pstmt = dbConn.prepareStatement(sql)) {
-            pstmt.setString(1, fullText);
-            pstmt.setString(2, shortText);
+            pstmt.setString(1, newShort);
+            pstmt.setString(2, newFull);
+            pstmt.setString(3, originalShort);
             int rowsAffected = pstmt.executeUpdate();
             if (rowsAffected > 0) {
-                abbrevMap.put(shortText, fullText);
+                // Update the in-memory map
+                abbrevMap.remove(originalShort);
+                abbrevMap.put(newShort, newFull);
                 showAlert("Success", "Abbreviation updated.", Alert.AlertType.INFORMATION);
             } else {
-                showAlert("Warning", "Abbreviation not found.", Alert.AlertType.WARNING);
+                showAlert("Warning", "Original abbreviation '" + originalShort + "' not found.", Alert.AlertType.WARNING);
             }
         } catch (SQLException e) {
             showAlert("Database Error", "Failed to edit abbreviation: " + e.getMessage(), Alert.AlertType.ERROR);
@@ -208,22 +242,9 @@ public class dbControl {
     }
 
     /**
-     * Finds an abbreviation and shows an alert.
-     */
-    private void find(String shortText) {
-        String fullText = abbrevMap.get(shortText);
-        if (fullText != null) {
-            showAlert("Found", "Found: " + shortText + " -> " + fullText, Alert.AlertType.INFORMATION);
-        } else {
-            showAlert("Not Found", "Abbreviation '" + shortText + "' was not found.", Alert.AlertType.INFORMATION);
-        }
-    }
-    
-    /**
-     * Populates the ListView with all abbreviations.
+     * Populates the ListView with all abbreviations, sorted by key.
      */
     private void updateListView(ListView<String> listView) {
-        // Use a stream to sort the map entries by key and collect them into an ObservableList
         ObservableList<String> items = abbrevMap.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .map(entry -> entry.getKey() + " -> " + entry.getValue())
@@ -233,7 +254,7 @@ public class dbControl {
     }
 
     /**
-     * Clears the input fields.
+     * Clears the input fields and requests focus on the first field.
      */
     private void clearFields(TextField shortField, TextField fullField) {
         shortField.clear();
