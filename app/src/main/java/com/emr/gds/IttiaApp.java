@@ -1,7 +1,7 @@
 // IttiaApp.java
 package com.emr.gds;
 
-import javafx.application.Application;
+import javafx.application.Application;	
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -22,6 +22,10 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.UnaryOperator;
+import javax.swing.SwingUtilities; // For Swing/JavaFX interoperability
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 
 public class IttiaApp extends Application {
     // ---- Instance Variables ----
@@ -56,6 +60,16 @@ public class IttiaApp extends Application {
         root.setCenter(buildCenterAreas());
         root.setBottom(buttonAction.buildBottomBar());
 
+        // Let's modify the top bar built by ListButtonAction
+        ToolBar topBar = buttonAction.buildTopBar();
+        Button templateButton = new Button("Load Template");
+        templateButton.setOnAction(e -> openTemplateEditor());
+        // Add it to the toolbar
+        topBar.getItems().add(new Separator());
+        topBar.getItems().add(templateButton);
+        
+        root.setTop(topBar); // Re-set the modified top bar
+        
         // Configure and show the scene
         Scene scene = new Scene(root, 1400, 800);
         stage.setScene(scene);
@@ -317,6 +331,82 @@ public class IttiaApp extends Application {
     public static String normalizeLine(String s) {
         return s == null ? "" : s.trim().replaceAll("\\s+", " ");
     }
+    
+    private void openTemplateEditor() {
+        // Swing UI operations must be done on the Swing Event Dispatch Thread (EDT).
+        SwingUtilities.invokeLater(() -> {
+            // Create the editor and pass it a callback function.
+            // This function defines what to do when "Use Template" is clicked.
+            FU_edit editor = new FU_edit(templateContent -> {
+                // The callback is executed on the Swing EDT.
+                // To update the JavaFX UI, we must switch back to the JavaFX Application Thread.
+                Platform.runLater(() -> parseAndAppendTemplate(templateContent));
+            });
+            editor.setVisible(true);
+        });
+    }
+    
+    /**
+     * Parses a template string and appends its content to the corresponding TextAreas.
+     * The template format is expected to use headers like "CC>", "PI>", etc.
+     * @param templateContent The full string content of the template.
+     */
+    public void parseAndAppendTemplate(String templateContent) {
+        if (templateContent == null || templateContent.isBlank()) {
+            return;
+        }
+
+        // Create a map of titles to TextAreas for easy lookup
+        Map<String, TextArea> areaMap = new HashMap<>();
+        for (int i = 0; i < TEXT_AREA_TITLES.length && i < areas.size(); i++) {
+            areaMap.put(TEXT_AREA_TITLES[i], areas.get(i));
+        }
+
+        // Regex to split the content by our headers (CC>, PI>, etc.)
+        // This pattern uses a "positive lookahead" to split *before* the delimiter, keeping it.
+        String patternString = "(?=(" + String.join("|", TEXT_AREA_TITLES)
+                .replace(">", "\\>")
+                .replace(" ", "\\s") + "))";
+        Pattern pattern = Pattern.compile(patternString);
+        String[] parts = pattern.split(templateContent);
+
+        int sectionsLoaded = 0;
+        for (String part : parts) {
+            part = part.trim();
+            if (part.isEmpty()) continue;
+
+            // Find which section this part belongs to
+            for (String title : TEXT_AREA_TITLES) {
+                if (part.startsWith(title)) {
+                    TextArea targetArea = areaMap.get(title);
+                    if (targetArea != null) {
+                        // Get content, which is everything after the title line
+                        String contentToAppend = part.substring(title.length()).trim();
+
+                        if (!contentToAppend.isEmpty()) {
+                            // Append with a newline for separation if the area is not empty
+                            if (targetArea.getText() != null && !targetArea.getText().isBlank()) {
+                                targetArea.appendText("\n" + contentToAppend);
+                            } else {
+                                targetArea.setText(contentToAppend);
+                            }
+                            sectionsLoaded++;
+                        }
+                    }
+                    break; // Move to the next part
+                }
+            }
+        }
+        
+        if (sectionsLoaded > 0) {
+            showToast("Template content loaded into " + sectionsLoaded + " section(s).");
+        } else {
+            // If no sections matched, append the whole template to the focused area
+            insertBlockIntoFocusedArea(templateContent);
+            showToast("Template format not recognized. Pasted into focused area.");
+        }
+    }
+    
     public static void main(String[] args) {
         launch(args);
     }

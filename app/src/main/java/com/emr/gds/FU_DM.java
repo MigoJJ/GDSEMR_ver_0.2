@@ -29,8 +29,8 @@ import java.util.function.UnaryOperator;
 
 public class FU_DM extends Stage {
 
-    private final IttiaApp app;                     // to reuse Formatter etc.
-    private final Map<String, String> abbrevMap;    // to reuse your abbreviation expansions
+    private final IttiaApp app;
+    private final Map<String, String> abbrevMap;
     private final List<TextArea> areas = new ArrayList<>(10);
     private TextArea lastFocusedArea = null;
 
@@ -44,19 +44,13 @@ public class FU_DM extends Stage {
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
 
-        // Top bar (title + actions)
         root.setTop(buildTopBar());
-
-        // Center (10 text areas, 5x2)
         root.setCenter(buildCenterAreas());
-
-        // Bottom (Clear, CE, Save, Quit)
         root.setBottom(buildBottomBar());
 
         Scene scene = new Scene(root, 1200, 760);
         setScene(scene);
 
-        // focus first area when shown
         setOnShown(e -> Platform.runLater(() -> {
             if (!areas.isEmpty()) {
                 areas.get(0).requestFocus();
@@ -64,7 +58,6 @@ public class FU_DM extends Stage {
             }
         }));
 
-        // keyboard shortcuts (optional quality-of-life)
         installShortcuts(scene);
     }
 
@@ -91,18 +84,15 @@ public class FU_DM extends Stage {
             ta.setPrefRowCount(8);
             ta.setPrefColumnCount(40);
 
-            // reuse titles from main app
             String title = (i < IttiaApp.TEXT_AREA_TITLES.length)
                     ? IttiaApp.TEXT_AREA_TITLES[i]
                     : "Area " + (i + 1);
             ta.setPromptText(title);
 
-            // track focus
             ta.focusedProperty().addListener((obs, o, n) -> {
                 if (n) lastFocusedArea = ta;
             });
 
-            // live abbreviation expansion on SPACE:  ":cd" -> ISO date, ":xx" -> from abbrevMap
             ta.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
                 if (event.getCode() == KeyCode.SPACE) {
                     int caret = ta.getCaretPosition();
@@ -124,13 +114,11 @@ public class FU_DM extends Stage {
                 }
             });
 
-            // filter control chars like in IttiaApp
             ta.setTextFormatter(new TextFormatter<>(filterControlChars()));
 
             grid.add(ta, i % cols, i / cols);
             areas.add(ta);
         }
-
         return grid;
     }
 
@@ -138,7 +126,7 @@ public class FU_DM extends Stage {
         Button btnClearAll = new Button("Clear");
         btnClearAll.setOnAction(e -> clearAll());
 
-        Button btnCE = new Button("CE"); // Clear Entry
+        Button btnCE = new Button("CE");
         btnCE.setOnAction(e -> clearEntry());
 
         Button btnSave = new Button("Save");
@@ -156,30 +144,24 @@ public class FU_DM extends Stage {
         return box;
     }
 
-
     private void installShortcuts(Scene scene) {
-        // Ctrl+S -> Save
         scene.getAccelerators().put(
                 new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN),
                 this::saveToFile
         );
-        // Ctrl+E -> CE (clear entry)
         scene.getAccelerators().put(
                 new KeyCodeCombination(KeyCode.E, KeyCombination.CONTROL_DOWN),
                 this::clearEntry
         );
-        // Ctrl+L -> Clear all
         scene.getAccelerators().put(
                 new KeyCodeCombination(KeyCode.L, KeyCombination.CONTROL_DOWN),
                 this::clearAll
         );
-        // Ctrl+W -> Quit
         scene.getAccelerators().put(
                 new KeyCodeCombination(KeyCode.W, KeyCombination.CONTROL_DOWN),
                 this::close
         );
 
-        // Ctrl+1..9, Ctrl+0 to jump areas
         for (int i = 1; i <= 9; i++) {
             final int idx = i - 1;
             scene.getAccelerators().put(
@@ -216,7 +198,6 @@ public class FU_DM extends Stage {
     }
 
     private void saveToFile() {
-        // Build a single EMR-formatted block from the 10 areas
         StringJoiner sj = new StringJoiner("\n\n");
         for (int i = 0; i < areas.size(); i++) {
             String text = uniqueLines(areas.get(i).getText());
@@ -286,25 +267,38 @@ public class FU_DM extends Stage {
         a.showAndWait();
     }
     
-    
+    // 이 메서드를 보완
     private void appendToIttiaApp() {
-        StringJoiner sj = new StringJoiner("\n\n");
+        // app.getTextAreas() 메서드가 존재한다고 가정하고 IttiaApp의 TextArea 목록을 가져옵니다.
+        List<TextArea> ittiaAppAreas = app.getTextAreas();
+        
+        if (ittiaAppAreas.size() < areas.size()) {
+            showError("The main application does not have enough text areas to append to.");
+            return;
+        }
+        
+        boolean appended = false;
         for (int i = 0; i < areas.size(); i++) {
-            String text = uniqueLines(areas.get(i).getText());
-            if (!text.isBlank()) {
-                String title = (i < IttiaApp.TEXT_AREA_TITLES.length)
-                        ? IttiaApp.TEXT_AREA_TITLES[i].replaceAll(">$", "")
-                        : "Area " + (i + 1);
-                sj.add("# " + title + "\n" + text);
+            // FU_DM의 i번째 TextArea에서 고유한 라인들을 가져옵니다.
+            String textToAppend = uniqueLines(areas.get(i).getText());
+            
+            // 텍스트가 비어있지 않고, IttiaApp에 해당하는 TextArea가 있다면
+            if (!textToAppend.isBlank() && i < ittiaAppAreas.size()) {
+                TextArea targetArea = ittiaAppAreas.get(i);
+                
+                // 새로운 줄바꿈으로 기존 텍스트에 추가합니다.
+                String existingText = targetArea.getText();
+                String newText = existingText.isEmpty() ? textToAppend : existingText + "\n\n" + textToAppend;
+                
+                targetArea.setText(newText);
+                appended = true;
             }
         }
-        String block = IttiaApp.Formatter.finalizeForEMR(sj.toString());
-        if (!block.isBlank()) {
-            app.insertBlockIntoFocusedArea(block + "\n\n");
-            toast("Appended FU_DM note into main IttiaApp.");
+        
+        if (appended) {
+            toast("Appended each FU_DM note into its corresponding area in the main IttiaApp.");
         } else {
             toast("Nothing to append.");
         }
     }
-
 }
