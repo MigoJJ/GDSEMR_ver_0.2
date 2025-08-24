@@ -1,7 +1,7 @@
 // IttiaApp.java
 package com.emr.gds;
 
-import javafx.application.Application;	
+import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -9,8 +9,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.*;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
-import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
 import java.sql.Connection;
@@ -21,26 +19,15 @@ import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.function.UnaryOperator;
-import javax.swing.SwingUtilities; // For Swing/JavaFX interoperability
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import javax.swing.SwingUtilities;
 
 public class IttiaApp extends Application {
     // ---- Instance Variables ----
-    private final List<TextArea> areas = new ArrayList<>(10);
-    private TextArea lastFocusedArea = null;
     private ListProblemAction problemAction;
     private ListButtonAction buttonAction;
     private Connection dbConn;
     private final Map<String, String> abbrevMap = new HashMap<>();
-
-    // ---- Constants ----
-    public static final String[] TEXT_AREA_TITLES = {
-            "CC>", "PI>", "ROS>", "PMH>", "S>",
-            "O>", "Physical Exam>", "A>", "P>", "Comment>"
-    };
+    private IttiaAppTextArea textAreaManager;
 
     // ---- Main Application Entry Point ----
     @Override
@@ -50,6 +37,7 @@ public class IttiaApp extends Application {
         // Initialize components and data
         initAbbrevDatabase();
         problemAction = new ListProblemAction(this);
+        textAreaManager = new IttiaAppTextArea(abbrevMap, problemAction);
         buttonAction = new ListButtonAction(this, dbConn, abbrevMap);
         
         // Build the main UI layout
@@ -57,7 +45,7 @@ public class IttiaApp extends Application {
         root.setPadding(new Insets(10));
         root.setTop(buttonAction.buildTopBar());
         root.setLeft(problemAction.buildProblemPane());
-        root.setCenter(buildCenterAreas());
+        root.setCenter(textAreaManager.buildCenterAreas());
         root.setBottom(buttonAction.buildBottomBar());
 
         // Let's modify the top bar built by ListButtonAction
@@ -77,10 +65,7 @@ public class IttiaApp extends Application {
 
         // Set initial focus
         Platform.runLater(() -> {
-            if (!areas.isEmpty()) {
-                areas.get(0).requestFocus();
-                lastFocusedArea = areas.get(0);
-            }
+            textAreaManager.focusArea(0);
         });
 
         // Install global keyboard shortcuts
@@ -112,86 +97,21 @@ public class IttiaApp extends Application {
         }
     }
 
-    // ---- UI Component Builders ----
-    private GridPane buildCenterAreas() {
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        int rows = 5, cols = 2;
-
-        for (int i = 0; i < rows * cols; i++) {
-            TextArea ta = new TextArea();
-            ta.setWrapText(true);
-            ta.setFont(Font.font("Monospaced", 13));
-            ta.setPrefRowCount(8);
-            ta.setPrefColumnCount(40);
-            
-            String title = (i < TEXT_AREA_TITLES.length) ? TEXT_AREA_TITLES[i] : "Area " + (i + 1);
-            ta.setPromptText(title);
-            
-            // Add listeners for focus and text changes
-            ta.focusedProperty().addListener((obs, oldVal, newVal) -> {
-                if (newVal) {
-                    lastFocusedArea = ta;
-                }
-            });
-            final int idx = i;
-            if (idx < TEXT_AREA_TITLES.length) {
-                ta.textProperty().addListener((obs, oldVal, newVal) ->
-                        problemAction.updateAndRedrawScratchpad(TEXT_AREA_TITLES[idx], newVal));
-            }
-            
-            // Handle abbreviation expansion on space key press
-            ta.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
-                if (event.getCode() == KeyCode.SPACE) {
-                    int caret = ta.getCaretPosition();
-                    String text = ta.getText(0, caret);
-                    int start = Math.max(text.lastIndexOf(' '), text.lastIndexOf('\n')) + 1;
-                    String word = text.substring(start);
-                    
-                    if (word.startsWith(":")) {
-                        String key = word.substring(1);
-                        String replacement = "cd".equals(key) ?
-                                LocalDate.now().format(DateTimeFormatter.ISO_DATE) :
-                                abbrevMap.get(key);
-                        if (replacement != null) {
-                            ta.deleteText(start, caret);
-                            ta.insertText(start, replacement + " ");
-                            event.consume();
-                        }
-                    }
-                }
-            });
-
-            ta.setTextFormatter(new TextFormatter<>(filterControlChars()));
-            grid.add(ta, i % cols, i / cols);
-            areas.add(ta);
-        }
-        return grid;
-    }
-
     // ---- Text and Clipboard Actions ----
     public void insertTemplateIntoFocusedArea(ListButtonAction.TemplateLibrary t) {
-        insertBlockIntoFocusedArea(t.body());
+        textAreaManager.insertTemplateIntoFocusedArea(t);
     }
 
     public void insertLineIntoFocusedArea(String line) {
-        String insert = line.endsWith("\n") ? line : line + "\n";
-        insertBlockIntoFocusedArea(insert);
+        textAreaManager.insertLineIntoFocusedArea(line);
     }
     
     public void insertBlockIntoFocusedArea(String block) {
-        TextArea ta = getFocusedArea();
-        if (ta == null) return;
-        int caret = ta.getCaretPosition();
-        ta.insertText(caret, block);
-        Platform.runLater(ta::requestFocus);
+        textAreaManager.insertBlockIntoFocusedArea(block);
     }
 
     public void formatCurrentArea() {
-        TextArea ta = getFocusedArea();
-        if (ta == null) return;
-        ta.setText(Formatter.autoFormat(ta.getText()));
+        textAreaManager.formatCurrentArea();
     }
     
     public void copyAllToClipboard() {
@@ -206,31 +126,24 @@ public class IttiaApp extends Application {
             sj.add(pb.toString().trim());
         }
 
-        for (int i = 0; i < areas.size(); i++) {
-            String uniqueText = getUniqueLines(areas.get(i).getText());
+        for (int i = 0; i < textAreaManager.getTextAreas().size(); i++) {
+            String uniqueText = textAreaManager.getUniqueLines(textAreaManager.getTextAreas().get(i).getText());
             if (!uniqueText.isEmpty()) {
-                String title = (i < TEXT_AREA_TITLES.length) ?
-                        TEXT_AREA_TITLES[i].replaceAll(">$", "") : "Area " + (i + 1);
+                String title = (i < IttiaAppTextArea.TEXT_AREA_TITLES.length) ?
+                        IttiaAppTextArea.TEXT_AREA_TITLES[i].replaceAll(">$", "") : "Area " + (i + 1);
                 sj.add("# " + title + "\n" + uniqueText);
             }
         }
 
-        String result = Formatter.finalizeForEMR(sj.toString());
+        String result = IttiaAppTextArea.Formatter.finalizeForEMR(sj.toString());
         ClipboardContent cc = new ClipboardContent();
         cc.putString(result);
         Clipboard.getSystemClipboard().setContent(cc);
         showToast("Copied all content to clipboard");
     }
 
-    private String getUniqueLines(String text) {
-        if (text == null || text.isBlank()) return "";
-        Set<String> uniqueLines = new LinkedHashSet<>();
-        text.lines().map(String::trim).filter(line -> !line.isEmpty()).forEach(uniqueLines::add);
-        return String.join("\n", uniqueLines);
-    }
-
     public void clearAllText() {
-        areas.forEach(TextArea::clear);
+        textAreaManager.clearAllTextAreas();
         if (problemAction != null) {
             problemAction.clearScratchpad();
         }
@@ -238,15 +151,6 @@ public class IttiaApp extends Application {
     }
 
     // ---- Helper and Utility Methods ----
-    private TextArea getFocusedArea() {
-        for (TextArea ta : areas) {
-            if (ta.isFocused()) {
-                return ta;
-            }
-        }
-        return lastFocusedArea != null ? lastFocusedArea : (areas.isEmpty() ? null : areas.get(0));
-    }
-    
     private void installGlobalShortcuts(Scene scene) {
         scene.getAccelerators().put(new KeyCodeCombination(KeyCode.I, KeyCombination.CONTROL_DOWN),
                 () -> insertTemplateIntoFocusedArea(ListButtonAction.TemplateLibrary.HPI));
@@ -259,77 +163,17 @@ public class IttiaApp extends Application {
         for (int i = 1; i <= 9; i++) {
             final int idx = i - 1;
             scene.getAccelerators().put(new KeyCodeCombination(KeyCode.getKeyCode(String.valueOf(i)), KeyCombination.CONTROL_DOWN),
-                    () -> focusArea(idx));
+                    () -> textAreaManager.focusArea(idx));
         }
         scene.getAccelerators().put(new KeyCodeCombination(KeyCode.DIGIT0, KeyCombination.CONTROL_DOWN),
-                () -> focusArea(9));
+                () -> textAreaManager.focusArea(9));
     }
     
-    private void focusArea(int idx) {
-        if (idx >= 0 && idx < areas.size()) {
-            areas.get(idx).requestFocus();
-            lastFocusedArea = areas.get(idx);
-        }
-    }
-
     private void showToast(String message) {
         Alert a = new Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK);
         a.setHeaderText(null);
         a.setTitle("Info");
         a.showAndWait();
-    }
-    
-    private static UnaryOperator<TextFormatter.Change> filterControlChars() {
-        return change -> {
-            if (change.getText() == null || change.getText().isEmpty()) {
-                return change;
-            }
-            String filtered = change.getText().replaceAll("[\\u0000-\\u001F\\u007F]", "\n");
-            if (!filtered.equals(change.getText())) {
-                // Optional: Log or alert user about filtered characters
-                System.out.println("Filtered control characters from input: " + change.getText());
-            }
-            change.setText(filtered);
-            return change;
-        };
-    }
-    
-    public List<TextArea> getTextAreas() {
-        return this.areas;
-    }
-    
-    public static class Formatter {
-        static String autoFormat(String raw) {
-            if (raw == null || raw.isBlank()) return "";
-            String[] lines = raw.replace("\r", "").split("\n", -1);
-            StringBuilder out = new StringBuilder();
-            boolean lastBlank = false;
-            
-            for (String line : lines) {
-                String t = line.strip().replaceAll("^[•·→▶▷‣⦿∘*]+\\s*|^[-]{1,2}\\s*", "- ");
-                if (t.isEmpty()) {
-                    if (!lastBlank) {
-                        out.append("\n");
-                        lastBlank = true;
-                    }
-                } else {
-                    out.append(t).append("\n");
-                    lastBlank = false;
-                }
-            }
-            return out.toString().strip();
-        }
-        
-        static String finalizeForEMR(String raw) {
-            String s = autoFormat(raw);
-            s = s.replaceAll("^(#+)([^#\\n])", "$1 $2");
-            s = s.replaceAll("\\n{3,}", "\n\n");
-            return s.trim();
-        }
-    }
- // IttiaApp.java
-    public static String normalizeLine(String s) {
-        return s == null ? "" : s.trim().replaceAll("\\s+", " ");
     }
     
     private void openTemplateEditor() {
@@ -340,71 +184,10 @@ public class IttiaApp extends Application {
             FU_edit editor = new FU_edit(templateContent -> {
                 // The callback is executed on the Swing EDT.
                 // To update the JavaFX UI, we must switch back to the JavaFX Application Thread.
-                Platform.runLater(() -> parseAndAppendTemplate(templateContent));
+                Platform.runLater(() -> textAreaManager.parseAndAppendTemplate(templateContent));
             });
             editor.setVisible(true);
         });
-    }
-    
-    /**
-     * Parses a template string and appends its content to the corresponding TextAreas.
-     * The template format is expected to use headers like "CC>", "PI>", etc.
-     * @param templateContent The full string content of the template.
-     */
-    public void parseAndAppendTemplate(String templateContent) {
-        if (templateContent == null || templateContent.isBlank()) {
-            return;
-        }
-
-        // Create a map of titles to TextAreas for easy lookup
-        Map<String, TextArea> areaMap = new HashMap<>();
-        for (int i = 0; i < TEXT_AREA_TITLES.length && i < areas.size(); i++) {
-            areaMap.put(TEXT_AREA_TITLES[i], areas.get(i));
-        }
-
-        // Regex to split the content by our headers (CC>, PI>, etc.)
-        // This pattern uses a "positive lookahead" to split *before* the delimiter, keeping it.
-        String patternString = "(?=(" + String.join("|", TEXT_AREA_TITLES)
-                .replace(">", "\\>")
-                .replace(" ", "\\s") + "))";
-        Pattern pattern = Pattern.compile(patternString);
-        String[] parts = pattern.split(templateContent);
-
-        int sectionsLoaded = 0;
-        for (String part : parts) {
-            part = part.trim();
-            if (part.isEmpty()) continue;
-
-            // Find which section this part belongs to
-            for (String title : TEXT_AREA_TITLES) {
-                if (part.startsWith(title)) {
-                    TextArea targetArea = areaMap.get(title);
-                    if (targetArea != null) {
-                        // Get content, which is everything after the title line
-                        String contentToAppend = part.substring(title.length()).trim();
-
-                        if (!contentToAppend.isEmpty()) {
-                            // Append with a newline for separation if the area is not empty
-                            if (targetArea.getText() != null && !targetArea.getText().isBlank()) {
-                                targetArea.appendText("\n" + contentToAppend);
-                            } else {
-                                targetArea.setText(contentToAppend);
-                            }
-                            sectionsLoaded++;
-                        }
-                    }
-                    break; // Move to the next part
-                }
-            }
-        }
-        
-        if (sectionsLoaded > 0) {
-            showToast("Template content loaded into " + sectionsLoaded + " section(s).");
-        } else {
-            // If no sections matched, append the whole template to the focused area
-            insertBlockIntoFocusedArea(templateContent);
-            showToast("Template format not recognized. Pasted into focused area.");
-        }
     }
     
     public static void main(String[] args) {

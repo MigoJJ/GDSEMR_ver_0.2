@@ -1,4 +1,3 @@
-// ListProblemAction.java
 package com.emr.gds;
 
 import javafx.application.Platform;
@@ -18,13 +17,19 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
-import javafx.scene.control.TextArea;
 
 public class ListProblemAction {
 
+    // ==== Layout tuning (adjust as you like) ====
+    private static final double SIDEBAR_WIDTH_PX = 440;     // overall width of this left pane
+    private static final int    SCRATCHPAD_ROWS   = 22;      // fewer rows = shorter TextArea
+    private static final double PROBLIST_HEIGHT_PX = 180;    // shorter Problem List region
+    private static final double SPACING_PX = 8;
+    private static final double PADDING_RIGHT_PX = 8;
+
     private final IttiaApp app;
     private TextArea scratchpad;
-    
+
     // Database connection for the problem list
     private Connection dbConn;
 
@@ -94,7 +99,7 @@ public class ListProblemAction {
             System.err.println("Failed to load problems from database: " + e.getMessage());
         }
     }
-    
+
     /**
      * Adds a new problem to the database and then updates the UI.
      * @param problemText The problem to add.
@@ -139,7 +144,12 @@ public class ListProblemAction {
     public VBox buildProblemPane() {
         // --- Problem List Section ---
         problemList = new ListView<>(problems);
-        problemList.setPrefWidth(320);
+        problemList.setPrefWidth(SIDEBAR_WIDTH_PX);
+        problemList.setMaxWidth(SIDEBAR_WIDTH_PX);
+        problemList.setMinWidth(SIDEBAR_WIDTH_PX);
+        // shorter visible height; will scroll when longer
+        problemList.setPrefHeight(PROBLIST_HEIGHT_PX);
+
         problemList.setOnMouseClicked(e -> {
             if (e.getClickCount() == 2) {
                 String sel = problemList.getSelectionModel().getSelectedItem();
@@ -150,7 +160,7 @@ public class ListProblemAction {
         TextField input = new TextField();
         input.setPromptText("Add problem and press Enter");
         input.setOnAction(e -> {
-            String text = IttiaApp.normalizeLine(input.getText());
+            String text = IttiaAppTextArea.normalizeLine(input.getText());
             if (!text.isBlank()) {
                 addProblem(text); // Persist to DB and update UI
                 input.clear();
@@ -165,29 +175,49 @@ public class ListProblemAction {
             }
         });
 
-        HBox problemControls = new HBox(8, input, remove);
+        HBox problemControls = new HBox(SPACING_PX, input, remove);
         HBox.setHgrow(input, Priority.ALWAYS);
+        problemControls.setPrefWidth(SIDEBAR_WIDTH_PX);
+        problemControls.setMaxWidth(SIDEBAR_WIDTH_PX);
 
         // --- Scratchpad Section ---
         this.scratchpadArea = new TextArea();
         scratchpadArea.setPromptText("Scratchpad... (auto-updated from center areas)");
         scratchpadArea.setWrapText(true);
-        scratchpadArea.setPrefRowCount(16);
         scratchpadArea.setEditable(true);
 
+        // Make it narrower & shorter (width and height)
+        scratchpadArea.setPrefColumnCount(28); // controls width in many layouts
+        scratchpadArea.setPrefRowCount(SCRATCHPAD_ROWS);
+        scratchpadArea.setMaxWidth(SIDEBAR_WIDTH_PX);
+        scratchpadArea.setMinWidth(SIDEBAR_WIDTH_PX);
+
+        // --- Labels ---
+        Label scratchpadLabel = new Label("Scratchpad");
+        scratchpadLabel.setMaxWidth(SIDEBAR_WIDTH_PX);
+        Label problemLabel = new Label("Problem List (Persistent)");
+        problemLabel.setMaxWidth(SIDEBAR_WIDTH_PX);
+
         // --- Assemble the VBox ---
-        VBox box = new VBox(8,
-                new Label("Scratchpad"),
+        VBox box = new VBox(
+                SPACING_PX,
+                scratchpadLabel,
                 scratchpadArea,
                 new Separator(Orientation.HORIZONTAL),
-                new Label("Problem List (Persistent)"),
+                problemLabel,
                 problemList,
                 problemControls
         );
 
-        VBox.setVgrow(problemList, Priority.ALWAYS);
-        VBox.setVgrow(scratchpadArea, Priority.ALWAYS);
-        box.setPadding(new Insets(0, 10, 0, 0));
+        // Keep vertical growth modest for visibility
+        VBox.setVgrow(problemList, Priority.NEVER);     // don't expand taller than prefHeight
+        VBox.setVgrow(scratchpadArea, Priority.NEVER);  // keep compact
+
+        box.setPadding(new Insets(0, PADDING_RIGHT_PX, 0, 0));
+        box.setPrefWidth(SIDEBAR_WIDTH_PX);
+        box.setMaxWidth(SIDEBAR_WIDTH_PX);
+        box.setMinWidth(SIDEBAR_WIDTH_PX);
+
         return box;
     }
 
@@ -207,7 +237,7 @@ public class ListProblemAction {
     public void redrawScratchpad() {
         if (scratchpadArea == null) return;
 
-        List<String> orderedTitles = Arrays.asList(IttiaApp.TEXT_AREA_TITLES);
+        List<String> orderedTitles = Arrays.asList(IttiaAppTextArea.TEXT_AREA_TITLES);
         StringJoiner sj = new StringJoiner("\n");
         for (String title : orderedTitles) {
             String value = scratchpadEntries.get(title);
@@ -215,7 +245,7 @@ public class ListProblemAction {
                 sj.add(title + " " + value);
             }
         }
-        
+
         if (!scratchpadArea.getText().equals(sj.toString())) {
             scratchpadArea.setText(sj.toString());
             scratchpadArea.positionCaret(scratchpadArea.getLength());
@@ -224,13 +254,11 @@ public class ListProblemAction {
     }
 
     public void clearScratchpad() {
-        if (scratchpad != null) {
-            scratchpad.clear();
+        if (scratchpadArea != null) {
+            scratchpadArea.clear();
         }
     }
 
-    
-    
     public ObservableList<String> getProblems() {
         return problems;
     }
