@@ -9,6 +9,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.*;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.sql.Connection;
@@ -29,49 +30,54 @@ public class IttiaApp extends Application {
     private final Map<String, String> abbrevMap = new HashMap<>();
     private IttiaAppTextArea textAreaManager;
 
-    // ---- Main Application Entry Point ----
+ // ---- Main Application Entry Point ----
     @Override
     public void start(Stage stage) {
         stage.setTitle("GDSEMR ITTIA – EMR Prototype (JavaFX)");
 
-        // Initialize components and data
+        // --- 1. Initialization and Component Setup ---
         initAbbrevDatabase();
         problemAction = new ListProblemAction(this);
         textAreaManager = new IttiaAppTextArea(abbrevMap, problemAction);
         buttonAction = new ListButtonAction(this, dbConn, abbrevMap);
         
-        // Build the main UI layout
+        // --- 2. UI Layout Creation ---
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
-        root.setTop(buttonAction.buildTopBar());
-        root.setLeft(problemAction.buildProblemPane());
-        root.setCenter(textAreaManager.buildCenterAreas());
-        root.setBottom(buttonAction.buildBottomBar());
-
-        // Let's modify the top bar built by ListButtonAction
+        
+        // --- 3. Build and Configure UI Components ---
+        // Top Bar (Toolbar)
         ToolBar topBar = buttonAction.buildTopBar();
         Button templateButton = new Button("Load Template");
         templateButton.setOnAction(e -> openTemplateEditor());
-        // Add it to the toolbar
         topBar.getItems().add(new Separator());
         topBar.getItems().add(templateButton);
+        root.setTop(topBar);
+
+        // Left Panel
+        VBox leftPanel = problemAction.buildProblemPane();
+        BorderPane.setMargin(leftPanel, new Insets(0, 10, 0, 0));
+        root.setLeft(leftPanel);
+
+        // Center Panel
+        javafx.scene.layout.Pane centerPane = textAreaManager.buildCenterAreas();
+        centerPane.setStyle("-fx-background-color: linear-gradient(to bottom right, #FFFACD, #FAFAD2);");
+        root.setCenter(centerPane);
         
-        root.setTop(topBar); // Re-set the modified top bar
-        
-        // Configure and show the scene
-        Scene scene = new Scene(root, 1400, 800);
+        // Bottom Bar
+        root.setBottom(buttonAction.buildBottomBar());
+
+        // --- 4. Scene Configuration and Display ---
+        Scene scene = new Scene(root, 1200, 800);
         stage.setScene(scene);
         stage.show();
 
-        // Set initial focus
+        // --- 5. Post-Display Actions ---
         Platform.runLater(() -> {
             textAreaManager.focusArea(0);
         });
-
-        // Install global keyboard shortcuts
         installGlobalShortcuts(scene);
     }
-
     // ---- Database & Data Initialization ----
     private void initAbbrevDatabase() {
         try {

@@ -28,6 +28,12 @@ public class IttiaAppTextArea {
             "O>", "Physical Exam>", "A>", "P>", "Comment>"
     };
 
+    // Light lemon gradient applied to the editable content of TextArea
+    private static final String LEMON_GRADIENT_STYLE =
+            "-fx-control-inner-background: linear-gradient(to bottom, #FFFFE0, #FFFACD);" +  // content area
+            "-fx-background-insets: 0;" +
+            "-fx-background-radius: 6;";
+
     public IttiaAppTextArea(Map<String, String> abbrevMap, ListProblemAction problemAction) {
         this.abbrevMap = abbrevMap;
         this.problemAction = problemAction;
@@ -46,10 +52,13 @@ public class IttiaAppTextArea {
             ta.setFont(Font.font("Monospaced", 13));
             ta.setPrefRowCount(8);
             ta.setPrefColumnCount(40);
-            
+
+            // ✨ Apply light lemon gradient inside each TextArea
+            ta.setStyle(LEMON_GRADIENT_STYLE);
+
             String title = (i < TEXT_AREA_TITLES.length) ? TEXT_AREA_TITLES[i] : "Area " + (i + 1);
             ta.setPromptText(title);
-            
+
             // Add listeners for focus and text changes
             ta.focusedProperty().addListener((obs, oldVal, newVal) -> {
                 if (newVal) {
@@ -61,7 +70,7 @@ public class IttiaAppTextArea {
                 ta.textProperty().addListener((obs, oldVal, newVal) ->
                         problemAction.updateAndRedrawScratchpad(TEXT_AREA_TITLES[idx], newVal));
             }
-            
+
             // Handle abbreviation expansion on space key press
             ta.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
                 if (event.getCode() == KeyCode.SPACE) {
@@ -69,7 +78,7 @@ public class IttiaAppTextArea {
                     String text = ta.getText(0, caret);
                     int start = Math.max(text.lastIndexOf(' '), text.lastIndexOf('\n')) + 1;
                     String word = text.substring(start);
-                    
+
                     if (word.startsWith(":")) {
                         String key = word.substring(1);
                         String replacement = "cd".equals(key) ?
@@ -100,7 +109,7 @@ public class IttiaAppTextArea {
         String insert = line.endsWith("\n") ? line : line + "\n";
         insertBlockIntoFocusedArea(insert);
     }
-    
+
     public void insertBlockIntoFocusedArea(String block) {
         TextArea ta = getFocusedArea();
         if (ta == null) return;
@@ -128,20 +137,21 @@ public class IttiaAppTextArea {
         }
         return lastFocusedArea != null ? lastFocusedArea : (areas.isEmpty() ? null : areas.get(0));
     }
-    
+
     public void focusArea(int idx) {
         if (idx >= 0 && idx < areas.size()) {
             areas.get(idx).requestFocus();
             lastFocusedArea = areas.get(idx);
         }
     }
-    
+
     private static UnaryOperator<TextFormatter.Change> filterControlChars() {
         return change -> {
             if (change.getText() == null || change.getText().isEmpty()) {
                 return change;
             }
-            String filtered = change.getText().replaceAll("[\u0000-\u001F\u007F]", "\n");            if (!filtered.equals(change.getText())) {
+            String filtered = change.getText().replaceAll("[\u0000-\u001F\u007F]", "\n");
+            if (!filtered.equals(change.getText())) {
                 // Optional: Log or alert user about filtered characters
                 System.out.println("Filtered control characters from input: " + change.getText());
             }
@@ -149,25 +159,25 @@ public class IttiaAppTextArea {
             return change;
         };
     }
-    
+
     public List<TextArea> getTextAreas() {
         return this.areas;
     }
-    
+
     public String getUniqueLines(String text) {
         if (text == null || text.isBlank()) return "";
         Set<String> uniqueLines = new LinkedHashSet<>();
         text.lines().map(String::trim).filter(line -> !line.isEmpty()).forEach(uniqueLines::add);
         return String.join("\n", uniqueLines);
     }
-    
+
     public static class Formatter {
         static String autoFormat(String raw) {
             if (raw == null || raw.isBlank()) return "";
             String[] lines = raw.replace("\r", "").split("\n", -1);
             StringBuilder out = new StringBuilder();
             boolean lastBlank = false;
-            
+
             for (String line : lines) {
                 String t = line.strip().replaceAll("^[•·→▶▷‣⦿∘*]+\\s*|^[-]{1,2}\\s*", "- ");
                 if (t.isEmpty()) {
@@ -182,7 +192,7 @@ public class IttiaAppTextArea {
             }
             return out.toString().strip();
         }
-        
+
         static String finalizeForEMR(String raw) {
             String s = autoFormat(raw);
             s = s.replaceAll("^(#+)([^#\\n])", "$1 $2");
@@ -190,11 +200,11 @@ public class IttiaAppTextArea {
             return s.trim();
         }
     }
- 
+
     public static String normalizeLine(String s) {
         return s == null ? "" : s.trim().replaceAll("\\s+", " ");
     }
-    
+
     /**
      * Parses a template string and appends its content to the corresponding TextAreas.
      * The template format is expected to use headers like "CC>", "PI>", etc.
@@ -246,7 +256,7 @@ public class IttiaAppTextArea {
                 }
             }
         }
-        
+
         if (sectionsLoaded > 0) {
             // showToast("Template content loaded into " + sectionsLoaded + " section(s).");
         } else {
