@@ -68,7 +68,7 @@ public class IttiaApp extends Application {
         root.setBottom(buttonAction.buildBottomBar());
 
         // --- 4. Scene Configuration and Display ---
-        Scene scene = new Scene(root, 1200, 800);
+        Scene scene = new Scene(root, 1200, 900);
         stage.setScene(scene);
         stage.show();
 

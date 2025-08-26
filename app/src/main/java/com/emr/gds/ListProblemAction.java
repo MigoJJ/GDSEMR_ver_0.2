@@ -22,7 +22,7 @@ public class ListProblemAction {
 
     // ==== Layout tuning (adjust as you like) ====
     private static final double SIDEBAR_WIDTH_PX = 440;     // overall width of this left pane
-    private static final int    SCRATCHPAD_ROWS   = 22;      // fewer rows = shorter TextArea
+    private static final int    SCRATCHPAD_ROWS   = 26;      // fewer rows = shorter TextArea
     private static final double PROBLIST_HEIGHT_PX = 180;    // shorter Problem List region
     private static final double SPACING_PX = 8;
     private static final double PADDING_RIGHT_PX = 8;
