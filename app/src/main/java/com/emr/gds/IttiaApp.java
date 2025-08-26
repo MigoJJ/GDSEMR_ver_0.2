@@ -1,7 +1,7 @@
 // IttiaApp.java
 package com.emr.gds;
 
-import javafx.application.Application;
+import javafx.application.Application;	
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -20,6 +20,7 @@ import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import com.emr.gds.inputdata.VitalBPHbA1cFU;
 import javax.swing.SwingUtilities;
 
 public class IttiaApp extends Application {
@@ -52,6 +53,14 @@ public class IttiaApp extends Application {
         templateButton.setOnAction(e -> openTemplateEditor());
         topBar.getItems().add(new Separator());
         topBar.getItems().add(templateButton);
+        
+        
+     // Add Vital BP & HbA1c button to the top bar
+        Button vitalButton = new Button("Vital BP & HbA1c");
+        vitalButton.setOnAction(e -> openVitalBPHbA1cFU());
+        topBar.getItems().add(new Separator());
+        topBar.getItems().add(vitalButton);
+        
         root.setTop(topBar);
 
         // Left Panel
@@ -196,6 +205,10 @@ public class IttiaApp extends Application {
         });
     }
     
+ // New method to open VitalBPHbA1cFU
+    public void openVitalBPHbA1cFU() {
+        SwingUtilities.invokeLater(() -> new VitalBPHbA1cFU(this));
+    }
     public static void main(String[] args) {
         launch(args);
     }
