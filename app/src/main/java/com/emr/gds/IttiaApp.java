@@ -25,6 +25,9 @@ import java.util.*;
 import javax.swing.SwingUtilities;
 
 import com.emr.gds.input.FreqInputFrame;
+import com.emr.gds.main.IttiaAppTextArea;
+import com.emr.gds.main.ListButtonAction;
+import com.emr.gds.main.ListProblemAction;
 
 public class IttiaApp extends Application {
     // ---- Instance Variables ----

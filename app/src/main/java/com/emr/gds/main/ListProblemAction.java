@@ -1,4 +1,4 @@
-package com.emr.gds;
+package com.emr.gds.main;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -17,6 +17,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
+
+import com.emr.gds.IttiaApp;
 
 public class ListProblemAction {
 

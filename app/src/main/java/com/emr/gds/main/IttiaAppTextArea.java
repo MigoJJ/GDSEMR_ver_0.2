@@ -1,4 +1,4 @@
-package com.emr.gds;
+package com.emr.gds.main;
 
 // IttiaAppTextArea.java
 import javafx.application.Platform;
@@ -215,7 +215,7 @@ public class IttiaAppTextArea {
     	    return out.toString().strip();
     	}
 
-    	static String finalizeForEMR(String raw) {
+    	public static String finalizeForEMR(String raw) {
     	    // First, apply the standard auto-formatting.
     	    String formattedText = autoFormat(raw);
 

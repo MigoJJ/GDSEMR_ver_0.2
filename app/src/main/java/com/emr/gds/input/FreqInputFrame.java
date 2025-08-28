@@ -3,7 +3,7 @@ package com.emr.gds.input;
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 
-import com.emr.gds.IttiaAppTextArea.IttiaAppMain;
+import com.emr.gds.main.IttiaAppTextArea.IttiaAppMain;
 
 import java.awt.*;
 import java.awt.event.KeyAdapter;

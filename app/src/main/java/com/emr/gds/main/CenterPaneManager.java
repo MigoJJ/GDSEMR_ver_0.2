@@ -1,5 +1,5 @@
 // CenterPaneManager.java
-package com.emr.gds;
+package com.emr.gds.main;
 
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextFormatter;

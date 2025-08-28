@@ -1,5 +1,5 @@
 // TextFormatUtil.java
-package com.emr.gds;
+package com.emr.gds.main;
 
 import javafx.scene.control.TextFormatter;
 import java.util.LinkedHashSet;
