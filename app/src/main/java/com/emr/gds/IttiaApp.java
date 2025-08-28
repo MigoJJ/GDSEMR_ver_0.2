@@ -1,4 +1,5 @@
 package com.emr.gds;
+
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
@@ -10,6 +11,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -18,13 +20,18 @@ import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+
 import javax.swing.SwingUtilities;
+
 import com.emr.gds.input.FreqInputFrame;
+import com.emr.gds.input.IttiaAppMain;
+import com.emr.gds.input.FxTextAreaManager;          // <-- NEW: bridge impl
 import com.emr.gds.main.IttiaAppTextArea;
 import com.emr.gds.main.ListButtonAction;
 import com.emr.gds.main.ListProblemAction;
 import com.emr.gds.main.TextFormatUtil;
-
+import com.emr.gds.input.IttiaAppMain;
+import com.emr.gds.input.FxTextAreaManager;
 public class IttiaApp extends Application {
     // ---- Instance Variables ----
     private ListProblemAction problemAction;
@@ -32,7 +39,10 @@ public class IttiaApp extends Application {
     private Connection dbConn;
     private final Map<String, String> abbrevMap = new HashMap<>();
     private IttiaAppTextArea textAreaManager;
-    
+
+    // Vital 보조창(이미 열려 있으면 앞으로만 가져오도록)
+    private FreqInputFrame freqStage;
+
     // ---- Main Application Entry Point ----
     public static void main(String[] args) {
         launch(args);
@@ -52,9 +62,6 @@ public class IttiaApp extends Application {
         postShow(scene);                  // 3) 표시 이후 포커싱/단축키
     }
 
-    // Vital 보조창(이미 열려 있으면 앞으로만 가져오도록)
-    private FreqInputFrame freqStage;
-
     /* =============================== *
      *  1) 초기화 로직
      * =============================== */
@@ -64,9 +71,10 @@ public class IttiaApp extends Application {
         textAreaManager = new IttiaAppTextArea(abbrevMap, problemAction);
         buttonAction    = new ListButtonAction(this, dbConn, abbrevMap);
 
-        // (선택) FreqInputFrame이 IttiaAppMain 브릿지를 통해 EMR TextArea에 쓰도록 연결
-        // textAreaManager가 내부적으로 areas(List<TextArea>)를 보유한다면 아래와 같이 매핑:
-        // IttiaAppMain.setTextAreaManager(new FxTextAreaManager(textAreaManager.getAreas()));
+        // --- BRIDGE WIRING ---
+        // FreqInputFrame -> IttiaAppMain -> FxTextAreaManager -> your 10 TextAreas
+        // This is the key line that makes Save/Append work from FreqInputFrame.
+        IttiaAppMain.setTextAreaManager(new FxTextAreaManager(textAreaManager.getTextAreas()));
     }
 
     /* =============================== *
@@ -119,13 +127,24 @@ public class IttiaApp extends Application {
      *  Vital 보조창 열기/포커스
      * =============================== */
     private void openVitalWindow() {
+        if (!ensureBridgeReady()) {
+            showToast("Text areas not ready yet. Please try again in a moment.");
+            return;
+        }
+
         if (freqStage == null || !freqStage.isShowing()) {
             freqStage = new FreqInputFrame();  // JavaFX 버전 Stage
-            // 필요 시: 화면 특정 위치로 고정하거나, 소속(owner) 지정 가능
-            // freqStage.initOwner(primaryStageReference);
         } else {
             freqStage.requestFocus();
             freqStage.toFront();
+        }
+    }
+
+    private boolean ensureBridgeReady() {
+        try {
+            return IttiaAppMain.getTextAreaManager().isReady();
+        } catch (Exception e) {
+            return false;
         }
     }
 
@@ -137,7 +156,6 @@ public class IttiaApp extends Application {
         installGlobalShortcuts(scene);
     }
 
-    
     // ---- Database & Data Initialization ----
     private void initAbbrevDatabase() {
         try {
@@ -148,7 +166,7 @@ public class IttiaApp extends Application {
             stmt.execute("CREATE TABLE IF NOT EXISTS abbreviations (short TEXT PRIMARY KEY, full TEXT)");
             stmt.execute("INSERT OR IGNORE INTO abbreviations (short, full) VALUES ('c', 'hypercholesterolemia')");
             stmt.execute("INSERT OR IGNORE INTO abbreviations (short, full) VALUES ('to', 'hypothyroidism')");
-            
+
             abbrevMap.clear();
             ResultSet rs = stmt.executeQuery("SELECT * FROM abbreviations");
             while (rs.next()) {
@@ -161,28 +179,28 @@ public class IttiaApp extends Application {
             System.err.println("Failed to initialize database: " + e.getMessage());
         }
     }
-    
+
     // ---- Text and Clipboard Actions ----
     public void insertTemplateIntoFocusedArea(ListButtonAction.TemplateLibrary t) {
         textAreaManager.insertTemplateIntoFocusedArea(t);
     }
-    
+
     public void insertLineIntoFocusedArea(String line) {
         textAreaManager.insertLineIntoFocusedArea(line);
     }
-    
+
     public void insertBlockIntoFocusedArea(String block) {
         textAreaManager.insertBlockIntoFocusedArea(block);
     }
-    
+
     public void formatCurrentArea() {
         textAreaManager.formatCurrentArea();
     }
-    
+
     public void copyAllToClipboard() {
         StringJoiner sj = new StringJoiner("\n\n");
         ObservableList<String> problems = problemAction.getProblems();
-        
+
         if (!problems.isEmpty()) {
             StringBuilder pb = new StringBuilder("# Problem List (as of ")
                     .append(LocalDate.now().format(DateTimeFormatter.ISO_DATE))
@@ -190,7 +208,7 @@ public class IttiaApp extends Application {
             problems.forEach(p -> pb.append("- ").append(p).append("\n"));
             sj.add(pb.toString().trim());
         }
-        
+
         for (int i = 0; i < textAreaManager.getTextAreas().size(); i++) {
             String uniqueText = TextFormatUtil.getUniqueLines(textAreaManager.getTextAreas().get(i).getText());
             if (!uniqueText.isEmpty()) {
@@ -199,15 +217,15 @@ public class IttiaApp extends Application {
                 sj.add("# " + title + "\n" + uniqueText);
             }
         }
-        
-        // TextFormatUtil의 finalizeForEMR 사용 (중복된 Formatter 클래스 대신)
+
+        // finalize for EMR
         String result = TextFormatUtil.finalizeForEMR(sj.toString());
         ClipboardContent cc = new ClipboardContent();
         cc.putString(result);
         Clipboard.getSystemClipboard().setContent(cc);
         showToast("Copied all content to clipboard");
     }
-    
+
     public void clearAllText() {
         textAreaManager.clearAllTextAreas();
         if (problemAction != null) {
@@ -215,7 +233,7 @@ public class IttiaApp extends Application {
         }
         showToast("All text cleared");
     }
-    
+
     // ---- Helper and Utility Methods ----
     private void installGlobalShortcuts(Scene scene) {
         scene.getAccelerators().put(new KeyCodeCombination(KeyCode.I, KeyCombination.CONTROL_DOWN),
@@ -224,7 +242,7 @@ public class IttiaApp extends Application {
                 this::formatCurrentArea);
         scene.getAccelerators().put(new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN),
                 this::copyAllToClipboard);
-        
+
         // Ctrl+1...9 and Ctrl+0 shortcuts
         for (int i = 1; i <= 9; i++) {
             final int idx = i - 1;
@@ -234,42 +252,33 @@ public class IttiaApp extends Application {
         scene.getAccelerators().put(new KeyCodeCombination(KeyCode.DIGIT0, KeyCombination.CONTROL_DOWN),
                 () -> textAreaManager.focusArea(9));
     }
-    
+
     private void showToast(String message) {
         Alert a = new Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK);
         a.setHeaderText(null);
         a.setTitle("Info");
         a.showAndWait();
     }
-    
+
     private void openTemplateEditor() {
         // Swing UI operations must be done on the Swing Event Dispatch Thread (EDT).
         SwingUtilities.invokeLater(() -> {
-            // Create the editor and pass it a callback function.
-            // This function defines what to do when "Use Template" is clicked.
-            FU_edit editor = new FU_edit(templateContent -> {
-                // The callback is executed on the Swing EDT.
-                // To update the JavaFX UI, we must switch back to the JavaFX Application Thread.
-                Platform.runLater(() -> textAreaManager.parseAndAppendTemplate(templateContent));
-            });
+            FU_edit editor = new FU_edit(templateContent ->
+                Platform.runLater(() -> textAreaManager.parseAndAppendTemplate(templateContent))
+            );
             editor.setVisible(true);
         });
     }
-    
-    // New method to open VitalBPHbA1cFU
-    public void openVitalBPHbA1cFU() {
-//         SwingUtilities.invokeLater(() -> new VitalBPHbA1cFU(this));
-    }
-    
-    // ---- Getter Methods (필요시 다른 클래스에서 접근하기 위해) ----
+
+    // ---- Getter Methods ----
     public IttiaAppTextArea getTextAreaManager() {
         return textAreaManager;
     }
-    
+
     public Connection getDbConnection() {
         return dbConn;
     }
-    
+
     public Map<String, String> getAbbrevMap() {
         return abbrevMap;
     }

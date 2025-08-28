@@ -1,24 +1,36 @@
 package com.emr.gds.input;
 
+import javafx.application.Platform;
+
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+
 public final class IttiaAppMain {
-    private static TextAreaManager textAreaManager = new TextAreaManager(); // no-op default
+    private static final AtomicReference<FxTextAreaManager> MANAGER = new AtomicReference<>(null);
 
     private IttiaAppMain() {}
 
-    public static TextAreaManager getTextAreaManager() {
-        return textAreaManager;
+    public static void setTextAreaManager(FxTextAreaManager manager) {
+        Objects.requireNonNull(manager, "TextAreaManager must not be null");
+        MANAGER.set(manager);
     }
 
-    public static void setTextAreaManager(TextAreaManager manager) {
-        if (manager != null) {
-            textAreaManager = manager;
+    public static FxTextAreaManager getTextAreaManager() {
+        FxTextAreaManager m = MANAGER.get();
+        if (m == null) {
+            throw new IllegalStateException("TextAreaManager is not set. Call IttiaAppMain.setTextAreaManager(...) after creating the 10 EMR TextAreas.");
         }
+        return m;
     }
 
-    /** API used by Swing/JFX helpers (FreqInputFrame, etc.) */
-    public static class TextAreaManager {
-        public void focusArea(int index) { /* no-op default */ }
-        public void insertLineIntoFocusedArea(String line) { /* no-op default */ }
-        public void insertBlockIntoFocusedArea(String block) { /* no-op default */ }
+    public static Optional<FxTextAreaManager> maybeManager() {
+        return Optional.ofNullable(MANAGER.get());
+    }
+
+    /** Utility for safe FX-thread execution inside manager implementations */
+    public static void runFx(Runnable r) {
+        if (Platform.isFxApplicationThread()) r.run();
+        else Platform.runLater(r);
     }
 }
