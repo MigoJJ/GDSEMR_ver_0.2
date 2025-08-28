@@ -37,62 +37,106 @@ public class IttiaApp extends Application {
     public static void main(String[] args) {
         launch(args);
     }
-    
+
     @Override
     public void start(Stage stage) {
         stage.setTitle("GDSEMR ITTIA – EMR Prototype (JavaFX)");
-        
-        // --- 1. Initialization and Component Setup ---
-        initAbbrevDatabase();
-        problemAction = new ListProblemAction(this);
-        textAreaManager = new IttiaAppTextArea(abbrevMap, problemAction);
-        // IttiaAppMain 내부 클래스 제거로 인한 수정 - 더 이상 필요 없음
-        buttonAction = new ListButtonAction(this, dbConn, abbrevMap);
-        
-        // --- 2. UI Layout Creation ---
-        BorderPane root = new BorderPane();
-        root.setPadding(new Insets(10));
-        
-        // --- 3. Build and Configure UI Components ---
-        // Top Bar (Toolbar)
-        ToolBar topBar = buttonAction.buildTopBar();
-        
-        // Template Button
-        Button templateButton = new Button("Load Template");
-        templateButton.setOnAction(e -> openTemplateEditor());
-        topBar.getItems().add(new Separator());
-        topBar.getItems().add(templateButton);
-        
-        // Vital BP & HbA1c Button
-        Button vitalButton = new Button("Vital BP & HbA1c");
-        vitalButton.setOnAction(e -> FreqInputFrame.main(null));
-        topBar.getItems().add(new Separator());
-        topBar.getItems().add(vitalButton);
-        
-        root.setTop(topBar);
-        
-        // Left Panel
-        VBox leftPanel = problemAction.buildProblemPane();
-        BorderPane.setMargin(leftPanel, new Insets(0, 10, 0, 0));
-        root.setLeft(leftPanel);
-        
-        // Center Panel
-        GridPane centerPane = textAreaManager.buildCenterAreas();
-        centerPane.setStyle("-fx-background-color: linear-gradient(to bottom right, #FFFACD, #FAFAD2);");
-        root.setCenter(centerPane);
-        
-        // Bottom Bar
-        root.setBottom(buttonAction.buildBottomBar());
-        
-        // --- 4. Scene Configuration and Display ---
+
+        initAppState();                   // 1) 데이터/매니저 초기화
+        BorderPane root = buildRoot();    // 2) 레이아웃 구성
+
         Scene scene = new Scene(root, 1300, 1000);
         stage.setScene(scene);
         stage.show();
-        
-        // --- 5. Post-Display Actions ---
+
+        postShow(scene);                  // 3) 표시 이후 포커싱/단축키
+    }
+
+    // Vital 보조창(이미 열려 있으면 앞으로만 가져오도록)
+    private FreqInputFrame freqStage;
+
+    /* =============================== *
+     *  1) 초기화 로직
+     * =============================== */
+    private void initAppState() {
+        initAbbrevDatabase();
+        problemAction   = new ListProblemAction(this);
+        textAreaManager = new IttiaAppTextArea(abbrevMap, problemAction);
+        buttonAction    = new ListButtonAction(this, dbConn, abbrevMap);
+
+        // (선택) FreqInputFrame이 IttiaAppMain 브릿지를 통해 EMR TextArea에 쓰도록 연결
+        // textAreaManager가 내부적으로 areas(List<TextArea>)를 보유한다면 아래와 같이 매핑:
+        // IttiaAppMain.setTextAreaManager(new FxTextAreaManager(textAreaManager.getAreas()));
+    }
+
+    /* =============================== *
+     *  2) 루트 UI 구성
+     * =============================== */
+    private BorderPane buildRoot() {
+        BorderPane root = new BorderPane();
+        root.setPadding(new Insets(10));
+
+        // TopBar
+        ToolBar topBar = buildTopBar();
+        root.setTop(topBar);
+
+        // Left (Problem List)
+        VBox leftPanel = problemAction.buildProblemPane();
+        BorderPane.setMargin(leftPanel, new Insets(0, 10, 0, 0));
+        root.setLeft(leftPanel);
+
+        // Center (EMR 10칸 템플릿)
+        GridPane centerPane = textAreaManager.buildCenterAreas();
+        centerPane.setStyle("-fx-background-color: linear-gradient(to bottom right, #FFFACD, #FAFAD2);");
+        root.setCenter(centerPane);
+
+        // Bottom (주요 버튼)
+        root.setBottom(buttonAction.buildBottomBar());
+
+        return root;
+    }
+
+    /* =============================== *
+     *  TopBar 구성 (템플릿 버튼 + Vital 버튼)
+     * =============================== */
+    private ToolBar buildTopBar() {
+        ToolBar topBar = buttonAction.buildTopBar();
+
+        // Template Button
+        Button templateButton = new Button("Load Template");
+        templateButton.setOnAction(e -> openTemplateEditor());
+        topBar.getItems().addAll(new Separator(), templateButton);
+
+        // Vital BP & HbA1c (JavaFX Stage로 열기)
+        Button vitalButton = new Button("Vital BP & HbA1c");
+        vitalButton.setOnAction(e -> openVitalWindow());
+        topBar.getItems().addAll(new Separator(), vitalButton);
+
+        return topBar;
+    }
+
+    /* =============================== *
+     *  Vital 보조창 열기/포커스
+     * =============================== */
+    private void openVitalWindow() {
+        if (freqStage == null || !freqStage.isShowing()) {
+            freqStage = new FreqInputFrame();  // JavaFX 버전 Stage
+            // 필요 시: 화면 특정 위치로 고정하거나, 소속(owner) 지정 가능
+            // freqStage.initOwner(primaryStageReference);
+        } else {
+            freqStage.requestFocus();
+            freqStage.toFront();
+        }
+    }
+
+    /* =============================== *
+     *  3) 표시 이후 처리
+     * =============================== */
+    private void postShow(Scene scene) {
         Platform.runLater(() -> textAreaManager.focusArea(0));
         installGlobalShortcuts(scene);
     }
+
     
     // ---- Database & Data Initialization ----
     private void initAbbrevDatabase() {
@@ -214,7 +258,7 @@ public class IttiaApp extends Application {
     
     // New method to open VitalBPHbA1cFU
     public void openVitalBPHbA1cFU() {
-        // SwingUtilities.invokeLater(() -> new VitalBPHbA1cFU(this));
+//         SwingUtilities.invokeLater(() -> new VitalBPHbA1cFU(this));
     }
     
     // ---- Getter Methods (필요시 다른 클래스에서 접근하기 위해) ----

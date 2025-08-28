@@ -1,246 +1,266 @@
 package com.emr.gds.input;
 
-import javax.swing.*;
-import javax.swing.border.TitledBorder;
+import com.emr.gds.input.IttiaAppMain; // bridge to EMR TextAreaManager
 
-import com.emr.gds.main.IttiaAppTextArea.IttiaAppMain;
-
-import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.util.HashSet;
-import java.util.Set;
 import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.stage.Screen;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
- * A combined JFrame for frequently used data input panels: BMI, HbA1c, and Vital Signs.
+ * JavaFX version of FreqInputFrame.
+ * ------------------------------------------------------------
+ * A compact utility window for quick EMR entries:
+ *   1) BMI calculator
+ *   2) HbA1c builder (IFCC / eAG auto-calc)
+ *   3) Vital sign tracker (scripted input + numeric sequence)
+ *
+ * NOTE:
+ * - This class extends Stage (JavaFX). No Swing.
+ * - Ensure your main JavaFX app calls:
+ *     IttiaAppMain.setTextAreaManager(new FxTextAreaManager(areas));
+ *   after creating the 10 EMR TextAreas.
+ *
+ * - Vitals are saved to O> (index 5) by default.
+ * - HbA1c status line is appended to A> (index 7).
  */
-public class FreqInputFrame extends JFrame {
+public class FreqInputFrame extends Stage {
 
-    //<editor-fold desc="Fields for EMR_BMI_calculator">
-    private static final String[] BMI_FIELDS = {"Height (cm): ", "Weight (kg): ", "Waist (cm or inch): "};
-    private final JTextField[] bmiInputs = new JTextField[BMI_FIELDS.length];
-    //</editor-fold>
+    // ------------------------------------------------------------
+    // BMI section
+    // ------------------------------------------------------------
+    private static final List<String> BMI_FIELDS = List.of(
+            "Height (cm): ", "Weight (kg): ", "Waist (cm or inch): "
+    );
+    private final TextField[] bmiInputs = new TextField[BMI_FIELDS.size()];
 
-    //<editor-fold desc="Fields for EMR_HbA1c">
-    private static final String[] HBA1C_LABELS = {"FBS / PP2 time", "Glucose mg/dL", "HbA1c %"};
+    // ------------------------------------------------------------
+    // HbA1c section
+    // ------------------------------------------------------------
+    private static final String[] HBA1C_LABELS = { "FBS / PP2 time", "Glucose mg/dL", "HbA1c %" };
     private static final String[][] GLUCOSE_STATUS = {
-        {"9.0", "Very poor"}, {"8.5", "Poor"}, {"7.5", "Fair"},
-        {"6.5", "Good"}, {"0.0", "Excellent"}
+            {"9.0", "Very poor"},
+            {"8.5", "Poor"},
+            {"7.5", "Fair"},
+            {"6.5", "Good"},
+            {"0.0", "Excellent"}
     };
-    private final JTextArea hba1cOutputArea = new JTextArea(4, 20);
-    private final JTextField[] hba1cInputs = new JTextField[HBA1C_LABELS.length];
-    //</editor-fold>
+    private final TextArea hba1cOutputArea = new TextArea();
+    private final TextField[] hba1cInputs = new TextField[HBA1C_LABELS.length];
 
-    //<editor-fold desc="Fields for Vitalsign">
-    private JTextField vsInputField;
-    private JTextArea vsOutputArea;
-    private JTextArea vsDescriptionArea;
+    // ------------------------------------------------------------
+    // Vital signs section
+    // ------------------------------------------------------------
+    private TextField vsInputField;
+    private TextArea vsOutputArea;
+    private TextArea vsDescriptionArea;
     private Set<String> vsValidInputs;
+
+    // staged numeric values
     private Integer sbp = null;
     private Integer dbp = null;
     private Integer pulseRate = null;
     private Double bodyTemperature = null;
     private Integer respirationRate = null;
-    //</editor-fold>
 
-    /**
-     * Constructs the main frame and initializes all UI components.
-     */
+    // ------------------------------------------------------------
+    // Constructor (build & show)
+    // ------------------------------------------------------------
     public FreqInputFrame() {
-        setupFrame();
-        createUI();
-        setVisible(true);
-    }
-
-    /**
-     * Sets up the main JFrame properties, size, and location.
-     */
-    private void setupFrame() {
+        initStyle(StageStyle.UNDECORATED);
         setTitle("Frequent Data Input");
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setUndecorated(true);
 
-        // Position frame at the top-right of the screen
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        int frameWidth = 320;
-        setLocation(screenSize.width - frameWidth, 0);
-        
-        setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
-    }
+        BorderPane root = new BorderPane();
+        root.setPadding(new Insets(8));
 
-    /**
-     * Creates and adds the individual panels for each function to the main frame.
-     */
-    private void createUI() {
-        initializeVitalsignValidInputs();
-        
-        add(createBmiPanel());
-        add(createHba1cPanel());
-        add(createVitalsignPanel());
-        
-        // Add a master Quit button at the bottom
-        JPanel quitPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        JButton quitButton = new JButton("Quit All");
-        quitButton.addActionListener(e -> dispose());
-        quitPanel.add(quitButton);
-        add(quitPanel);
+        VBox content = new VBox(8);
+        content.getChildren().addAll(
+                createBmiPane(),
+                createHba1cPane(),
+                createVitalsPane(),
+                createBottomButtons()
+        );
 
-        pack(); // Adjust frame size to fit all components
-    }
+        root.setCenter(content);
 
-    //<editor-fold desc="BMI Calculator Panel and Logic">
-    private JPanel createBmiPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("BMI Calculator"));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(2, 5, 2, 5);
+        Scene scene = new Scene(root, 360, 640);
+        setScene(scene);
 
-        for (int i = 0; i < BMI_FIELDS.length; i++) {
-            addBmiInputRow(panel, gbc, i);
-        }
+        // position: top-right of primary screen
+        Rectangle2D vb = Screen.getPrimary().getVisualBounds();
+        setX(vb.getMaxX() - getWidth() - 20);
+        setY(vb.getMinY() + 10);
 
-        JButton saveButton = new JButton("Save BMI");
-        saveButton.addActionListener(e -> calculateBMI());
-        gbc.gridx = 1;
-        gbc.gridy = BMI_FIELDS.length;
-        gbc.gridwidth = 2;
-        panel.add(saveButton, gbc);
-
-        return panel;
-    }
-
-    private void addBmiInputRow(JPanel panel, GridBagConstraints gbc, int row) {
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        panel.add(new JLabel(BMI_FIELDS[row]), gbc);
-
-        JTextField field = new JTextField(10);
-        field.setPreferredSize(new Dimension(15, 30));
-        field.setHorizontalAlignment(SwingConstants.CENTER);
-        
-        bmiInputs[row] = field;
-        gbc.gridx = 1;
-        panel.add(field, gbc);
-
-        field.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    if (row < bmiInputs.length - 1) {
-                        bmiInputs[row + 1].requestFocusInWindow();
-                    } else {
-                        calculateBMI();
-                    }
-                }
+        // Need to wait until Stage is showing to get final width/height
+        showingProperty().addListener((obs, was, is) -> {
+            if (is) {
+                setX(vb.getMaxX() - getWidth() - 20);
+                setY(vb.getMinY() + 10);
             }
         });
+
+        initializeVitalsValidInputs();
+        show();
     }
 
-    private void calculateBMI() {
+    // ============================================================
+    // BMI
+    // ============================================================
+    private TitledPane createBmiPane() {
+        GridPane grid = new GridPane();
+        grid.setHgap(8);
+        grid.setVgap(6);
+        grid.setPadding(new Insets(6));
+
+        for (int i = 0; i < BMI_FIELDS.size(); i++) {
+            Label label = new Label(BMI_FIELDS.get(i));
+            TextField field = new TextField();
+            field.setPromptText(BMI_FIELDS.get(i).replace(" : ", ""));
+            field.setPrefHeight(30);
+            bmiInputs[i] = field;
+
+            int row = i;
+            field.setOnAction(e -> {
+                if (row < bmiInputs.length - 1) {
+                    bmiInputs[row + 1].requestFocus();
+                } else {
+                    onSaveBMI();
+                }
+            });
+
+            grid.add(label, 0, i);
+            grid.add(field, 1, i);
+        }
+
+        Button save = new Button("Save BMI");
+        save.setOnAction(e -> onSaveBMI());
+        GridPane.setColumnSpan(save, 2);
+        grid.add(save, 0, BMI_FIELDS.size());
+
+        TitledPane tp = new TitledPane("BMI Calculator", grid);
+        tp.setExpanded(true);
+        return tp;
+    }
+
+    private void onSaveBMI() {
         try {
-            double height = Double.parseDouble(bmiInputs[0].getText());
-            double weight = Double.parseDouble(bmiInputs[1].getText());
-            double bmi = weight / Math.pow(height / 100, 2);
+            double height = Double.parseDouble(bmiInputs[0].getText().trim());
+            double weight = Double.parseDouble(bmiInputs[1].getText().trim());
+            double bmi = weight / Math.pow(height / 100.0, 2.0);
+            String category = bmiCategory(bmi);
+            String waist = processWaist(bmiInputs[2].getText().trim());
 
-            String bmiCategory = getBMICategory(bmi);
-            String waistMeasurement = processWaistMeasurement();
+            String bmiText = String.format("%s : BMI: [ %.2f ] kg/m^2", category, bmi);
+            String details = String.format(
+                    "\n< BMI >\n%s\nHeight : %.1f cm   Weight : %.1f kg%s",
+                    bmiText, height, weight,
+                    waist.isEmpty() ? "" : "   Waist: " + waist + " cm"
+            );
 
-            updateEMRFrameWithBMI(bmi, height, weight, bmiCategory, waistMeasurement);
-            
-            // Clear fields after calculation
-            for(JTextField field : bmiInputs) {
-                field.setText("");
-            }
-            bmiInputs[0].requestFocusInWindow();
+            IttiaAppMain.getTextAreaManager().insertBlockIntoFocusedArea(details);
 
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Please enter valid numbers for Height and Weight");
+            for (TextField f : bmiInputs) f.clear();
+            bmiInputs[0].requestFocus();
+
+        } catch (NumberFormatException ex) {
+            showError("Please enter valid numbers for Height and Weight.");
         }
     }
-    
-    private String processWaistMeasurement() {
-        String waist = bmiInputs[2].getText().trim();
-        if (waist.isEmpty()) return "";
-        if (waist.toLowerCase().contains("i")) {
-            double inches = Double.parseDouble(waist.replaceAll("[^\\d.]", ""));
+
+    private static String processWaist(String waistRaw) {
+        if (waistRaw.isEmpty()) return "";
+        String w = waistRaw.trim().toLowerCase();
+        if (w.contains("i")) { // has inches marker
+            double inches = Double.parseDouble(w.replaceAll("[^\\d.]", ""));
             return String.format("%.1f", inches * 2.54);
         }
-        return waist;
+        return waistRaw;
     }
 
-    private String getBMICategory(double bmi) {
+    private static String bmiCategory(double bmi) {
         if (bmi < 18.5) return "Underweight";
-        if (bmi < 25) return "Healthy weight";
-        if (bmi < 30) return "Overweight";
+        if (bmi < 25.0) return "Healthy weight";
+        if (bmi < 30.0) return "Overweight";
         return "Obesity";
     }
 
-    private void updateEMRFrameWithBMI(double bmi, double height, double weight, 
-            String category, String waist) {
-        String bmiText = String.format("%s : BMI: [ %.2f ]kg/m^2", category, bmi);
-        String details = String.format("\n< BMI >\n%s\nHeight : %.1f cm   Weight : %.1f kg%s", bmiText, height, weight,
-                    waist.isEmpty() ? "" : "   Waist: " + waist + " cm"
-                );
-        
-            IttiaAppMain.getTextAreaManager().insertBlockIntoFocusedArea(details);
-    }
+    // ============================================================
+    // HbA1c
+    // ============================================================
+    private TitledPane createHba1cPane() {
+        VBox box = new VBox(6);
+        box.setPadding(new Insets(6));
 
-    //</editor-fold>
-    
-    //<editor-fold desc="HbA1c Panel and Logic">
-    private JPanel createHba1cPanel() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBorder(BorderFactory.createTitledBorder("HbA1c EMR"));
+        hba1cOutputArea.setEditable(false);
+        hba1cOutputArea.setWrapText(true);
+        hba1cOutputArea.setPrefRowCount(4);
 
-        panel.add(hba1cOutputArea, BorderLayout.NORTH);
-        panel.add(createHba1cInputPanel(), BorderLayout.CENTER);
-        panel.add(createHba1cButtonPanel(), BorderLayout.SOUTH);
+        GridPane inputs = new GridPane();
+        inputs.setHgap(8);
+        inputs.setVgap(6);
 
-        return panel;
-    }
-
-    private JPanel createHba1cInputPanel() {
-        JPanel panel = new JPanel(new GridLayout(3, 2, 5, 5));
         for (int i = 0; i < HBA1C_LABELS.length; i++) {
-            panel.add(new JLabel(HBA1C_LABELS[i], SwingConstants.CENTER));
-            hba1cInputs[i] = createStyledTextField(i);
-            panel.add(hba1cInputs[i]);
+            Label label = new Label(HBA1C_LABELS[i]);
+            TextField tf = new TextField();
+            tf.setPrefHeight(30);
+            tf.setPromptText(HBA1C_LABELS[i]);
+            hba1cInputs[i] = tf;
+
+            int idx = i;
+            tf.setOnAction(e -> onHba1cInput(idx));
+
+            inputs.add(label, 0, i);
+            inputs.add(tf, 1, i);
         }
-        return panel;
+
+        HBox buttons = new HBox(8);
+        buttons.setAlignment(Pos.CENTER_RIGHT);
+        Button clear = new Button("Clear");
+        Button save  = new Button("Save");
+        clear.setOnAction(e -> clearHba1c());
+        save.setOnAction(e -> saveHba1cToEMR());
+        buttons.getChildren().addAll(clear, save);
+
+        box.getChildren().addAll(new Label("Output:"), hba1cOutputArea,
+                new Separator(), inputs, buttons);
+
+        TitledPane tp = new TitledPane("HbA1c EMR", box);
+        tp.setExpanded(true);
+        return tp;
     }
 
-    private JTextField createStyledTextField(int index) {
-        JTextField field = new JTextField();
-        field.setPreferredSize(new Dimension(field.getPreferredSize().width, 30));
-        field.setHorizontalAlignment(JTextField.CENTER);
-        field.addActionListener(e -> processHba1cInput(index));
-        return field;
-    }
-
-    private JPanel createHba1cButtonPanel() {
-        JPanel panel = new JPanel(new FlowLayout());
-        for (String name : new String[]{"Clear", "Save"}) {
-            JButton button = new JButton(name);
-            button.addActionListener(e -> handleHba1cButton(name));
-            panel.add(button);
-        }
-        return panel;
-    }
-
-    private void processHba1cInput(int index) {
-        String value = hba1cInputs[index].getText();
-        if (value.trim().isEmpty()) return;
+    private void onHba1cInput(int index) {
+        String value = hba1cInputs[index].getText().trim();
+        if (value.isEmpty()) return;
 
         if (index == 0) {
-            hba1cOutputArea.append("\n   " + (value.equals("0") ? "FBS" : "PP" + value));
+            hba1cOutputArea.appendText("\n   " + (value.equals("0") ? "FBS" : "PP" + value));
         } else if (index == 1) {
-            hba1cOutputArea.append("   [    " + value + "   ] mg/dL");
+            hba1cOutputArea.appendText("   [    " + value + "   ] mg/dL");
         } else if (index == 2) {
-            processHbA1cValue(value);
+            try {
+                double h = Double.parseDouble(value);
+                hba1cOutputArea.appendText("   HbA1c       [    " + value + "   ] %\n");
+                appendHba1cCalcs(h);
+                // autosave to O> and status to A>
+                saveHba1cToEMR();
+                clearHba1c();
+            } catch (NumberFormatException ex) {
+                showError("Invalid HbA1c value.");
+            }
         }
-        hba1cInputs[index].setText("");
+
+        hba1cInputs[index].clear();
         if (index < hba1cInputs.length - 1) {
             hba1cInputs[index + 1].requestFocus();
         } else {
@@ -248,130 +268,90 @@ public class FreqInputFrame extends JFrame {
         }
     }
 
-    private void processHbA1cValue(String value) {
-        try {
-            double hba1c = Double.parseDouble(value);
-            hba1cOutputArea.append("   HbA1c       [    " + value + "   ] %\n");
-            calculateAndDisplayHba1c(hba1c);
-            saveHba1cData();
-            clearHba1cFields();
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Invalid HbA1c value.");
-        }
-    }
-    
-    private void calculateAndDisplayHba1c(double hba1c) {
+    private void appendHba1cCalcs(double hba1c) {
         double ifcc = (hba1c - 2.15) * 10.929;
         double eagMgDl = (28.7 * hba1c) - 46.7;
         double eagMmolL = eagMgDl / 18.01559;
 
-        hba1cOutputArea.append(String.format(
-            "\n\tIFCC HbA1c: [ %.0f ] mmol/mol" +
-            "\n\teAG: [ %.0f ] mg/dL" +
-            "\n\teAG: [ %.2f ] mmol/l\n",
-            ifcc, eagMgDl, eagMmolL));
+        hba1cOutputArea.appendText(String.format(
+                "\n\tIFCC HbA1c: [ %.0f ] mmol/mol" +
+                "\n\teAG: [ %.0f ] mg/dL" +
+                "\n\teAG: [ %.2f ] mmol/l\n",
+                ifcc, eagMgDl, eagMmolL));
 
-        determineGlucoseStatus(hba1c);
-    }
-    
-    private void determineGlucoseStatus(double hba1c) {
         for (String[] status : GLUCOSE_STATUS) {
             if (hba1c > Double.parseDouble(status[0])) {
                 final String line = "\n...now [ " + status[1] + " ] controlled glucose status";
-                Platform.runLater(() -> {
-                    // A> is index 7 in TEXT_AREA_TITLES
-                    IttiaAppMain.getTextAreaManager().focusArea(7);
-                    IttiaAppMain.getTextAreaManager().insertLineIntoFocusedArea(line);
-                });
+                IttiaAppMain.getTextAreaManager().focusArea(7); // A> index
+                IttiaAppMain.getTextAreaManager().insertLineIntoFocusedArea(line);
                 break;
             }
         }
     }
 
-    private void handleHba1cButton(String name) {
-        switch (name) {
-            case "Clear" -> clearHba1cFields();
-            case "Save" -> saveHba1cData();
+    private void clearHba1c() {
+        hba1cOutputArea.clear();
+        for (TextField f : hba1cInputs) f.clear();
+        hba1cInputs[0].requestFocus();
+    }
+
+    private void saveHba1cToEMR() {
+        String text = hba1cOutputArea.getText().trim();
+        if (text.isEmpty()) return;
+
+        // O> index 5 (objective)
+        IttiaAppMain.getTextAreaManager().focusArea(5);
+        if (text.contains("\n")) {
+            IttiaAppMain.getTextAreaManager().insertBlockIntoFocusedArea(text + "\n");
+        } else {
+            IttiaAppMain.getTextAreaManager().insertLineIntoFocusedArea(text);
         }
     }
 
-    private void clearHba1cFields() {
-        hba1cOutputArea.setText("");
-        for (JTextField field : hba1cInputs) field.setText("");
-        hba1cInputs[0].requestFocusInWindow();
-    }
+    // ============================================================
+    // Vital signs
+    // ============================================================
+    private TitledPane createVitalsPane() {
+        VBox box = new VBox(6);
+        box.setPadding(new Insets(6));
 
-    private void saveHba1cData() {
-        final String text = hba1cOutputArea.getText().trim();
-        if (!text.isEmpty()) {
-            Platform.runLater(() -> {
-                // O> is index 5 in TEXT_AREA_TITLES
-                IttiaAppMain.getTextAreaManager().focusArea(5);
-                // If it’s multi-line, keep it as a block; otherwise a single line is fine
-                if (text.contains("\n")) {
-                    IttiaAppMain.getTextAreaManager().insertBlockIntoFocusedArea(text + "\n");
-                } else {
-                    IttiaAppMain.getTextAreaManager().insertLineIntoFocusedArea(text);
-                }
-            });
-        }
-    }
-
-    //</editor-fold>
-
-    //<editor-fold desc="Vitalsign Panel and Logic">
-    private JPanel createVitalsignPanel() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createTitledBorder("Vital Sign Tracker"));
-
-        vsInputField = new JTextField(20);
-        vsInputField.setHorizontalAlignment(JTextField.CENTER);
-        Dimension preferredSize = vsInputField.getPreferredSize();
-        preferredSize.height = 30;
-        vsInputField.setPreferredSize(preferredSize);
-        vsInputField.setMaximumSize(vsInputField.getPreferredSize());
-        panel.add(vsInputField);
-
-        vsDescriptionArea = new JTextArea(1, 20);
-        vsDescriptionArea.setText(" at GDS : Regular pulse, Right Seated Position");
-        vsDescriptionArea.setBorder(BorderFactory.createTitledBorder("Description"));
-        vsDescriptionArea.setLineWrap(true);
-        vsDescriptionArea.setWrapStyleWord(true);
-        vsDescriptionArea.setEditable(false);
-        panel.add(new JScrollPane(vsDescriptionArea));
-
-        vsOutputArea = new JTextArea(5, 20);
-        vsOutputArea.setBorder(BorderFactory.createTitledBorder("Output"));
-        vsOutputArea.setEditable(false);
-        vsOutputArea.setLineWrap(true);
-        vsOutputArea.setWrapStyleWord(true);
-        panel.add(new JScrollPane(vsOutputArea));
-
-        vsInputField.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    handleVitalsignInput();
-                    vsInputField.setText("");
-                }
-            }
+        vsInputField = new TextField();
+        vsInputField.setPromptText("Enter code (h/o/g/l/r/i/t36.5) or numbers (SBP→DBP→PR→BT→RR)");
+        vsInputField.setPrefHeight(30);
+        vsInputField.setOnAction(e -> {
+            handleVitalsInput(vsInputField.getText().trim().toLowerCase());
+            vsInputField.clear();
         });
-        
-        JPanel buttonPanel = new JPanel();
-        JButton clearButton = new JButton("Clear");
-        JButton saveButton = new JButton("Save");
-        buttonPanel.add(clearButton);
-        buttonPanel.add(saveButton);
-        panel.add(buttonPanel);
 
-        clearButton.addActionListener(e -> resetVitalsignFields());
-        saveButton.addActionListener(e -> saveVitalsignData());
+        vsDescriptionArea = new TextArea(" at GDS : Regular pulse, Right Seated Position");
+        vsDescriptionArea.setEditable(false);
+        vsDescriptionArea.setWrapText(true);
+        vsDescriptionArea.setPrefRowCount(2);
 
-        return panel;
+        vsOutputArea = new TextArea();
+        vsOutputArea.setEditable(false);
+        vsOutputArea.setWrapText(true);
+        vsOutputArea.setPrefRowCount(5);
+
+        HBox buttons = new HBox(8);
+        buttons.setAlignment(Pos.CENTER_RIGHT);
+        Button clear = new Button("Clear");
+        Button save  = new Button("Save");
+        clear.setOnAction(e -> resetVitalsFields());
+        save.setOnAction(e -> saveVitalsToEMR());
+        buttons.getChildren().addAll(clear, save);
+
+        box.getChildren().addAll(vsInputField,
+                new Label("Description:"), vsDescriptionArea,
+                new Label("Output:"), vsOutputArea,
+                buttons);
+
+        TitledPane tp = new TitledPane("Vital Sign Tracker", box);
+        tp.setExpanded(true);
+        return tp;
     }
 
-    private void initializeVitalsignValidInputs() {
+    private void initializeVitalsValidInputs() {
         vsValidInputs = new HashSet<>();
         vsValidInputs.add("h"); // Home
         vsValidInputs.add("o"); // Other clinic
@@ -379,74 +359,105 @@ public class FreqInputFrame extends JFrame {
         vsValidInputs.add("l"); // Left position
         vsValidInputs.add("r"); // Right position
         vsValidInputs.add("i"); // Irregular pulse
-        vsValidInputs.add("t"); // Temperature input prefix
+        vsValidInputs.add("t"); // Temperature prefix
     }
-    
-    private void handleVitalsignInput() {
-        String input = vsInputField.getText().trim().toLowerCase();
+
+    private void handleVitalsInput(String input) {
+        if (input.isEmpty()) return;
+
         if (vsValidInputs.contains(input) || input.startsWith("t")) {
             if (input.startsWith("t")) {
-                handleVitalsignTemperatureInput(input);
+                handleVitalsTemperatureInput(input);
             } else {
-                updateVitalsignDescriptionArea(input);
+                updateVitalsDescription(input);
             }
         } else {
-            handleVitalsignNumericInput(input);
+            // numeric sequence handler
+            try {
+                double value = Double.parseDouble(input);
+                processVitalsNumeric(value);
+            } catch (NumberFormatException ex) {
+                vsOutputArea.setText("Invalid input. Enter a code (h/o/g/l/r/i/t#) or a number.");
+            }
         }
     }
-    
-    private void updateVitalsignDescriptionArea(String input) {
-        String currentText = vsDescriptionArea.getText();
-        switch (input) {
+
+    private void updateVitalsDescription(String code) {
+        String cur = vsDescriptionArea.getText();
+        switch (code) {
             case "h" -> vsDescriptionArea.setText("   at home by self");
             case "o" -> vsDescriptionArea.setText("   at Other clinic");
             case "g" -> vsDescriptionArea.setText(" at GDS : Regular pulse, Right Seated Position");
-            case "l" -> vsDescriptionArea.setText(currentText.replace("Right", "Left"));
-            case "r" -> vsDescriptionArea.setText(currentText.replace("Left", "Right"));
-            case "i" -> vsDescriptionArea.setText(currentText.replace("Regular", "Irregular"));
+            case "l" -> vsDescriptionArea.setText(cur.replace("Right", "Left"));
+            case "r" -> vsDescriptionArea.setText(cur.replace("Left", "Right"));
+            case "i" -> vsDescriptionArea.setText(cur.replace("Regular", "Irregular"));
+            default -> {}
         }
     }
-    
-    private void handleVitalsignTemperatureInput(String input) {
+
+    private void handleVitalsTemperatureInput(String input) {
         try {
-            double tempValue = Double.parseDouble(input.substring(1));
+            double t = Double.parseDouble(input.substring(1));
             vsDescriptionArea.setText(" at GDS : Forehead (Temporal Artery) Thermometer:");
-            vsOutputArea.setText("Body Temperature [ " + tempValue + " ] ℃");
-        } catch (NumberFormatException | StringIndexOutOfBoundsException e) {
+            vsOutputArea.setText("Body Temperature [ " + t + " ] ℃");
+        } catch (RuntimeException ex) {
             vsOutputArea.setText("Invalid temperature input. Use 't' followed by a number.");
         }
     }
 
-    private void handleVitalsignNumericInput(String input) {
-        try {
-            double value = Double.parseDouble(input);
-            processVitalsignMeasurement(value);
-        } catch (NumberFormatException e) {
-            vsOutputArea.setText("Invalid input. Please enter a number.");
-        }
-    }
-    
-    private void processVitalsignMeasurement(double value) {
+    private void processVitalsNumeric(double v) {
         if (sbp == null) {
-            sbp = (int) value;
+            sbp = (int) v;
             vsOutputArea.setText("\tSBP [" + sbp + "] mmHg   ");
-        } else if (dbp == null) {
-            dbp = (int) value;
+            return;
+        }
+        if (dbp == null) {
+            dbp = (int) v;
             vsOutputArea.setText("BP [" + sbp + " / " + dbp + "] mmHg   ");
-        } else if (pulseRate == null) {
-            pulseRate = (int) value;
-            vsOutputArea.append("PR [" + pulseRate + "]/minute   ");
-        } else if (bodyTemperature == null) {
-            bodyTemperature = value;
-            vsOutputArea.append("\n\tBody Temperature [" + bodyTemperature + "]℃");
-        } else if (respirationRate == null) {
-            respirationRate = (int) value;
-            vsOutputArea.append("\n\tRespiration Rate [" + respirationRate + "]/minute");
-            resetVitalsignMeasurements();
+            return;
+        }
+        if (pulseRate == null) {
+            pulseRate = (int) v;
+            vsOutputArea.appendText("PR [" + pulseRate + "]/minute   ");
+            return;
+        }
+        if (bodyTemperature == null) {
+            bodyTemperature = v;
+            vsOutputArea.appendText("\n\tBody Temperature [" + bodyTemperature + "]℃");
+            return;
+        }
+        if (respirationRate == null) {
+            respirationRate = (int) v;
+            vsOutputArea.appendText("\n\tRespiration Rate [" + respirationRate + "]/minute");
+            // complete set captured; reset for next cycle
+            resetVitalsStaged();
         }
     }
-    
-    private void resetVitalsignMeasurements() {
+
+    private void saveVitalsToEMR() {
+        final String desc = vsDescriptionArea.getText().trim();
+        final String out  = vsOutputArea.getText().trim();
+        if (desc.isEmpty() && out.isEmpty()) return;
+
+        // Target O> index = 5
+        IttiaAppMain.getTextAreaManager().focusArea(5);
+        if (!desc.isEmpty()) {
+            IttiaAppMain.getTextAreaManager().insertLineIntoFocusedArea(desc);
+        }
+        if (!out.isEmpty()) {
+            IttiaAppMain.getTextAreaManager().insertLineIntoFocusedArea("\t" + out);
+        }
+        resetVitalsFields();
+    }
+
+    private void resetVitalsFields() {
+        vsInputField.clear();
+        vsOutputArea.clear();
+        vsDescriptionArea.setText(" at GDS : Regular pulse, Right Seated Position");
+        resetVitalsStaged();
+    }
+
+    private void resetVitalsStaged() {
         sbp = null;
         dbp = null;
         pulseRate = null;
@@ -454,32 +465,23 @@ public class FreqInputFrame extends JFrame {
         respirationRate = null;
     }
 
-    private void resetVitalsignFields() {
-        vsInputField.setText("");
-        vsOutputArea.setText("");
-        vsDescriptionArea.setText(" at GDS : Regular pulse, Right Seated Position");
-        resetVitalsignMeasurements();
-    }
-    
-    private void saveVitalsignData() {
-        if (!vsDescriptionArea.getText().isBlank()) {
-            IttiaAppMain.getTextAreaManager().insertLineIntoFocusedArea(vsDescriptionArea.getText());
-        }
-        if (!vsOutputArea.getText().isBlank()) {
-            IttiaAppMain.getTextAreaManager().insertLineIntoFocusedArea("\t" + vsOutputArea.getText());
-        }
-        resetVitalsignFields();
+    // ============================================================
+    // Bottom buttons (Quit)
+    // ============================================================
+    private HBox createBottomButtons() {
+        Button quit = new Button("Quit All");
+        quit.setOnAction(e -> close());
+
+        HBox box = new HBox(8, quit);
+        box.setAlignment(Pos.CENTER);
+        box.setPadding(new Insets(4, 0, 0, 0));
+        return box;
     }
 
-    //</editor-fold>
-    
-
-
-
-    /**
-     * Main method to run the application.
-     */
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(FreqInputFrame::new);
+    // ============================================================
+    // Helpers
+    // ============================================================
+    private static void showError(String msg) {
+        Platform.runLater(() -> new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK).showAndWait());
     }
 }

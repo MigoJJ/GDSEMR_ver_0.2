@@ -1,5 +1,5 @@
 package com.emr.gds.main;
-import javafx.application.Platform;
+import javafx.application.Platform;	
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.input.KeyCode;
@@ -11,6 +11,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
+
+import com.emr.gds.input.FxTextAreaManager;
+import com.emr.gds.input.IttiaAppMain;
 
 public class IttiaAppTextArea {
     // ---- Instance Variables ----
@@ -156,6 +159,7 @@ public class IttiaAppTextArea {
     }
     
     public List<TextArea> getTextAreas() {
+    	IttiaAppMain.setTextAreaManager(new FxTextAreaManager(areas));
         return this.areas;
     }
     
