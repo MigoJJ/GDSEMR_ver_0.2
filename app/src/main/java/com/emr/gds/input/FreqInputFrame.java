@@ -1,7 +1,5 @@
 package com.emr.gds.input;
 
-import com.emr.gds.input.IttiaAppMain; // bridge to EMR TextAreaManager
-
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -25,13 +23,13 @@ import java.util.Set;
  *   2) HbA1c builder (IFCC / eAG auto-calc)
  *   3) Vital sign tracker (scripted input + numeric sequence)
  *
- * NOTE:
+ * NOTES:
  * - This class extends Stage (JavaFX). No Swing.
- * - Ensure your main JavaFX app calls:
+ * - Your main app MUST wire the bridge once AFTER creating the 10 TextAreas, e.g.:
  *     IttiaAppMain.setTextAreaManager(new FxTextAreaManager(areas));
- *   after creating the 10 EMR TextAreas.
  *
- * - Vitals are saved to O> (index 5) by default.
+ * Conventions:
+ * - Vitals are saved to O> (index 5).
  * - HbA1c status line is appended to A> (index 7).
  */
 public class FreqInputFrame extends Stage {
@@ -40,7 +38,7 @@ public class FreqInputFrame extends Stage {
     // BMI section
     // ------------------------------------------------------------
     private static final List<String> BMI_FIELDS = List.of(
-            "Height (cm): ", "Weight (kg): ", "Waist (cm or inch): "
+            "Height (cm):", "Weight (kg):", "Waist (cm or inch):"
     );
     private final TextField[] bmiInputs = new TextField[BMI_FIELDS.size()];
 
@@ -90,26 +88,28 @@ public class FreqInputFrame extends Stage {
                 createVitalsPane(),
                 createBottomButtons()
         );
-
         root.setCenter(content);
 
         Scene scene = new Scene(root, 360, 640);
         setScene(scene);
 
-        // position: top-right of primary screen
-        Rectangle2D vb = Screen.getPrimary().getVisualBounds();
-        setX(vb.getMaxX() - getWidth() - 20);
-        setY(vb.getMinY() + 10);
-
-        // Need to wait until Stage is showing to get final width/height
-        showingProperty().addListener((obs, was, is) -> {
-            if (is) {
-                setX(vb.getMaxX() - getWidth() - 20);
-                setY(vb.getMinY() + 10);
-            }
+        // position: top-right of primary screen once shown
+        setOnShown(ev -> {
+            Rectangle2D vb = Screen.getPrimary().getVisualBounds();
+            setX(vb.getMaxX() - getWidth() - 20);
+            setY(vb.getMinY() + 10);
         });
 
         initializeVitalsValidInputs();
+
+        // Soft check: warn early if bridge is not wired
+        Platform.runLater(() -> {
+            if (!bridgeReady()) {
+                showError("EMR text areas are not ready yet.\n" +
+                          "Please make sure IttiaAppMain.setTextAreaManager(...) was called after building the 10 TextAreas.");
+            }
+        });
+
         show();
     }
 
@@ -125,11 +125,11 @@ public class FreqInputFrame extends Stage {
         for (int i = 0; i < BMI_FIELDS.size(); i++) {
             Label label = new Label(BMI_FIELDS.get(i));
             TextField field = new TextField();
-            field.setPromptText(BMI_FIELDS.get(i).replace(" : ", ""));
+            field.setPromptText(BMI_FIELDS.get(i).replace(":", "").trim());
             field.setPrefHeight(30);
             bmiInputs[i] = field;
 
-            int row = i;
+            final int row = i;
             field.setOnAction(e -> {
                 if (row < bmiInputs.length - 1) {
                     bmiInputs[row + 1].requestFocus();
@@ -167,6 +167,11 @@ public class FreqInputFrame extends Stage {
                     waist.isEmpty() ? "" : "   Waist: " + waist + " cm"
             );
 
+            if (!bridgeReady()) {
+                showError("Cannot insert BMI: EMR text areas not ready.");
+                return;
+            }
+            // Insert into the currently focused area (do not force a section change)
             IttiaAppMain.getTextAreaManager().insertBlockIntoFocusedArea(details);
 
             for (TextField f : bmiInputs) f.clear();
@@ -180,11 +185,12 @@ public class FreqInputFrame extends Stage {
     private static String processWaist(String waistRaw) {
         if (waistRaw.isEmpty()) return "";
         String w = waistRaw.trim().toLowerCase();
-        if (w.contains("i")) { // has inches marker
+        if (w.contains("i")) { // inches marker present (e.g., "32 in")
             double inches = Double.parseDouble(w.replaceAll("[^\\d.]", ""));
             return String.format("%.1f", inches * 2.54);
         }
-        return waistRaw;
+        // assume already in cm
+        return w.replaceAll("[^\\d.]", "");
     }
 
     private static String bmiCategory(double bmi) {
@@ -216,7 +222,7 @@ public class FreqInputFrame extends Stage {
             tf.setPromptText(HBA1C_LABELS[i]);
             hba1cInputs[i] = tf;
 
-            int idx = i;
+            final int idx = i;
             tf.setOnAction(e -> onHba1cInput(idx));
 
             inputs.add(label, 0, i);
@@ -244,6 +250,7 @@ public class FreqInputFrame extends Stage {
         if (value.isEmpty()) return;
 
         if (index == 0) {
+            // "0" -> FBS, otherwise PP{minutes}
             hba1cOutputArea.appendText("\n   " + (value.equals("0") ? "FBS" : "PP" + value));
         } else if (index == 1) {
             hba1cOutputArea.appendText("   [    " + value + "   ] mg/dL");
@@ -252,7 +259,7 @@ public class FreqInputFrame extends Stage {
                 double h = Double.parseDouble(value);
                 hba1cOutputArea.appendText("   HbA1c       [    " + value + "   ] %\n");
                 appendHba1cCalcs(h);
-                // autosave to O> and status to A>
+                // autosave to O> and status to A>, then clear
                 saveHba1cToEMR();
                 clearHba1c();
             } catch (NumberFormatException ex) {
@@ -276,13 +283,15 @@ public class FreqInputFrame extends Stage {
         hba1cOutputArea.appendText(String.format(
                 "\n\tIFCC HbA1c: [ %.0f ] mmol/mol" +
                 "\n\teAG: [ %.0f ] mg/dL" +
-                "\n\teAG: [ %.2f ] mmol/l\n",
+                "\n\teAG: [ %.2f ] mmol/L\n",
                 ifcc, eagMgDl, eagMmolL));
 
+        // Status line -> A> (index 7), first match by threshold
         for (String[] status : GLUCOSE_STATUS) {
             if (hba1c > Double.parseDouble(status[0])) {
+                if (!bridgeReady()) return;
                 final String line = "\n...now [ " + status[1] + " ] controlled glucose status";
-                IttiaAppMain.getTextAreaManager().focusArea(7); // A> index
+                IttiaAppMain.getTextAreaManager().focusArea(9); // A>
                 IttiaAppMain.getTextAreaManager().insertLineIntoFocusedArea(line);
                 break;
             }
@@ -298,8 +307,11 @@ public class FreqInputFrame extends Stage {
     private void saveHba1cToEMR() {
         String text = hba1cOutputArea.getText().trim();
         if (text.isEmpty()) return;
-
-        // O> index 5 (objective)
+        if (!bridgeReady()) {
+            showError("Cannot save HbA1c: EMR text areas not ready.");
+            return;
+        }
+        // O> index 5 (Objective)
         IttiaAppMain.getTextAreaManager().focusArea(5);
         if (text.contains("\n")) {
             IttiaAppMain.getTextAreaManager().insertBlockIntoFocusedArea(text + "\n");
@@ -359,7 +371,7 @@ public class FreqInputFrame extends Stage {
         vsValidInputs.add("l"); // Left position
         vsValidInputs.add("r"); // Right position
         vsValidInputs.add("i"); // Irregular pulse
-        vsValidInputs.add("t"); // Temperature prefix
+        vsValidInputs.add("t"); // Temperature prefix (e.g., t36.5)
     }
 
     private void handleVitalsInput(String input) {
@@ -372,7 +384,7 @@ public class FreqInputFrame extends Stage {
                 updateVitalsDescription(input);
             }
         } else {
-            // numeric sequence handler
+            // numeric sequence handler: SBP -> DBP -> PR -> BT -> RR
             try {
                 double value = Double.parseDouble(input);
                 processVitalsNumeric(value);
@@ -391,7 +403,7 @@ public class FreqInputFrame extends Stage {
             case "l" -> vsDescriptionArea.setText(cur.replace("Right", "Left"));
             case "r" -> vsDescriptionArea.setText(cur.replace("Left", "Right"));
             case "i" -> vsDescriptionArea.setText(cur.replace("Regular", "Irregular"));
-            default -> {}
+            default -> { /* no-op */ }
         }
     }
 
@@ -401,7 +413,7 @@ public class FreqInputFrame extends Stage {
             vsDescriptionArea.setText(" at GDS : Forehead (Temporal Artery) Thermometer:");
             vsOutputArea.setText("Body Temperature [ " + t + " ] ℃");
         } catch (RuntimeException ex) {
-            vsOutputArea.setText("Invalid temperature input. Use 't' followed by a number.");
+            vsOutputArea.setText("Invalid temperature input. Use 't' followed by a number (e.g., t36.5).");
         }
     }
 
@@ -438,6 +450,11 @@ public class FreqInputFrame extends Stage {
         final String desc = vsDescriptionArea.getText().trim();
         final String out  = vsOutputArea.getText().trim();
         if (desc.isEmpty() && out.isEmpty()) return;
+
+        if (!bridgeReady()) {
+            showError("Cannot save vitals: EMR text areas not ready.");
+            return;
+        }
 
         // Target O> index = 5
         IttiaAppMain.getTextAreaManager().focusArea(5);
@@ -481,7 +498,17 @@ public class FreqInputFrame extends Stage {
     // ============================================================
     // Helpers
     // ============================================================
+    private static boolean bridgeReady() {
+        try {
+            return IttiaAppMain.getTextAreaManager().isReady();
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     private static void showError(String msg) {
-        Platform.runLater(() -> new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK).showAndWait());
+        Platform.runLater(() ->
+                new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK).showAndWait()
+        );
     }
 }

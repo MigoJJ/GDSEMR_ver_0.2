@@ -52,7 +52,8 @@ public class IttiaApp extends Application {
     public void start(Stage stage) {
         stage.setTitle("GDSEMR ITTIA – EMR Prototype (JavaFX)");
 
-        initAppState();                   // 1) 데이터/매니저 초기화
+//        initAppState(); // 1) 데이터/매니저 초기화
+        initAbbrevDatabase(); 
         BorderPane root = buildRoot();    // 2) 레이아웃 구성
 
         Scene scene = new Scene(root, 1300, 1000);
@@ -65,63 +66,60 @@ public class IttiaApp extends Application {
     /* =============================== *
      *  1) 초기화 로직
      * =============================== */
-    private void initAppState() {
-        initAbbrevDatabase();
-        problemAction   = new ListProblemAction(this);
-        textAreaManager = new IttiaAppTextArea(abbrevMap, problemAction);
-        buttonAction    = new ListButtonAction(this, dbConn, abbrevMap);
 
-        // --- BRIDGE WIRING ---
-        // FreqInputFrame -> IttiaAppMain -> FxTextAreaManager -> your 10 TextAreas
-        // This is the key line that makes Save/Append work from FreqInputFrame.
-        IttiaAppMain.setTextAreaManager(new FxTextAreaManager(textAreaManager.getTextAreas()));
-    }
 
     /* =============================== *
      *  2) 루트 UI 구성
      * =============================== */
     private BorderPane buildRoot() {
+        ensureActions(); // ← 문제 재발 방지: problemAction, textAreaManager, buttonAction 보장
+
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
 
-        // TopBar
+        // Top
         ToolBar topBar = buildTopBar();
         root.setTop(topBar);
 
-        // Left (Problem List)
+        // Left
         VBox leftPanel = problemAction.buildProblemPane();
         BorderPane.setMargin(leftPanel, new Insets(0, 10, 0, 0));
         root.setLeft(leftPanel);
 
-        // Center (EMR 10칸 템플릿)
+        // Center (여기서 10칸 생성됨)
         GridPane centerPane = textAreaManager.buildCenterAreas();
         centerPane.setStyle("-fx-background-color: linear-gradient(to bottom right, #FFFACD, #FAFAD2);");
         root.setCenter(centerPane);
 
-        // Bottom (주요 버튼)
+        // 10칸 생성 직후 브릿지 연결
+        ensureBridgeWired();
+
+        // Bottom
         root.setBottom(buttonAction.buildBottomBar());
 
         return root;
     }
 
+
     /* =============================== *
      *  TopBar 구성 (템플릿 버튼 + Vital 버튼)
      * =============================== */
     private ToolBar buildTopBar() {
+        ensureActions(); // ← buttonAction null 방지
+
         ToolBar topBar = buttonAction.buildTopBar();
 
-        // Template Button
         Button templateButton = new Button("Load Template");
         templateButton.setOnAction(e -> openTemplateEditor());
         topBar.getItems().addAll(new Separator(), templateButton);
 
-        // Vital BP & HbA1c (JavaFX Stage로 열기)
         Button vitalButton = new Button("Vital BP & HbA1c");
         vitalButton.setOnAction(e -> openVitalWindow());
         topBar.getItems().addAll(new Separator(), vitalButton);
 
         return topBar;
     }
+
 
     /* =============================== *
      *  Vital 보조창 열기/포커스
@@ -152,9 +150,17 @@ public class IttiaApp extends Application {
      *  3) 표시 이후 처리
      * =============================== */
     private void postShow(Scene scene) {
-        Platform.runLater(() -> textAreaManager.focusArea(0));
+        Platform.runLater(() -> {
+            try {
+                com.emr.gds.input.IttiaAppMain.getTextAreaManager(); // 없으면 예외
+            } catch (Exception ignored) {
+                ensureBridgeWired(); // 누락 시 한번 더 연결
+            }
+            textAreaManager.focusArea(0);
+        });
         installGlobalShortcuts(scene);
     }
+
 
     // ---- Database & Data Initialization ----
     private void initAbbrevDatabase() {
@@ -282,4 +288,31 @@ public class IttiaApp extends Application {
     public Map<String, String> getAbbrevMap() {
         return abbrevMap;
     }
+    
+ // IttiaApp.java
+
+    private void ensureActions() {
+        if (problemAction == null) {
+            problemAction = new com.emr.gds.main.ListProblemAction(this);
+        }
+        if (textAreaManager == null) {
+            // problemAction이 필요하므로 위에서 먼저 보장
+            textAreaManager = new com.emr.gds.main.IttiaAppTextArea(abbrevMap, problemAction);
+        }
+        if (buttonAction == null) {
+            buttonAction = new com.emr.gds.main.ListButtonAction(this, dbConn, abbrevMap);
+        }
+    }
+
+    private void ensureBridgeWired() {
+        var areas = textAreaManager.getTextAreas();
+        if (areas == null || areas.size() < 10) {
+            throw new IllegalStateException("EMR text areas not initialized. buildCenterAreas() must run first.");
+        }
+        com.emr.gds.input.IttiaAppMain.setTextAreaManager(
+            new com.emr.gds.input.FxTextAreaManager(areas)
+        );
+    }
+
+    
 }
