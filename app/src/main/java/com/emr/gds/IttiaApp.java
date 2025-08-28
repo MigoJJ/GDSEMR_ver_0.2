@@ -20,7 +20,7 @@ import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import com.emr.gds.inputdata.VitalBPHbA1cFU;
+//import com.emr.gds.inputdata.VitalBPHbA1cFU;
 import javax.swing.SwingUtilities;
 
 public class IttiaApp extends Application {
@@ -207,7 +207,7 @@ public class IttiaApp extends Application {
     
  // New method to open VitalBPHbA1cFU
     public void openVitalBPHbA1cFU() {
-        SwingUtilities.invokeLater(() -> new VitalBPHbA1cFU(this));
+//        SwingUtilities.invokeLater(() -> new VitalBPHbA1cFU(this));
     }
     public static void main(String[] args) {
         launch(args);

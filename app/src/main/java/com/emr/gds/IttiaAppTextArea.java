@@ -50,8 +50,8 @@ public class IttiaAppTextArea {
             TextArea ta = new TextArea();
             ta.setWrapText(true);
             ta.setFont(Font.font("Monospaced", 13));
-            ta.setPrefRowCount(8);
-            ta.setPrefColumnCount(40);
+            ta.setPrefRowCount(9);
+            ta.setPrefColumnCount(48);
 
             // ✨ Apply light lemon gradient inside each TextArea
             ta.setStyle(LEMON_GRADIENT_STYLE);
@@ -119,8 +119,16 @@ public class IttiaAppTextArea {
     }
 
     public void formatCurrentArea() {
+        // Get the TextArea that currently has focus.
         TextArea ta = getFocusedArea();
-        if (ta == null) return;
+
+        // If no TextArea is focused, exit the method.
+        if (ta == null) {
+            return;
+        }
+
+        // Call the static autoFormat method to process the text
+        // and set the formatted text back to the TextArea.
         ta.setText(Formatter.autoFormat(ta.getText()));
     }
 
@@ -172,33 +180,56 @@ public class IttiaAppTextArea {
     }
 
     public static class Formatter {
-        static String autoFormat(String raw) {
-            if (raw == null || raw.isBlank()) return "";
-            String[] lines = raw.replace("\r", "").split("\n", -1);
-            StringBuilder out = new StringBuilder();
-            boolean lastBlank = false;
+    	static String autoFormat(String raw) {
+    	    // Return an empty string if the input is null or blank.
+    	    if (raw == null || raw.isBlank()) {
+    	        return "";
+    	    }
 
-            for (String line : lines) {
-                String t = line.strip().replaceAll("^[•·→▶▷‣⦿∘*]+\\s*|^[-]{1,2}\\s*", "- ");
-                if (t.isEmpty()) {
-                    if (!lastBlank) {
-                        out.append("\n");
-                        lastBlank = true;
-                    }
-                } else {
-                    out.append(t).append("\n");
-                    lastBlank = false;
-                }
-            }
-            return out.toString().strip();
-        }
+    	    // Split the input into lines, handling both Windows and Unix line endings.
+    	    String[] lines = raw.replace("\r", "").split("\n", -1);
+    	    StringBuilder out = new StringBuilder();
+    	    boolean lastBlank = false;
 
-        static String finalizeForEMR(String raw) {
-            String s = autoFormat(raw);
-            s = s.replaceAll("^(#+)([^#\\n])", "$1 $2");
-            s = s.replaceAll("\\n{3,}", "\n\n");
-            return s.trim();
-        }
+    	    // Iterate through each line to apply formatting rules.
+    	    for (String line : lines) {
+    	        // Trim whitespace and replace various bullet characters (•, ·, →, etc.) with a consistent "- ".
+    	        String trimmedLine = line.strip().replaceAll("^[•·→▶▷‣⦿∘*]+\\s*|^[-]{1,2}\\s*", "- ");
+
+    	        // If the line is empty after stripping, handle blank lines.
+    	        if (trimmedLine.isEmpty()) {
+    	            // Append a single newline only if the last line wasn't also blank,
+    	            // preventing multiple consecutive blank lines.
+    	            if (!lastBlank) {
+    	                out.append("\n");
+    	                lastBlank = true;
+    	            }
+    	        } else {
+    	            // Append the formatted line and a newline.
+    	            out.append(trimmedLine).append("\n");
+    	            lastBlank = false;
+    	        }
+    	    }
+
+    	    // Convert the StringBuilder to a String and remove leading/trailing whitespace.
+    	    return out.toString().strip();
+    	}
+
+    	static String finalizeForEMR(String raw) {
+    	    // First, apply the standard auto-formatting.
+    	    String formattedText = autoFormat(raw);
+
+    	    // Add a space after a hash symbol (#) at the beginning of a line if one is missing,
+    	    // to correctly format headers. For example, "##Title" becomes "## Title".
+    	    formattedText = formattedText.replaceAll("^(#+)([^#\\n])", "$1 $2");
+
+    	    // Replace three or more consecutive newlines with exactly two,
+    	    // ensuring consistent spacing between sections.
+    	    formattedText = formattedText.replaceAll("\\n{3,}", "\n\n");
+
+    	    // Trim any leading or trailing whitespace from the final result.
+    	    return formattedText.trim();
+    	}
     }
 
     public static String normalizeLine(String s) {
