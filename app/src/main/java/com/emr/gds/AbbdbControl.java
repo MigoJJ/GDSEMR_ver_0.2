@@ -27,14 +27,14 @@ import javafx.stage.Stage;
  * This class provides a modal dialog for adding, editing, and deleting
  * abbreviations, and for viewing the full list.
  */
-public class dbControl {
+public class AbbdbControl {
 
     private final Connection dbConn;
     private final Map<String, String> abbrevMap;
     private final Stage ownerStage;
     private final IttiaApp parentApp; // Reference to the main app for UI updates
 
-    public dbControl(Connection dbConn, Map<String, String> abbrevMap, Stage ownerStage, IttiaApp parentApp) {
+    public AbbdbControl(Connection dbConn, Map<String, String> abbrevMap, Stage ownerStage, IttiaApp parentApp) {
         this.dbConn = dbConn;
         this.abbrevMap = abbrevMap;
         this.ownerStage = ownerStage;

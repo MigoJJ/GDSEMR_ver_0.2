@@ -1,18 +1,22 @@
 // ListButtonAction.java
 package com.emr.gds;
 
-import javafx.geometry.Insets;	
-import javafx.geometry.Pos;
-import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.stage.Stage;
-
 import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+
+import javafx.geometry.Insets;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.Separator;
+import javafx.scene.control.ToolBar;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.stage.Stage;
 
 public class ListButtonAction {
 
@@ -46,7 +50,7 @@ public class ListButtonAction {
         btnManageDb.setOnAction(e -> {
             // Get the main window to act as the owner for the modal dialog
             Stage ownerStage = (Stage) btnManageDb.getScene().getWindow();
-            dbControl controller = new dbControl(dbConn, abbrevMap, ownerStage, app);
+            AbbdbControl controller = new AbbdbControl(dbConn, abbrevMap, ownerStage, app);
             controller.showDbManagerDialog();
         });
         
