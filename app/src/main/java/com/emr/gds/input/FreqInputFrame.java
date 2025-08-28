@@ -179,12 +179,12 @@ public class FreqInputFrame extends JFrame {
 
     private void updateEMRFrameWithBMI(double bmi, double height, double weight, 
             String category, String waist) {
-    		String bmiText = String.format("%s : BMI: [ %.2f ]kg/m^2", category, bmi);
-    		String details = String.format("\n< BMI >\n%s\nHeight : %.1f cm   Weight : %.1f kg%s",bmiText, height, weight,
-    					waist.isEmpty() ? "" : "   Waist: " + waist + " cm"
-    				);
-
-    		IttiaAppMain.getTextAreaManager().insertBlockIntoFocusedArea(details);
+        String bmiText = String.format("%s : BMI: [ %.2f ]kg/m^2", category, bmi);
+        String details = String.format("\n< BMI >\n%s\nHeight : %.1f cm   Weight : %.1f kg%s", bmiText, height, weight,
+                    waist.isEmpty() ? "" : "   Waist: " + waist + " cm"
+                );
+        
+            IttiaAppMain.getTextAreaManager().insertBlockIntoFocusedArea(details);
     }
 
     //</editor-fold>

@@ -1,4 +1,3 @@
-// ListButtonAction.java
 package com.emr.gds.main;
 
 import java.sql.Connection;
@@ -22,33 +21,34 @@ import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 
 public class ListButtonAction {
+    // ---- Instance Variables ----
+    private final IttiaApp app;
+    private final Connection dbConn;
+    private final Map<String, String> abbrevMap;
 
-	    private final IttiaApp app;
-	    private final Connection dbConn;
-	    private final Map<String, String> abbrevMap;
+    // ---- Constructor ----
+    // Modify the constructor
+    public ListButtonAction(IttiaApp app, Connection dbConn, Map<String, String> abbrevMap) {
+        this.app = app;
+        this.dbConn = dbConn;
+        this.abbrevMap = abbrevMap;
+    }
 
-	    // Modify the constructor
-	    public ListButtonAction(IttiaApp app, Connection dbConn, Map<String, String> abbrevMap) {
-	        this.app = app;
-	        this.dbConn = dbConn;
-	        this.abbrevMap = abbrevMap;
-	    }
-
-
+    // ---- Public Methods ----
     public ToolBar buildTopBar() {
         Button btnInsertTemplate = new Button("Insert Template (Ctrl+I)");
         btnInsertTemplate.setOnAction(e -> app.insertTemplateIntoFocusedArea(TemplateLibrary.HPI));
 
         Button btnFormat = new Button("Auto Format (Ctrl+Shift+F)");
         btnFormat.setOnAction(e -> app.formatCurrentArea());
-        
+
         Button btnCopyAll = new Button("Copy All (Ctrl+Shift+C)");
         btnCopyAll.setOnAction(e -> app.copyAllToClipboard());
 
         Button btnClearAll = new Button("CE");
         btnClearAll.setOnAction(e -> app.clearAllText());
-        
-     // START: ADD THIS CODE
+
+        // START: ADD THIS CODE
         Button btnManageDb = new Button("Manage Abbrs...");
         btnManageDb.setOnAction(e -> {
             // Get the main window to act as the owner for the modal dialog
@@ -56,7 +56,7 @@ public class ListButtonAction {
             AbbdbControl controller = new AbbdbControl(dbConn, abbrevMap, ownerStage, app);
             controller.showDbManagerDialog();
         });
-        
+
         // Templates menu
         MenuButton templatesMenu = new MenuButton("Templates");
         for (TemplateLibrary t : TemplateLibrary.values()) {
@@ -93,21 +93,21 @@ public class ListButtonAction {
         Button b5 = quickSnippetButton("Plan", TemplateLibrary.SNIPPET_PLAN.body());
         Button b6 = quickSnippetButton("F/U", TemplateLibrary.SNIPPET_FOLLOWUP.body());
         Button b7 = quickSnippetButton("Signature", TemplateLibrary.SNIPPET_SIGNATURE.body());
-     // inside buildTopBar()
 
         ToolBar tb = new ToolBar(b1, b2, b3, b4, b5, b6, b7);
         tb.setPadding(new Insets(8, 0, 0, 0));
         return tb;
     }
-    
+
+    // ---- Private Methods ----
     private Button quickSnippetButton(String title, String snippet) {
         Button b = new Button(title);
         b.setOnAction(e -> app.insertBlockIntoFocusedArea(snippet));
         return b;
     }
 
+    // ---- Nested Classes ----
     // ===== Template library =====
-
     public enum TemplateLibrary {
         HPI("HPI",
                 "# HPI\n" +
@@ -154,8 +154,18 @@ public class ListButtonAction {
 
         private final String display;
         private final String body;
-        TemplateLibrary(String display, String body) { this.display = display; this.body = body; }
-        public String displayName() { return display; }
-        public String body() { return body; }
+
+        TemplateLibrary(String display, String body) {
+            this.display = display;
+            this.body = body;
+        }
+
+        public String displayName() {
+            return display;
+        }
+
+        public String body() {
+            return body;
+        }
     }
 }

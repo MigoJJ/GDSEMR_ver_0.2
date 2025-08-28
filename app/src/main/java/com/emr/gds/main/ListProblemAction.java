@@ -21,7 +21,6 @@ import java.util.*;
 import com.emr.gds.IttiaApp;
 
 public class ListProblemAction {
-
     // ==== Layout tuning (adjust as you like) ====
     private static final double SIDEBAR_WIDTH_PX = 460;     // overall width of this left pane
     private static final int    SCRATCHPAD_ROWS   = 35;      // fewer rows = shorter TextArea
@@ -29,6 +28,7 @@ public class ListProblemAction {
     private static final double SPACING_PX = 8;
     private static final double PADDING_RIGHT_PX = 8;
 
+    // ---- Instance Variables ----
     private final IttiaApp app;
     private TextArea scratchpad;
 
@@ -42,12 +42,14 @@ public class ListProblemAction {
     private TextArea scratchpadArea;
     private final LinkedHashMap<String, String> scratchpadEntries = new LinkedHashMap<>();
 
+    // ---- Constructor ----
     public ListProblemAction(IttiaApp app) {
         this.app = app;
         initProblemListDatabase();
         loadProblemsFromDb();
     }
 
+    // ---- Database Initialization and Operations ----
     /**
      * Initializes the SQLite database for the problem list.
      * Creates the database and table if they don't exist.
@@ -143,6 +145,7 @@ public class ListProblemAction {
         }
     }
 
+    // ---- UI Building ----
     public VBox buildProblemPane() {
         // --- Problem List Section ---
         problemList = new ListView<>(problems);
@@ -223,6 +226,7 @@ public class ListProblemAction {
         return box;
     }
 
+    // ---- Scratchpad Methods ----
     public void updateAndRedrawScratchpad(String title, String newText) {
         String trimmedText = newText.trim();
 
@@ -261,6 +265,7 @@ public class ListProblemAction {
         }
     }
 
+    // ---- Getter Methods ----
     public ObservableList<String> getProblems() {
         return problems;
     }

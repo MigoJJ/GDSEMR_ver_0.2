@@ -1,7 +1,6 @@
-// CenterPaneManager.java
 package com.emr.gds.main;
 
-import javafx.scene.control.TextArea;
+import javafx.scene.control.TextArea;	
 import javafx.scene.control.TextFormatter;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -24,6 +23,7 @@ public class CenterPaneManager {
             "O>", "Physical Exam>", "A>", "P>", "Comment>"
     };
 
+    // ---- Instance Variables ----
     private final List<TextArea> areas = new ArrayList<>(10);
     private final GridPane gridPane;
     private TextArea lastFocusedArea = null;
@@ -31,12 +31,14 @@ public class CenterPaneManager {
     private final Map<String, String> abbrevMap;
     private final ListProblemAction problemAction;
 
+    // ---- Constructor ----
     public CenterPaneManager(Map<String, String> abbrevMap, ListProblemAction problemAction) {
         this.abbrevMap = abbrevMap;
         this.problemAction = problemAction;
         this.gridPane = buildCenterAreas();
     }
 
+    // ---- Public Methods ----
     /**
      * Returns the fully constructed GridPane UI component.
      * @return The GridPane containing all the TextAreas.
@@ -69,7 +71,7 @@ public class CenterPaneManager {
         }
         return areas.isEmpty() ? null : areas.get(0);
     }
-    
+
     /**
      * Programmatically sets focus to a specific TextArea by its index.
      * @param idx The index (0-9) of the TextArea to focus.
@@ -99,16 +101,17 @@ public class CenterPaneManager {
         if (ta == null) return;
         ta.setText(TextFormatUtil.autoFormat(ta.getText()));
     }
-    
+
     /**
      * Clears the text from all managed TextAreas.
      */
     public void clearAll() {
-        for(TextArea ta : areas) {
+        for (TextArea ta : areas) {
             ta.clear();
         }
     }
 
+    // ---- Private Methods ----
     private GridPane buildCenterAreas() {
         GridPane grid = new GridPane();
         grid.setHgap(10);
@@ -118,7 +121,7 @@ public class CenterPaneManager {
         for (int i = 0; i < rows * cols; i++) {
             TextArea ta = new TextArea();
             ta.setWrapText(true);
-            ta.setFont(Font.font("Monospaced", 13));
+            ta.setFont(Font.font("Consolas", 11));
             ta.setPrefRowCount(8);
             ta.setPrefColumnCount(40);
             ta.setPromptText(TEXT_AREA_TITLES[i]);
