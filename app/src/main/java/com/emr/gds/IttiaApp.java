@@ -9,6 +9,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.*;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -22,6 +23,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 //import com.emr.gds.inputdata.VitalBPHbA1cFU;
 import javax.swing.SwingUtilities;
+
+import com.emr.gds.input.FreqInputFrame;
 
 public class IttiaApp extends Application {
     // ---- Instance Variables ----
@@ -40,6 +43,11 @@ public class IttiaApp extends Application {
         initAbbrevDatabase();
         problemAction = new ListProblemAction(this);
         textAreaManager = new IttiaAppTextArea(abbrevMap, problemAction);
+        
+        IttiaAppTextArea taManager = new IttiaAppTextArea(abbrevMap, problemAction);
+        GridPane center = taManager.buildCenterAreas();
+        IttiaAppTextArea.IttiaAppMain.init(taManager);
+        
         buttonAction = new ListButtonAction(this, dbConn, abbrevMap);
         
         // --- 2. UI Layout Creation ---
@@ -57,7 +65,7 @@ public class IttiaApp extends Application {
         
      // Add Vital BP & HbA1c button to the top bar
         Button vitalButton = new Button("Vital BP & HbA1c");
-        vitalButton.setOnAction(e -> openVitalBPHbA1cFU());
+        vitalButton.setOnAction(e -> FreqInputFrame.main(null));
         topBar.getItems().add(new Separator());
         topBar.getItems().add(vitalButton);
         
@@ -77,7 +85,7 @@ public class IttiaApp extends Application {
         root.setBottom(buttonAction.buildBottomBar());
 
         // --- 4. Scene Configuration and Display ---
-        Scene scene = new Scene(root, 1200, 900);
+        Scene scene = new Scene(root, 1300, 1000);
         stage.setScene(scene);
         stage.show();
 

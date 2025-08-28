@@ -50,7 +50,7 @@ public class IttiaAppTextArea {
             TextArea ta = new TextArea();
             ta.setWrapText(true);
             ta.setFont(Font.font("Monospaced", 13));
-            ta.setPrefRowCount(9);
+            ta.setPrefRowCount(10);
             ta.setPrefColumnCount(48);
 
             // ✨ Apply light lemon gradient inside each TextArea
@@ -296,4 +296,10 @@ public class IttiaAppTextArea {
             // showToast("Template format not recognized. Pasted into focused area.");
         }
     }
+    public final class IttiaAppMain {
+        private static IttiaAppTextArea textAreaManager;
+        public static void init(IttiaAppTextArea m) { textAreaManager = m; }
+        public static IttiaAppTextArea getTextAreaManager() { return textAreaManager; }
+    }
+    
 }
