@@ -90,7 +90,7 @@ public class FreqInputFrame extends Stage {
         );
         root.setCenter(content);
 
-        Scene scene = new Scene(root, 360, 640);
+        Scene scene = new Scene(root, 360, 710);
         setScene(scene);
 
         // position: top-right of primary screen once shown
