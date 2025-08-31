@@ -1,0 +1,22 @@
+# Ignore build outputs
+/build/
+/**/build/
+out/
+bin/
+
+# Ignore SQLite temp sidecars
+*.db-wal
+*.db-shm
+
+# Ignore IDE metadata
+.classpath
+.project
+.settings/
+*.iml
+.idea/
+
+# If you want to track only DBs under app/db
+!app/src/main/resources/*.db
+
+# Ignore all other db files (optional safeguard)
+*.db
