@@ -9,16 +9,18 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
-
 import com.emr.gds.IttiaApp;
+import com.emr.gds.main.IttiaAppTextArea;
 
 public class ListProblemAction {
     // ==== Layout tuning (adjust as you like) ====
@@ -31,16 +33,28 @@ public class ListProblemAction {
     // ---- Instance Variables ----
     private final IttiaApp app;
     private TextArea scratchpad;
-
+    
     // Database connection for the problem list
     private Connection dbConn;
-
+    
     // The problem list is now populated from the database
     private final ObservableList<String> problems = FXCollections.observableArrayList();
-
     private ListView<String> problemList;
     private TextArea scratchpadArea;
     private final LinkedHashMap<String, String> scratchpadEntries = new LinkedHashMap<>();
+
+    // --- DB Helpers (Repo-tracked under app/db) ---
+    private static Path repoRoot() {
+        Path p = Paths.get("").toAbsolutePath();
+        while (p != null && !Files.exists(p.resolve("gradlew")) && !Files.exists(p.resolve(".git"))) {
+            p = p.getParent();
+        }
+        return (p != null) ? p : Paths.get("").toAbsolutePath();
+    }
+    
+    private static Path dbPath() {
+        return repoRoot().resolve("app").resolve("db").resolve("prolist.db");
+    }
 
     // ---- Constructor ----
     public ListProblemAction(IttiaApp app) {
@@ -58,30 +72,40 @@ public class ListProblemAction {
     private void initProblemListDatabase() {
         try {
             Class.forName("org.sqlite.JDBC");
-            // Define the path to the new database
-            String dbPath = System.getProperty("user.dir") + "/src/main/resources/database/prolist.db";
-            dbConn = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
-
-            Statement stmt = dbConn.createStatement();
-            // Create the 'problems' table with a unique constraint to prevent duplicates
-            stmt.execute("CREATE TABLE IF NOT EXISTS problems (id INTEGER PRIMARY KEY AUTOINCREMENT, problem_text TEXT NOT NULL UNIQUE)");
-
-            // Check if the table is empty to add initial default data
-            ResultSet rs = stmt.executeQuery("SELECT COUNT(*) AS count FROM problems");
-            if (rs.next() && rs.getInt("count") == 0) {
-                System.out.println("Problem list database is empty. Populating with default data.");
-                stmt.execute("INSERT INTO problems (problem_text) VALUES ('Hypercholesterolemia [F/U]')");
-                stmt.execute("INSERT INTO problems (problem_text) VALUES ('Prediabetes (FBS 108 mg/dL)')");
-                stmt.execute("INSERT INTO problems (problem_text) VALUES ('Thyroid nodule (small)')");
-            }
-            rs.close();
-            stmt.close();
-
+            Path db = dbPath();
+            Files.createDirectories(db.getParent());
+            String url = "jdbc:sqlite:" + db.toAbsolutePath();
+            System.out.println("[DB PATH] prolist -> " + db.toAbsolutePath());
+            this.dbConn = DriverManager.getConnection(url);
+            
+            createProblemTable();
+            
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
             System.err.println("FATAL: Failed to initialize Problem List database: " + e.getMessage());
-            // In a real app, you might show a disabling alert here
+            throw new RuntimeException("Failed to open prolist.db", e);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to open prolist.db", e);
         }
+    }
+    
+    private void createProblemTable() throws SQLException {
+        Statement stmt = dbConn.createStatement();
+        
+        // Create the 'problems' table with a unique constraint to prevent duplicates
+        stmt.execute("CREATE TABLE IF NOT EXISTS problems (id INTEGER PRIMARY KEY AUTOINCREMENT, problem_text TEXT NOT NULL UNIQUE)");
+        
+        // Check if the table is empty to add initial default data
+        ResultSet rs = stmt.executeQuery("SELECT COUNT(*) AS count FROM problems");
+        if (rs.next() && rs.getInt("count") == 0) {
+            System.out.println("Problem list database is empty. Populating with default data.");
+            stmt.execute("INSERT INTO problems (problem_text) VALUES ('Hypercholesterolemia [F/U]')");
+            stmt.execute("INSERT INTO problems (problem_text) VALUES ('Prediabetes (FBS 108 mg/dL)')");
+            stmt.execute("INSERT INTO problems (problem_text) VALUES ('Thyroid nodule (small)')");
+        }
+        
+        rs.close();
+        stmt.close();
     }
 
     /**
@@ -89,15 +113,17 @@ public class ListProblemAction {
      */
     private void loadProblemsFromDb() {
         if (dbConn == null) return;
+        
         problems.clear();
         String sql = "SELECT problem_text FROM problems ORDER BY id";
+        
         try (Statement stmt = dbConn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
-
+            
             while (rs.next()) {
                 problems.add(rs.getString("problem_text"));
             }
-
+            
         } catch (SQLException e) {
             e.printStackTrace();
             System.err.println("Failed to load problems from database: " + e.getMessage());
@@ -110,14 +136,17 @@ public class ListProblemAction {
      */
     private void addProblem(String problemText) {
         if (dbConn == null) return;
+        
         String sql = "INSERT INTO problems(problem_text) VALUES(?)";
         try (PreparedStatement pstmt = dbConn.prepareStatement(sql)) {
             pstmt.setString(1, problemText);
             int affectedRows = pstmt.executeUpdate();
+            
             if (affectedRows > 0) {
                 // If DB insert is successful, update the UI list
                 Platform.runLater(() -> problems.add(problemText));
             }
+            
         } catch (SQLException e) {
             // This error is expected if the problem already exists due to the UNIQUE constraint.
             System.err.println("Failed to add problem '" + problemText + "'. It might already exist. Details: " + e.getMessage());
@@ -131,14 +160,17 @@ public class ListProblemAction {
      */
     private void removeProblem(String problemText) {
         if (dbConn == null) return;
+        
         String sql = "DELETE FROM problems WHERE problem_text = ?";
         try (PreparedStatement pstmt = dbConn.prepareStatement(sql)) {
             pstmt.setString(1, problemText);
             int affectedRows = pstmt.executeUpdate();
+            
             if (affectedRows > 0) {
                 // If DB delete is successful, update the UI list
                 Platform.runLater(() -> problems.remove(problemText));
             }
+            
         } catch (SQLException e) {
             e.printStackTrace();
             System.err.println("Failed to remove problem '" + problemText + "': " + e.getMessage());
@@ -154,7 +186,6 @@ public class ListProblemAction {
         problemList.setMinWidth(SIDEBAR_WIDTH_PX);
         // shorter visible height; will scroll when longer
         problemList.setPrefHeight(PROBLIST_HEIGHT_PX);
-
         problemList.setOnMouseClicked(e -> {
             if (e.getClickCount() == 2) {
                 String sel = problemList.getSelectionModel().getSelectedItem();
@@ -190,7 +221,6 @@ public class ListProblemAction {
         scratchpadArea.setPromptText("Scratchpad... (auto-updated from center areas)");
         scratchpadArea.setWrapText(true);
         scratchpadArea.setEditable(true);
-
         // Make it narrower & shorter (width and height)
         scratchpadArea.setPrefColumnCount(28); // controls width in many layouts
         scratchpadArea.setPrefRowCount(SCRATCHPAD_ROWS);
@@ -229,14 +259,12 @@ public class ListProblemAction {
     // ---- Scratchpad Methods ----
     public void updateAndRedrawScratchpad(String title, String newText) {
         String trimmedText = newText.trim();
-
         if (trimmedText.isEmpty()) {
             scratchpadEntries.remove(title);
         } else {
             String singleLineText = trimmedText.replaceAll("\\s*\\R\\s*", " \n\t ");
             scratchpadEntries.put(title, singleLineText);
         }
-
         redrawScratchpad();
     }
 
@@ -245,6 +273,7 @@ public class ListProblemAction {
 
         List<String> orderedTitles = Arrays.asList(IttiaAppTextArea.TEXT_AREA_TITLES);
         StringJoiner sj = new StringJoiner("\n");
+
         for (String title : orderedTitles) {
             String value = scratchpadEntries.get(title);
             if (value != null && !value.isEmpty()) {
@@ -268,5 +297,17 @@ public class ListProblemAction {
     // ---- Getter Methods ----
     public ObservableList<String> getProblems() {
         return problems;
+    }
+
+    // ---- Cleanup Method ----
+    public void closeDatabase() {
+        if (dbConn != null) {
+            try {
+                dbConn.close();
+                System.out.println("Problem list database connection closed.");
+            } catch (SQLException e) {
+                System.err.println("Error closing problem list database: " + e.getMessage());
+            }
+        }
     }
 }

@@ -19,7 +19,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class FU_edit extends JFrame {
-
     // === Canonical section titles (labels) ===
     public static final String[] TEXT_AREA_TITLES = {
             "CC>", "PI>", "ROS>", "PMH>", "S>",
@@ -51,9 +50,21 @@ public class FU_edit extends JFrame {
     private int selectedTemplateId = -1;
     private final Consumer<String> onTemplateSelectedCallback;
 
+    // --- DB Helpers (Repo-tracked under app/db) ---
+    private static Path repoRoot() {
+        Path p = Paths.get("").toAbsolutePath();
+        while (p != null && !Files.exists(p.resolve("gradlew")) && !Files.exists(p.resolve(".git"))) {
+            p = p.getParent();
+        }
+        return (p != null) ? p : Paths.get("").toAbsolutePath();
+    }
+    
+    private static Path dbPath() {
+        return repoRoot().resolve("app").resolve("db").resolve("emr_templates.db");
+    }
+
     public FU_edit(Consumer<String> onTemplateSelectedCallback) {
         this.onTemplateSelectedCallback = onTemplateSelectedCallback;
-
         dbManager = new DatabaseManager();
         dbManager.ensureDbDirectory();
         dbManager.createTableIfNotExists();
@@ -67,7 +78,6 @@ public class FU_edit extends JFrame {
         initComponents();
         layoutComponents();
         attachListeners();
-
         loadTemplatesIntoTable();
 
         SwingUtilities.invokeLater(() -> templateNameField.requestFocusInWindow());
@@ -96,6 +106,7 @@ public class FU_edit extends JFrame {
                 return columnIndex == 0 ? Integer.class : String.class;
             }
         };
+
         templateTable = new JTable(tableModel);
         templateTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         templateTable.setRowHeight(22);
@@ -103,6 +114,7 @@ public class FU_edit extends JFrame {
         templateTable.removeColumn(templateTable.getColumnModel().getColumn(0));
 
         templateNameField = new JTextField(28);
+
         templateContentArea = new JTextArea();
         templateContentArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
         templateContentArea.setLineWrap(true);
@@ -136,7 +148,6 @@ public class FU_edit extends JFrame {
         namePanel.add(new JLabel("Name:"));
         namePanel.add(templateNameField);
         rightPanel.add(namePanel, BorderLayout.NORTH);
-
         rightPanel.add(new JScrollPane(templateContentArea), BorderLayout.CENTER);
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftPanel, rightPanel);
@@ -164,7 +175,6 @@ public class FU_edit extends JFrame {
     }
 
     // === Core behavior: parse & assemble ===
-
     /**
      * Parse the free text into section buckets. Lines with a header start a new section.
      * Anything not under a recognized header is appended to "Comment>" by default.
@@ -206,7 +216,6 @@ public class FU_edit extends JFrame {
                 }
             }
         }
-
         return sections;
     }
 
@@ -286,6 +295,7 @@ public class FU_edit extends JFrame {
             processAndDeliver(templateContentArea.getText());
             return;
         }
+
         String content = dbManager.getTemplateContent(selectedTemplateId);
         if (content == null) content = "";
         processAndDeliver(content);
@@ -309,6 +319,7 @@ public class FU_edit extends JFrame {
             selectedTemplateId = (int) tableModel.getValueAt(modelRow, 0);
             String name = (String) tableModel.getValueAt(modelRow, 1);
             String content = dbManager.getTemplateContent(selectedTemplateId);
+
             templateNameField.setText(name);
             templateContentArea.setText(content != null ? content : "");
         }
@@ -325,16 +336,19 @@ public class FU_edit extends JFrame {
     private void saveTemplate() {
         String name = templateNameField.getText().trim();
         String content = templateContentArea.getText();
+
         if (name.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Template name cannot be empty.", "Error",
                     JOptionPane.ERROR_MESSAGE);
             return;
         }
+
         if (selectedTemplateId == -1) {
             dbManager.createTemplate(name, content);
         } else {
             dbManager.updateTemplate(selectedTemplateId, name, content);
         }
+
         loadTemplatesIntoTable();
     }
 
@@ -344,6 +358,7 @@ public class FU_edit extends JFrame {
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
+
         int response = JOptionPane.showConfirmDialog(this, "Delete this template?", "Confirm Deletion",
                 JOptionPane.YES_NO_OPTION);
         if (response == JOptionPane.YES_OPTION) {
@@ -367,14 +382,25 @@ public class FU_edit extends JFrame {
 
     // === Database helper ===
     private static class DatabaseManager {
-        private static final String DB_PATH =
-                System.getProperty("user.dir") + "/src/main/resources/database/emr_templates.db";
-        private static final String DB_URL = "jdbc:sqlite:" + DB_PATH;
+        private Connection conn;
+
+        DatabaseManager() {
+            try {
+                Class.forName("org.sqlite.JDBC");
+                Path db = dbPath();
+                Files.createDirectories(db.getParent());
+                String url = "jdbc:sqlite:" + db.toAbsolutePath();
+                System.out.println("[DB PATH] emr_templates -> " + db.toAbsolutePath());
+                this.conn = DriverManager.getConnection(url);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to open emr_templates.db", e);
+            }
+        }
 
         void ensureDbDirectory() {
             try {
-                Path dbFile = Paths.get(DB_PATH);
-                Path parent = dbFile.getParent();
+                Path db = dbPath();
+                Path parent = db.getParent();
                 if (parent != null && !Files.exists(parent)) {
                     Files.createDirectories(parent);
                 }
@@ -384,8 +410,7 @@ public class FU_edit extends JFrame {
         }
 
         private Connection connect() {
-            try { return DriverManager.getConnection(DB_URL); }
-            catch (SQLException e) { System.err.println(e.getMessage()); return null; }
+            return conn; // Use the existing connection
         }
 
         void createTableIfNotExists() {
@@ -394,82 +419,83 @@ public class FU_edit extends JFrame {
                     "name TEXT NOT NULL," +
                     "content TEXT" +
                     ");";
-            try (Connection conn = this.connect();
-                 Statement stmt = conn != null ? conn.createStatement() : null) {
-                if (stmt != null) stmt.execute(sql);
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute(sql);
             } catch (SQLException e) {
-                System.err.println(e.getMessage());
+                System.err.println("Failed to create templates table: " + e.getMessage());
             }
         }
 
         List<Object[]> getAllTemplates() {
             String sql = "SELECT id, name FROM templates ORDER BY name;";
             List<Object[]> list = new ArrayList<>();
-            try (Connection conn = this.connect();
-                 Statement stmt = conn != null ? conn.createStatement() : null;
-                 ResultSet rs = (stmt != null) ? stmt.executeQuery(sql) : null) {
-                if (rs != null) {
-                    while (rs.next()) {
-                        list.add(new Object[]{rs.getInt("id"), rs.getString("name")});
-                    }
+            try (Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery(sql)) {
+                
+                while (rs.next()) {
+                    list.add(new Object[]{rs.getInt("id"), rs.getString("name")});
                 }
+                
             } catch (SQLException e) {
-                System.err.println(e.getMessage());
+                System.err.println("Failed to load templates: " + e.getMessage());
             }
             return list;
         }
 
         String getTemplateContent(int id) {
             String sql = "SELECT content FROM templates WHERE id = ?;";
-            try (Connection conn = this.connect();
-                 PreparedStatement ps = (conn != null) ? conn.prepareStatement(sql) : null) {
-                if (ps == null) return "";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, id);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) return rs.getString("content");
                 }
             } catch (SQLException e) {
-                System.err.println(e.getMessage());
+                System.err.println("Failed to get template content: " + e.getMessage());
             }
             return "";
         }
 
         void createTemplate(String name, String content) {
             String sql = "INSERT INTO templates (name, content) VALUES (?, ?);";
-            try (Connection conn = this.connect();
-                 PreparedStatement ps = (conn != null) ? conn.prepareStatement(sql) : null) {
-                if (ps == null) return;
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, name);
                 ps.setString(2, content);
                 ps.executeUpdate();
             } catch (SQLException e) {
-                System.err.println(e.getMessage());
+                System.err.println("Failed to create template: " + e.getMessage());
             }
         }
 
         void updateTemplate(int id, String name, String content) {
             String sql = "UPDATE templates SET name = ?, content = ? WHERE id = ?;";
-            try (Connection conn = this.connect();
-                 PreparedStatement ps = (conn != null) ? conn.prepareStatement(sql) : null) {
-                if (ps == null) return;
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, name);
                 ps.setString(2, content);
                 ps.setInt(3, id);
                 ps.executeUpdate();
             } catch (SQLException e) {
-                System.err.println(e.getMessage());
+                System.err.println("Failed to update template: " + e.getMessage());
             }
         }
 
         void deleteTemplate(int id) {
             String sql = "DELETE FROM templates WHERE id = ?;";
-            try (Connection conn = this.connect();
-                 PreparedStatement ps = (conn != null) ? conn.prepareStatement(sql) : null) {
-                if (ps == null) return;
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setInt(1, id);
                 ps.executeUpdate();
             } catch (SQLException e) {
-                System.err.println(e.getMessage());
+                System.err.println("Failed to delete template: " + e.getMessage());
+            }
+        }
+
+        void closeConnection() {
+            if (conn != null) {
+                try {
+                    conn.close();
+                    System.out.println("Template database connection closed.");
+                } catch (SQLException e) {
+                    System.err.println("Error closing template database: " + e.getMessage());
+                }
             }
         }
     }

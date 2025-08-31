@@ -11,7 +11,6 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -20,8 +19,13 @@ import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.UnaryOperator;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import javax.swing.SwingUtilities;
-
 import com.emr.gds.input.FreqInputFrame;
 import com.emr.gds.input.IttiaAppMain;
 import com.emr.gds.input.FxTextAreaManager;
@@ -35,7 +39,6 @@ import com.emr.gds.main.TextFormatUtil;
  * Handles UI layout, database initialization, and user interactions
  */
 public class IttiaApp extends Application {
-
     // ================================
     // INSTANCE VARIABLES
     // ================================
@@ -54,13 +57,30 @@ public class IttiaApp extends Application {
     private IttiaAppFunctionkey functionKeyHandler;
 
     // ================================
+    // DB HELPERS (Repo-tracked under app/db)
+    // ================================
+    
+    private static Path repoRoot() {
+        // Walk upward to find the repo root (dir containing 'gradlew' or '.git')
+        Path p = Paths.get("").toAbsolutePath();
+        while (p != null && !Files.exists(p.resolve("gradlew")) && !Files.exists(p.resolve(".git"))) {
+            p = p.getParent();
+        }
+        return (p != null) ? p : Paths.get("").toAbsolutePath();
+    }
+
+    private static Path dbPath(String fileName) {
+        return repoRoot().resolve("app").resolve("db").resolve(fileName);
+    }
+
+    // ================================
     // APPLICATION LIFECYCLE
     // ================================
     
     public static void main(String[] args) {
         launch(args);
     }
-
+    
     @Override
     public void start(Stage stage) {
         stage.setTitle("GDSEMR ITTIA – EMR Prototype (JavaFX)");
@@ -79,7 +99,7 @@ public class IttiaApp extends Application {
         // 4. Post-show setup
         configurePostShow(scene);
     }
-
+    
     // ================================
     // INITIALIZATION METHODS
     // ================================
@@ -93,15 +113,20 @@ public class IttiaApp extends Application {
     private void initAbbrevDatabase() {
         try {
             Class.forName("org.sqlite.JDBC");
-            String dbPath = System.getProperty("user.dir") + "/src/main/resources/database/abbreviations.db";
-            dbConn = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
+            Path db = dbPath("abbreviations.db");
+            Files.createDirectories(db.getParent());
+            String url = "jdbc:sqlite:" + db.toAbsolutePath();
+            System.out.println("[DB PATH] abbreviations -> " + db.toAbsolutePath());
+            
+            dbConn = DriverManager.getConnection(url);
             
             createAbbreviationTable();
             loadAbbreviations();
             
-        } catch (ClassNotFoundException | SQLException e) {
+        } catch (ClassNotFoundException | SQLException | IOException e) {
             e.printStackTrace();
             System.err.println("Failed to initialize database: " + e.getMessage());
+            throw new RuntimeException("Failed to initialize abbreviations.db", e);
         }
     }
     
@@ -144,7 +169,7 @@ public class IttiaApp extends Application {
     private void initializeFunctionKeyHandler() {
         functionKeyHandler = new IttiaAppFunctionkey(this);
     }
-
+    
     // ================================
     // UI LAYOUT METHODS
     // ================================
@@ -214,7 +239,7 @@ public class IttiaApp extends Application {
             return fallbackToolBar;
         }
     }
-
+    
     // ================================
     // WINDOW MANAGEMENT
     // ================================
@@ -241,7 +266,7 @@ public class IttiaApp extends Application {
             editor.setVisible(true);
         });
     }
-
+    
     // ================================
     // POST-INITIALIZATION SETUP
     // ================================
@@ -275,7 +300,7 @@ public class IttiaApp extends Application {
             return false;
         }
     }
-
+    
     // ================================
     // KEYBOARD SHORTCUTS
     // ================================
@@ -338,7 +363,7 @@ public class IttiaApp extends Application {
             () -> textAreaManager.focusArea(9)
         );
     }
-
+    
     // ================================
     // TEXT MANIPULATION METHODS
     // ================================
@@ -366,7 +391,7 @@ public class IttiaApp extends Application {
         }
         showToast("All text cleared");
     }
-
+    
     // ================================
     // CLIPBOARD OPERATIONS
     // ================================
@@ -424,7 +449,7 @@ public class IttiaApp extends Application {
         }
         return "Area " + (areaIndex + 1);
     }
-
+    
     // ================================
     // UTILITY METHODS
     // ================================
@@ -435,7 +460,7 @@ public class IttiaApp extends Application {
         alert.setTitle("Info");
         alert.showAndWait();
     }
-
+    
     // ================================
     // GETTER METHODS
     // ================================
