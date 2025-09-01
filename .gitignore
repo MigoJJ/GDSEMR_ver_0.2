@@ -21,11 +21,7 @@ Thumbs.db
 # === SQLite DB 관리 ===
 # 원칙: 기본적으로 DB는 ignore, 단 GitHub에 올려야 하는 파일은 예외 처리
 
-# 모든 DB 무시
-src/main/resources/database/*.db
-src/main/resources/database/*.sqlite
-src/main/resources/database/*.sqlite3
-
 # --- 예외 허용 (GitHub에 올려야 하는 DB) ---
-!src/main/resources/database/AbbFullDis.db
-!src/main/resources/database/TemplateLib.db
+!src/main/resources/database/abbreviations.db
+!src/main/resources/database/emr_templates.db
+!src/main/resources/database/prolist.db
