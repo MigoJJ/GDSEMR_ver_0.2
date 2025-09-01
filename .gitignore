@@ -1,27 +1,6 @@
-# === Build outputs ===
-/build/
-/.gradle/
-/out/
-/bin/
-
-# === Eclipse ===
-.project
-.classpath
-.settings/
-
-# === Logs & Temp ===
-*.log
-*.tmp
-*.bak
-
-# === System ===
-.DS_Store
-Thumbs.db
-
-# === SQLite DB 관리 ===
-# 원칙: 기본적으로 DB는 ignore, 단 GitHub에 올려야 하는 파일은 예외 처리
 
 # --- 예외 허용 (GitHub에 올려야 하는 DB) ---
 !src/main/resources/database/abbreviations.db
 !src/main/resources/database/emr_templates.db
 !src/main/resources/database/prolist.db
+/.gradle/
