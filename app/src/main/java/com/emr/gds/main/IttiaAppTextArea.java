@@ -1,11 +1,15 @@
 package com.emr.gds.main;
+
 import javafx.application.Platform;	
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.text.Font;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -22,6 +26,9 @@ public class IttiaAppTextArea {
     private final Map<String, String> abbrevMap;
     private ListProblemAction problemAction;
     
+    // Double-click handlers for each TextArea
+    private final Map<Integer, TextAreaDoubleClickHandler> doubleClickHandlers = new HashMap<>();
+    
     // ---- Constants ----
     public static final String[] TEXT_AREA_TITLES = {
             "CC>", "PI>", "ROS>", "PMH>", "S>",
@@ -34,10 +41,50 @@ public class IttiaAppTextArea {
             "-fx-background-insets: 0;" +
             "-fx-background-radius: 6;";
     
+    // ---- Interface for Double-Click Handlers ----
+    @FunctionalInterface
+    public interface TextAreaDoubleClickHandler {
+        void handle(TextArea textArea, int areaIndex);
+    }
+    
     // ---- Constructor ----
     public IttiaAppTextArea(Map<String, String> abbrevMap, ListProblemAction problemAction) {
         this.abbrevMap = abbrevMap;
         this.problemAction = problemAction;
+        initializeDoubleClickHandlers();
+    }
+    
+    // ---- Initialize Double-Click Handlers ----
+    private void initializeDoubleClickHandlers() {
+        // CC> - Chief Complaint Handler
+        doubleClickHandlers.put(0, (textArea, index) -> executeChiefComplaintHandler(textArea, index));
+        
+        // PI> - Present Illness Handler
+        doubleClickHandlers.put(1, (textArea, index) -> executePresentIllnessHandler(textArea, index));
+        
+        // ROS> - Review of Systems Handler
+        doubleClickHandlers.put(2, (textArea, index) -> executeReviewOfSystemsHandler(textArea, index));
+        
+        // PMH> - Past Medical History Handler
+        doubleClickHandlers.put(3, (textArea, index) -> executePastMedicalHistoryHandler(textArea, index));
+        
+        // S> - Subjective Handler
+        doubleClickHandlers.put(4, (textArea, index) -> executeSubjectiveHandler(textArea, index));
+        
+        // O> - Objective Handler
+        doubleClickHandlers.put(5, (textArea, index) -> executeObjectiveHandler(textArea, index));
+        
+        // Physical Exam> - Physical Examination Handler
+        doubleClickHandlers.put(6, (textArea, index) -> executePhysicalExamHandler(textArea, index));
+        
+        // A> - Assessment Handler
+        doubleClickHandlers.put(7, (textArea, index) -> executeAssessmentHandler(textArea, index));
+        
+        // P> - Plan Handler
+        doubleClickHandlers.put(8, (textArea, index) -> executePlanHandler(textArea, index));
+        
+        // Comment> - Comment Handler
+        doubleClickHandlers.put(9, (textArea, index) -> executeCommentHandler(textArea, index));
     }
     
     // ---- UI Component Builders ----
@@ -96,6 +143,14 @@ public class IttiaAppTextArea {
                 }
             });
             
+            // ✨ Add double-click event handler
+            ta.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+                if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
+                    handleDoubleClick(ta, idx);
+                    event.consume();
+                }
+            });
+            
             // 수정된 TextFormatter 적용 - TextFormatUtil 사용
             ta.setTextFormatter(new TextFormatter<>(TextFormatUtil.filterControlChars()));
             
@@ -104,6 +159,219 @@ public class IttiaAppTextArea {
         }
         
         return grid;
+    }
+    
+    // ---- Double-Click Event Handling ----
+    private void handleDoubleClick(TextArea textArea, int areaIndex) {
+        TextAreaDoubleClickHandler handler = doubleClickHandlers.get(areaIndex);
+        if (handler != null) {
+            try {
+                System.out.println("Double-click detected on " + TEXT_AREA_TITLES[areaIndex] + " (Area " + areaIndex + ")");
+                handler.handle(textArea, areaIndex);
+            } catch (Exception e) {
+                System.err.println("Error executing double-click handler for area " + areaIndex + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("No handler registered for area " + areaIndex);
+        }
+    }
+    
+    // ---- Individual Double-Click Handler Implementations ----
+    
+    private void executeChiefComplaintHandler(TextArea textArea, int index) {
+        System.out.println("Executing Chief Complaint Handler...");
+        try {
+            // Launch Chief Complaint specialized class
+            ChiefComplaintEditor ccEditor = new ChiefComplaintEditor(textArea);
+            ccEditor.show();
+        } catch (Exception e) {
+            System.err.println("Failed to launch Chief Complaint Editor: " + e.getMessage());
+            showDefaultDoubleClickAction("Chief Complaint", textArea, index);
+        }
+    }
+    
+    private void executePresentIllnessHandler(TextArea textArea, int index) {
+        System.out.println("Executing Present Illness Handler...");
+        try {
+            // Try to use reflection to load the class dynamically
+            Class<?> editorClass = Class.forName("com.emr.gds.main.PresentIllnessEditor");
+            Object editor = editorClass.getConstructor(TextArea.class).newInstance(textArea);
+            editorClass.getMethod("show").invoke(editor);
+        } catch (ClassNotFoundException e) {
+            System.out.println("PresentIllnessEditor class not found, using default action");
+            showDefaultDoubleClickAction("Present Illness", textArea, index);
+        } catch (Exception e) {
+            System.err.println("Failed to launch Present Illness Editor: " + e.getMessage());
+            showDefaultDoubleClickAction("Present Illness", textArea, index);
+        }
+    }
+    
+    private void executeReviewOfSystemsHandler(TextArea textArea, int index) {
+        System.out.println("Executing Review of Systems Handler...");
+        try {
+            Class<?> editorClass = Class.forName("com.emr.gds.main.ReviewOfSystemsEditor");
+            Object editor = editorClass.getConstructor(TextArea.class).newInstance(textArea);
+            editorClass.getMethod("show").invoke(editor);
+        } catch (ClassNotFoundException e) {
+            System.out.println("ReviewOfSystemsEditor class not found, using default action");
+            showDefaultDoubleClickAction("Review of Systems", textArea, index);
+        } catch (Exception e) {
+            System.err.println("Failed to launch Review of Systems Editor: " + e.getMessage());
+            showDefaultDoubleClickAction("Review of Systems", textArea, index);
+        }
+    }
+    
+    private void executePastMedicalHistoryHandler(TextArea textArea, int index) {
+        System.out.println("Executing Past Medical History Handler...");
+        try {
+            Class<?> editorClass = Class.forName("com.emr.gds.main.PastMedicalHistoryEditor");
+            Object editor = editorClass.getConstructor(TextArea.class).newInstance(textArea);
+            editorClass.getMethod("show").invoke(editor);
+        } catch (ClassNotFoundException e) {
+            System.out.println("PastMedicalHistoryEditor class not found, using default action");
+            showDefaultDoubleClickAction("Past Medical History", textArea, index);
+        } catch (Exception e) {
+            System.err.println("Failed to launch Past Medical History Editor: " + e.getMessage());
+            showDefaultDoubleClickAction("Past Medical History", textArea, index);
+        }
+    }
+    
+    private void executeSubjectiveHandler(TextArea textArea, int index) {
+        System.out.println("Executing Subjective Handler...");
+        try {
+            Class<?> editorClass = Class.forName("com.emr.gds.main.SubjectiveEditor");
+            Object editor = editorClass.getConstructor(TextArea.class).newInstance(textArea);
+            editorClass.getMethod("show").invoke(editor);
+        } catch (ClassNotFoundException e) {
+            System.out.println("SubjectiveEditor class not found, using default action");
+            showDefaultDoubleClickAction("Subjective", textArea, index);
+        } catch (Exception e) {
+            System.err.println("Failed to launch Subjective Editor: " + e.getMessage());
+            showDefaultDoubleClickAction("Subjective", textArea, index);
+        }
+    }
+    
+    private void executeObjectiveHandler(TextArea textArea, int index) {
+        System.out.println("Executing Objective Handler...");
+        try {
+            Class<?> editorClass = Class.forName("com.emr.gds.main.ObjectiveEditor");
+            Object editor = editorClass.getConstructor(TextArea.class).newInstance(textArea);
+            editorClass.getMethod("show").invoke(editor);
+        } catch (ClassNotFoundException e) {
+            System.out.println("ObjectiveEditor class not found, using default action");
+            showDefaultDoubleClickAction("Objective", textArea, index);
+        } catch (Exception e) {
+            System.err.println("Failed to launch Objective Editor: " + e.getMessage());
+            showDefaultDoubleClickAction("Objective", textArea, index);
+        }
+    }
+    
+    private void executePhysicalExamHandler(TextArea textArea, int index) {
+        System.out.println("Executing Physical Exam Handler...");
+        try {
+            Class<?> editorClass = Class.forName("com.emr.gds.main.PhysicalExamEditor");
+            Object editor = editorClass.getConstructor(TextArea.class).newInstance(textArea);
+            editorClass.getMethod("show").invoke(editor);
+        } catch (ClassNotFoundException e) {
+            System.out.println("PhysicalExamEditor class not found, using default action");
+            showDefaultDoubleClickAction("Physical Exam", textArea, index);
+        } catch (Exception e) {
+            System.err.println("Failed to launch Physical Exam Editor: " + e.getMessage());
+            showDefaultDoubleClickAction("Physical Exam", textArea, index);
+        }
+    }
+    
+    private void executeAssessmentHandler(TextArea textArea, int index) {
+        System.out.println("Executing Assessment Handler...");
+        try {
+            Class<?> editorClass = Class.forName("com.emr.gds.main.AssessmentEditor");
+            Object editor = editorClass.getConstructor(TextArea.class).newInstance(textArea);
+            editorClass.getMethod("show").invoke(editor);
+        } catch (ClassNotFoundException e) {
+            System.out.println("AssessmentEditor class not found, using default action");
+            showDefaultDoubleClickAction("Assessment", textArea, index);
+        } catch (Exception e) {
+            System.err.println("Failed to launch Assessment Editor: " + e.getMessage());
+            showDefaultDoubleClickAction("Assessment", textArea, index);
+        }
+    }
+    
+    private void executePlanHandler(TextArea textArea, int index) {
+        System.out.println("Executing Plan Handler...");
+        try {
+            Class<?> editorClass = Class.forName("com.emr.gds.main.PlanEditor");
+            Object editor = editorClass.getConstructor(TextArea.class).newInstance(textArea);
+            editorClass.getMethod("show").invoke(editor);
+        } catch (ClassNotFoundException e) {
+            System.out.println("PlanEditor class not found, using default action");
+            showDefaultDoubleClickAction("Plan", textArea, index);
+        } catch (Exception e) {
+            System.err.println("Failed to launch Plan Editor: " + e.getMessage());
+            showDefaultDoubleClickAction("Plan", textArea, index);
+        }
+    }
+    
+    private void executeCommentHandler(TextArea textArea, int index) {
+        System.out.println("Executing Comment Handler...");
+        try {
+            Class<?> editorClass = Class.forName("com.emr.gds.main.CommentEditor");
+            Object editor = editorClass.getConstructor(TextArea.class).newInstance(textArea);
+            editorClass.getMethod("show").invoke(editor);
+        } catch (ClassNotFoundException e) {
+            System.out.println("CommentEditor class not found, using default action");
+            showDefaultDoubleClickAction("Comment", textArea, index);
+        } catch (Exception e) {
+            System.err.println("Failed to launch Comment Editor: " + e.getMessage());
+            showDefaultDoubleClickAction("Comment", textArea, index);
+        }
+    }
+    
+    // ---- Fallback Action ----
+    private void showDefaultDoubleClickAction(String sectionName, TextArea textArea, int index) {
+        String message = String.format("Double-clicked on %s (Area %d)\nCurrent text length: %d characters", 
+            sectionName, index + 1, textArea.getText().length());
+        
+        // You can replace this with a proper dialog or notification
+        Platform.runLater(() -> {
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+            alert.setTitle("Double-Click Action");
+            alert.setHeaderText("Section: " + sectionName);
+            alert.setContentText(message);
+            alert.showAndWait();
+        });
+    }
+    
+    // ---- Configuration Methods ----
+    
+    /**
+     * Register a custom double-click handler for a specific area
+     * @param areaIndex The index of the TextArea (0-9)
+     * @param handler The handler to execute on double-click
+     */
+    public void setDoubleClickHandler(int areaIndex, TextAreaDoubleClickHandler handler) {
+        if (areaIndex >= 0 && areaIndex < areas.size()) {
+            doubleClickHandlers.put(areaIndex, handler);
+        } else {
+            throw new IllegalArgumentException("Area index must be between 0 and " + (areas.size() - 1));
+        }
+    }
+    
+    /**
+     * Remove double-click handler for a specific area
+     * @param areaIndex The index of the TextArea
+     */
+    public void removeDoubleClickHandler(int areaIndex) {
+        doubleClickHandlers.remove(areaIndex);
+    }
+    
+    /**
+     * Get the current double-click handler for an area
+     * @param areaIndex The index of the TextArea
+     * @return The current handler, or null if none is set
+     */
+    public TextAreaDoubleClickHandler getDoubleClickHandler(int areaIndex) {
+        return doubleClickHandlers.get(areaIndex);
     }
     
     // ---- Text Actions ----
@@ -159,7 +427,7 @@ public class IttiaAppTextArea {
     }
     
     public List<TextArea> getTextAreas() {
-    	IttiaAppMain.setTextAreaManager(new FxTextAreaManager(areas));
+        IttiaAppMain.setTextAreaManager(new FxTextAreaManager(areas));
         return this.areas;
     }
     
