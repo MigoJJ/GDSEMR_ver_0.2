@@ -16,9 +16,10 @@ public class FxTextAreaManager implements TextAreaManager {
 
     public FxTextAreaManager(List<TextArea> areas) {
         if (areas == null || areas.size() < areaCount()) {
-            throw new IllegalArgumentException("areas must contain 10 TextAreas (CC, PI, ROS, PMH, S, O, PE, A, P, Comment)");
+            throw new IllegalArgumentException(
+                "areas must contain 10 TextAreas (CC, PI, ROS, PMH, S, O, PE, A, P, Comment)"
+            );
         }
-        // null-check each element to be safe
         for (int i = 0; i < areaCount(); i++) {
             Objects.requireNonNull(areas.get(i), "TextArea at index " + i + " is null");
         }
@@ -35,9 +36,9 @@ public class FxTextAreaManager implements TextAreaManager {
     @Override
     public void insertLineIntoFocusedArea(String line) {
         if (line == null || line.isEmpty()) return;
+        final String add = ensureTrailingNewline(normalizeNewlines(line));
         runFx(() -> {
             TextArea ta = areas.get(focusedIndex);
-            String add = line.endsWith("\n") ? line : line + "\n";
             ta.insertText(ta.getCaretPosition(), add);
         });
     }
@@ -45,21 +46,34 @@ public class FxTextAreaManager implements TextAreaManager {
     @Override
     public void insertBlockIntoFocusedArea(String block) {
         if (block == null || block.isEmpty()) return;
+        final String add = ensureTrailingNewline(normalizeNewlines(block));
         runFx(() -> {
             TextArea ta = areas.get(focusedIndex);
-            String add = block.endsWith("\n") ? block : block + "\n";
             ta.insertText(ta.getCaretPosition(), add);
         });
     }
 
     @Override
     public boolean isReady() {
-        return areas != null && areas.size() >= areaCount();
+        if (areas == null || areas.size() < areaCount()) return false;
+        for (int i = 0; i < areaCount(); i++) {
+            if (areas.get(i) == null) return false;
+        }
+        return true;
     }
 
     // ---- Helpers ----
     private static void runFx(Runnable r) {
         if (Platform.isFxApplicationThread()) r.run();
         else Platform.runLater(r);
+    }
+
+    private static String normalizeNewlines(String s) {
+        // Convert \r\n and \r to \n to match JavaFX TextArea behavior
+        return s.replace("\r\n", "\n").replace('\r', '\n');
+    }
+
+    private static String ensureTrailingNewline(String s) {
+        return s.endsWith("\n") ? s : (s + "\n");
     }
 }

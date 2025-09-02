@@ -1,6 +1,6 @@
 package com.emr.gds.main;
 
-import javafx.application.Platform;	
+import javafx.application.Platform;			
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.input.KeyCode;
@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 
 import com.emr.gds.input.FxTextAreaManager;
 import com.emr.gds.input.IttiaAppMain;
+import com.emr.gds.main.doubleclick.ChiefComplaintEditor;
 
 public class IttiaAppTextArea {
     // ---- Instance Variables ----

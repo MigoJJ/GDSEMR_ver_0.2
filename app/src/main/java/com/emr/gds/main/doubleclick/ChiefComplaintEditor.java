@@ -1,4 +1,4 @@
-package com.emr.gds.main;
+package com.emr.gds.main.doubleclick;
 
 import javafx.application.Platform;
 import javafx.geometry.Insets;

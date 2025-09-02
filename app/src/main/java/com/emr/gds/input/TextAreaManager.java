@@ -42,4 +42,17 @@ public interface TextAreaManager {
 
     /** Validate index range. */
     default boolean isValidIndex(int index) { return index >= 0 && index < areaCount(); }
+
+    // Convenience: insert directly to a specific area (with optional focus).
+    default void insertBlockIntoArea(int index, String block, boolean moveFocus) {
+        if (!isValidIndex(index)) return;
+        if (moveFocus) focusArea(index);
+        insertBlockIntoFocusedArea(block);
+    }
+
+    default void insertLineIntoArea(int index, String line, boolean moveFocus) {
+        if (!isValidIndex(index)) return;
+        if (moveFocus) focusArea(index);
+        insertLineIntoFocusedArea(line);
+    }
 }

@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Global holder for the TextAreaManager bridge.
- * Set once after the 10 TextAreas are created (e.g., right after buildCenterAreas()).
+ * Register once after the 10 TextAreas are created.
  */
 public final class IttiaAppMain {
     private static final AtomicReference<TextAreaManager> MANAGER = new AtomicReference<>(null);
@@ -33,5 +33,10 @@ public final class IttiaAppMain {
     /** Optional getter without exception. */
     public static Optional<TextAreaManager> maybeManager() {
         return Optional.ofNullable(MANAGER.get());
+    }
+
+    /** Clear the registered manager (e.g., app shutdown). */
+    public static void clear() {
+        MANAGER.set(null);
     }
 }

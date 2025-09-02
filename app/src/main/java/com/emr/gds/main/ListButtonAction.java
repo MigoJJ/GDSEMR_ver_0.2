@@ -1,12 +1,13 @@
 package com.emr.gds.main;
 
-import java.sql.Connection;	
+import java.sql.Connection;		
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 import com.emr.gds.AbbdbControl;
 import com.emr.gds.IttiaApp;
+import com.emr.gds.input.IttiaAppMain;
 
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
@@ -37,7 +38,14 @@ public class ListButtonAction {
     // ---- Public Methods ----
     public ToolBar buildTopBar() {
         Button btnInsertTemplate = new Button("Insert Template (Ctrl+I)");
-        btnInsertTemplate.setOnAction(e -> app.insertTemplateIntoFocusedArea(TemplateLibrary.HPI));
+        btnInsertTemplate.setOnAction(e -> {
+            // (A) If you want to always focus a specific area first (e.g., index 5):
+            IttiaAppMain.maybeManager().ifPresent(mgr -> mgr.focusArea(5));
+
+            // (B) Then insert into whichever area currently has focus
+//            app.insertTemplateIntoFocusedArea(TemplateLibrary.HPI);
+        });
+
 
         Button btnFormat = new Button("Auto Format (Ctrl+Shift+F)");
         btnFormat.setOnAction(e -> app.formatCurrentArea());
