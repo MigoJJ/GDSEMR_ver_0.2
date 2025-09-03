@@ -43,7 +43,7 @@ public class ListButtonAction {
             IttiaAppMain.maybeManager().ifPresent(mgr -> mgr.focusArea(5));
 
             // (B) Then insert into whichever area currently has focus
-//            app.insertTemplateIntoFocusedArea(TemplateLibrary.HPI);
+            app.insertTemplateIntoFocusedArea(TemplateLibrary.HPI);
         });
 
 
