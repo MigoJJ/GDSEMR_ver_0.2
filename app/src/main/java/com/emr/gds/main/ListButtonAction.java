@@ -50,8 +50,9 @@ public class ListButtonAction {
     public ToolBar buildTopBar() {
         // Templates menu
         MenuButton templatesMenu = new MenuButton(TEMPLATE_MENU_TEXT);
-        // --- 여기를 수정합니다: .filter(t -> !t.isSnippet()) 부분을 제거 ---
         templatesMenu.getItems().addAll(Arrays.stream(TemplateLibrary.values())
+            // If you filtered snippets before, make sure this line is commented out or removed
+            // .filter(t -> !t.isSnippet()) 
             .map(t -> {
                 MenuItem mi = new MenuItem(t.displayName());
                 mi.setOnAction(e -> app.insertTemplateIntoFocusedArea(t));
@@ -148,6 +149,12 @@ public class ListButtonAction {
                 "- TSH:  uIU/mL\n", false),
         PROBLEM_LIST("Problem List Header",
                 "# Problem List\n- \n- \n- \n", false),
+        // --- ADD THIS NEW ENTRY HERE ---
+        VACCINATION_LIST("Vaccination",
+                "# Tdap ...List\n- \n- \n- \n", false),
+        TFT_LIST("TFT",
+                "# T3 ...List\n- \n- \n- \n", false),
+
 
         // Quick snippets (bottom bar)
         SNIPPET_VITALS("Vitals",
