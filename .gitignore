@@ -4,3 +4,4 @@
 !src/main/resources/database/emr_templates.db
 !src/main/resources/database/prolist.db
 /.gradle/
+/build/

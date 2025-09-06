@@ -14,6 +14,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.StringJoiner;
 
 import javax.swing.SwingUtilities;
@@ -21,6 +22,7 @@ import javax.swing.SwingUtilities;
 import com.emr.gds.input.FreqInputFrame;
 import com.emr.gds.input.FxTextAreaManager;
 import com.emr.gds.input.IttiaAppMain;
+import com.emr.gds.input.TextAreaManager; // Import the interface
 import com.emr.gds.main.IttiaAppTextArea;
 import com.emr.gds.main.ListButtonAction;
 import com.emr.gds.main.ListProblemAction;
@@ -49,221 +51,182 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 /**
- * Main JavaFX Application for GDSEMR ITTIA - EMR Prototype
- * Handles UI layout, database initialization, and user interactions
+ * Main JavaFX Application for GDSEMR ITTIA - EMR Prototype.
+ * Handles UI layout, database initialization, and user interactions.
  */
 public class IttiaApp extends Application {
+
+    // ================================
+    // CONSTANTS
+    // ================================
+    private static final String APP_TITLE = "GDSEMR ITTIA – EMR Prototype (JavaFX)";
+    private static final int SCENE_WIDTH = 1300;
+    private static final int SCENE_HEIGHT = 1000;
+    private static final String DB_FILENAME = "abbreviations.db";
+    private static final String DB_TABLE_NAME = "abbreviations";
+    private static final String DB_URL_PREFIX = "jdbc:sqlite:";
+    private static final String DB_DRIVER = "org.sqlite.JDBC";
+    private static final String DEFAULT_ABBREV_C = "hypercholesterolemia";
+    private static final String DEFAULT_ABBREV_TO = "hypothyroidism";
+    private static final int INITIAL_FOCUS_AREA = 0; // First text area
+
     // ================================
     // INSTANCE VARIABLES
     // ================================
-    
     private ListProblemAction problemAction;
     private ListButtonAction buttonAction;
-    private IttiaAppTextArea textAreaManager;
-    
+    private IttiaAppTextArea textAreaManager; // Manages the UI text areas
     private Connection dbConn;
     private final Map<String, String> abbrevMap = new HashMap<>();
-    
-    // Vital window management (singleton pattern for reuse)
-    private FreqInputFrame freqStage;
-    
-    // Function key handler
+    private FreqInputFrame freqStage; // Vital window management (singleton pattern for reuse)
     private IttiaAppFunctionkey functionKeyHandler;
-
-    // ================================
-    // DB HELPERS (Repo-tracked under app/db)
-    // ================================
-    
-    private static Path repoRoot() {
-        // Walk upward to find the repo root (dir containing 'gradlew' or '.git')
-        Path p = Paths.get("").toAbsolutePath();
-        while (p != null && !Files.exists(p.resolve("gradlew")) && !Files.exists(p.resolve(".git"))) {
-            p = p.getParent();
-        }
-        return (p != null) ? p : Paths.get("").toAbsolutePath();
-    }
-
-    private static Path dbPath(String fileName) {
-        return repoRoot().resolve("app").resolve("db").resolve(fileName);
-    }
 
     // ================================
     // APPLICATION LIFECYCLE
     // ================================
-    
+
     public static void main(String[] args) {
         launch(args);
     }
-    
+
     @Override
     public void start(Stage stage) {
-        stage.setTitle("GDSEMR ITTIA – EMR Prototype (JavaFX)");
-        
-        // 1. Initialize data and managers
-        initializeApplication();
-        
-        // 2. Build UI layout
-        BorderPane root = buildRootLayout();
-        Scene scene = new Scene(root, 1300, 1000);
-        
-        // 3. Display and configure
-        stage.setScene(scene);
-        stage.show();
-        
-        // 4. Post-show setup
-        configurePostShow(scene);
+        stage.setTitle(APP_TITLE);
+
+        try {
+            initializeApplicationComponents(); // Initialize data, managers, DB
+            BorderPane root = buildRootLayout(); // Build UI
+            Scene scene = new Scene(root, SCENE_WIDTH, SCENE_HEIGHT);
+            stage.setScene(scene);
+            stage.show();
+            configurePostShow(scene); // Setup after showing stage
+        } catch (Exception e) {
+            showFatalError("Application Startup Error", "Failed to start the application: " + e.getMessage(), e);
+        }
     }
-    
+
+    @Override
+    public void stop() throws Exception {
+        super.stop();
+        if (dbConn != null && !dbConn.isClosed()) {
+            dbConn.close();
+            System.out.println("Database connection closed.");
+        }
+    }
+
     // ================================
     // INITIALIZATION METHODS
     // ================================
-    
-    private void initializeApplication() {
+
+    private void initializeApplicationComponents() throws SQLException, IOException, ClassNotFoundException {
         initAbbrevDatabase();
-        ensureManagersInitialized();
-        initializeFunctionKeyHandler();
-    }
-    
-    private void initAbbrevDatabase() {
-        try {
-            Class.forName("org.sqlite.JDBC");
-            Path db = dbPath("abbreviations.db");
-            Files.createDirectories(db.getParent());
-            String url = "jdbc:sqlite:" + db.toAbsolutePath();
-            System.out.println("[DB PATH] abbreviations -> " + db.toAbsolutePath());
-            
-            dbConn = DriverManager.getConnection(url);
-            
-            createAbbreviationTable();
-            loadAbbreviations();
-            
-        } catch (ClassNotFoundException | SQLException | IOException e) {
-            e.printStackTrace();
-            System.err.println("Failed to initialize database: " + e.getMessage());
-            throw new RuntimeException("Failed to initialize abbreviations.db", e);
-        }
-    }
-    
-    private void createAbbreviationTable() throws SQLException {
-        Statement stmt = dbConn.createStatement();
-        stmt.execute("CREATE TABLE IF NOT EXISTS abbreviations (short TEXT PRIMARY KEY, full TEXT)");
-        
-        // Insert default abbreviations
-        stmt.execute("INSERT OR IGNORE INTO abbreviations (short, full) VALUES ('c', 'hypercholesterolemia')");
-        stmt.execute("INSERT OR IGNORE INTO abbreviations (short, full) VALUES ('to', 'hypothyroidism')");
-        
-        stmt.close();
-    }
-    
-    private void loadAbbreviations() throws SQLException {
-        abbrevMap.clear();
-        Statement stmt = dbConn.createStatement();
-        ResultSet rs = stmt.executeQuery("SELECT * FROM abbreviations");
-        
-        while (rs.next()) {
-            abbrevMap.put(rs.getString("short"), rs.getString("full"));
-        }
-        
-        rs.close();
-        stmt.close();
-    }
-    
-    private void ensureManagersInitialized() {
-        if (problemAction == null) {
-            problemAction = new ListProblemAction(this);
-        }
-        if (textAreaManager == null) {
-            textAreaManager = new IttiaAppTextArea(abbrevMap, problemAction);
-        }
-        if (buttonAction == null) {
-            buttonAction = new ListButtonAction(this, dbConn, abbrevMap);
-        }
-    }
-    
-    private void initializeFunctionKeyHandler() {
+        // Initialize managers using 'this' after DB is ready
+        problemAction = new ListProblemAction(this);
+        textAreaManager = new IttiaAppTextArea(abbrevMap, problemAction);
+        buttonAction = new ListButtonAction(this, dbConn, abbrevMap);
         functionKeyHandler = new IttiaAppFunctionkey(this);
     }
-    
+
+    private void initAbbrevDatabase() throws ClassNotFoundException, SQLException, IOException {
+        Class.forName(DB_DRIVER);
+        Path dbFile = getDbPath(DB_FILENAME);
+        Files.createDirectories(dbFile.getParent());
+        String url = DB_URL_PREFIX + dbFile.toAbsolutePath();
+        System.out.println("[DB PATH] abbreviations -> " + dbFile.toAbsolutePath());
+
+        dbConn = DriverManager.getConnection(url);
+        createAbbreviationTable();
+        loadAbbreviations();
+    }
+
+    private void createAbbreviationTable() throws SQLException {
+        try (Statement stmt = dbConn.createStatement()) {
+            stmt.execute("CREATE TABLE IF NOT EXISTS " + DB_TABLE_NAME + " (short TEXT PRIMARY KEY, full TEXT)");
+            stmt.execute("INSERT OR IGNORE INTO " + DB_TABLE_NAME + " (short, full) VALUES ('c', '" + DEFAULT_ABBREV_C + "')");
+            stmt.execute("INSERT OR IGNORE INTO " + DB_TABLE_NAME + " (short, full) VALUES ('to', '" + DEFAULT_ABBREV_TO + "')");
+        }
+    }
+
+    private void loadAbbreviations() throws SQLException {
+        abbrevMap.clear();
+        try (Statement stmt = dbConn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT * FROM " + DB_TABLE_NAME)) {
+            while (rs.next()) {
+                abbrevMap.put(rs.getString("short"), rs.getString("full"));
+            }
+        }
+    }
+
     // ================================
     // UI LAYOUT METHODS
     // ================================
-    
+
     private BorderPane buildRootLayout() {
-        ensureManagersInitialized();
-        
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
-        
-        // Configure layout sections
+
         root.setTop(buildTopToolBar());
         root.setLeft(buildLeftPanel());
         root.setCenter(buildCenterPanel());
         root.setBottom(buildBottomPanel());
-        
-        // Setup bridge connection after UI is built
-        establishBridgeConnection();
-        
+
+        establishBridgeConnection(); // Setup bridge connection after UI is built
+
         return root;
     }
-    
+
     private ToolBar buildTopToolBar() {
         ToolBar topBar = buttonAction.buildTopBar();
-        
-        // Add template button
+
         Button templateButton = new Button("Load Template");
         templateButton.setOnAction(e -> openTemplateEditor());
-        
-        // Add vital button
+
         Button vitalButton = new Button("Vital BP & HbA1c");
         vitalButton.setOnAction(e -> openVitalWindow());
-        
+
         topBar.getItems().addAll(
             new Separator(), templateButton,
             new Separator(), vitalButton
         );
-        
         return topBar;
     }
-    
+
     private VBox buildLeftPanel() {
         VBox leftPanel = problemAction.buildProblemPane();
         BorderPane.setMargin(leftPanel, new Insets(0, 10, 0, 0));
         return leftPanel;
     }
-    
+
     private GridPane buildCenterPanel() {
         GridPane centerPane = textAreaManager.buildCenterAreas();
         centerPane.setStyle("-fx-background-color: linear-gradient(to bottom right, #FFFACD, #FAFAD2);");
         return centerPane;
     }
-    
+
     private ToolBar buildBottomPanel() {
         try {
             return buttonAction.buildBottomBar();
         } catch (Exception e) {
             System.err.println("Error building bottom panel: " + e.getMessage());
             e.printStackTrace();
-            
-            // Return a fallback ToolBar
             ToolBar fallbackToolBar = new ToolBar();
             Label errorLabel = new Label("Error loading bottom panel");
             errorLabel.setStyle("-fx-text-fill: red; -fx-font-size: 12px;");
             fallbackToolBar.getItems().add(errorLabel);
-            
             return fallbackToolBar;
         }
     }
-    
+
     // ================================
     // WINDOW MANAGEMENT
     // ================================
-    
+
     public void openVitalWindow() {
         if (!isBridgeReady()) {
             showToast("Text areas not ready yet. Please try again in a moment.");
             return;
         }
-        
+
         if (freqStage == null || !freqStage.isShowing()) {
             freqStage = new FreqInputFrame();
         } else {
@@ -271,7 +234,7 @@ public class IttiaApp extends Application {
             freqStage.toFront();
         }
     }
-    
+
     private void openTemplateEditor() {
         SwingUtilities.invokeLater(() -> {
             FU_edit editor = new FU_edit(templateContent ->
@@ -280,174 +243,130 @@ public class IttiaApp extends Application {
             editor.setVisible(true);
         });
     }
-    
+
     // ================================
     // POST-INITIALIZATION SETUP
     // ================================
-    
+
     private void configurePostShow(Scene scene) {
         Platform.runLater(() -> {
-            try {
-                IttiaAppMain.getTextAreaManager();
-            } catch (Exception ignored) {
-                establishBridgeConnection(); // Retry if connection failed
+            if (!isBridgeReady()) { // Re-check or ensure bridge after UI is shown
+                establishBridgeConnection();
             }
-            textAreaManager.focusArea(0);
+            textAreaManager.focusArea(INITIAL_FOCUS_AREA);
         });
-        
         installAllKeyboardShortcuts(scene);
     }
-    
+
     private void establishBridgeConnection() {
         var areas = textAreaManager.getTextAreas();
-        if (areas == null || areas.size() < 10) {
+        if (areas == null || areas.isEmpty()) { // Check for empty, not just size
             throw new IllegalStateException("EMR text areas not initialized. buildCenterAreas() must run first.");
         }
-        
+        // Set the global static manager for external access
         IttiaAppMain.setTextAreaManager(new FxTextAreaManager(areas));
     }
-    
+
     private boolean isBridgeReady() {
-        try {
-            return IttiaAppMain.getTextAreaManager().isReady();
-        } catch (Exception e) {
-            return false;
-        }
+        return Optional.ofNullable(IttiaAppMain.getTextAreaManager()).map(TextAreaManager::isReady).orElse(false);
     }
-    
+
     // ================================
     // KEYBOARD SHORTCUTS
     // ================================
-    
+
     private void installAllKeyboardShortcuts(Scene scene) {
         installGlobalKeyboardShortcuts(scene);
-        installFunctionKeyShortcuts(scene);
+        functionKeyHandler.installFunctionKeyShortcuts(scene); // Simplified call
     }
-    
+
     private void installGlobalKeyboardShortcuts(Scene scene) {
-        Map<KeyCombination, Runnable> shortcuts = createShortcutMap();
-        
-        shortcuts.forEach((keyCombination, action) -> 
-            scene.getAccelerators().put(keyCombination, action)
-        );
-    }
-    
-    private void installFunctionKeyShortcuts(Scene scene) {
-        if (functionKeyHandler != null) {
-            functionKeyHandler.installFunctionKeyShortcuts(scene);
-        }
-    }
-    
-    private Map<KeyCombination, Runnable> createShortcutMap() {
         Map<KeyCombination, Runnable> shortcuts = new HashMap<>();
-        
-        // Template and formatting shortcuts
-        shortcuts.put(
-            new KeyCodeCombination(KeyCode.I, KeyCombination.CONTROL_DOWN),
-            () -> insertTemplateIntoFocusedArea(ListButtonAction.TemplateLibrary.HPI)
-        );
-        shortcuts.put(
-            new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN),
-            this::formatCurrentArea
-        );
-        shortcuts.put(
-            new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN),
-            this::copyAllToClipboard
-        );
-        
-        // Area focus shortcuts (Ctrl+1 through Ctrl+9, Ctrl+0)
+
+        shortcuts.put(new KeyCodeCombination(KeyCode.I, KeyCombination.CONTROL_DOWN), () -> insertTemplateIntoFocusedArea(ListButtonAction.TemplateLibrary.HPI));
+        shortcuts.put(new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN), this::formatCurrentArea);
+        shortcuts.put(new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN), this::copyAllToClipboard);
+
         addAreaFocusShortcuts(shortcuts);
-        
-        return shortcuts;
+
+        shortcuts.forEach((keyCombination, action) -> scene.getAccelerators().put(keyCombination, action));
     }
-    
+
     private void addAreaFocusShortcuts(Map<KeyCombination, Runnable> shortcuts) {
-        // Ctrl+1 through Ctrl+9
         for (int i = 1; i <= 9; i++) {
             final int areaIndex = i - 1;
-            shortcuts.put(
-                new KeyCodeCombination(KeyCode.getKeyCode(String.valueOf(i)), KeyCombination.CONTROL_DOWN),
-                () -> textAreaManager.focusArea(areaIndex)
-            );
+            shortcuts.put(new KeyCodeCombination(KeyCode.getKeyCode(String.valueOf(i)), KeyCombination.CONTROL_DOWN),
+                          () -> textAreaManager.focusArea(areaIndex));
         }
-        
-        // Ctrl+0 for area 10
-        shortcuts.put(
-            new KeyCodeCombination(KeyCode.DIGIT0, KeyCombination.CONTROL_DOWN),
-            () -> textAreaManager.focusArea(9)
-        );
+        shortcuts.put(new KeyCodeCombination(KeyCode.DIGIT0, KeyCombination.CONTROL_DOWN), () -> textAreaManager.focusArea(9));
     }
-    
+
     // ================================
     // TEXT MANIPULATION METHODS
     // ================================
-    
+
     public void insertTemplateIntoFocusedArea(ListButtonAction.TemplateLibrary template) {
         textAreaManager.insertTemplateIntoFocusedArea(template);
     }
-    
+
     public void insertLineIntoFocusedArea(String line) {
         textAreaManager.insertLineIntoFocusedArea(line);
     }
-    
+
     public void insertBlockIntoFocusedArea(String block) {
         textAreaManager.insertBlockIntoFocusedArea(block);
     }
-    
+
     public void formatCurrentArea() {
         textAreaManager.formatCurrentArea();
     }
-    
+
     public void clearAllText() {
         textAreaManager.clearAllTextAreas();
-        if (problemAction != null) {
-            problemAction.clearScratchpad();
-        }
+        Optional.ofNullable(problemAction).ifPresent(ListProblemAction::clearScratchpad);
         showToast("All text cleared");
     }
-    
+
     // ================================
     // CLIPBOARD OPERATIONS
     // ================================
-    
+
     public void copyAllToClipboard() {
         String compiledContent = compileAllContent();
         String finalizedContent = TextFormatUtil.finalizeForEMR(compiledContent);
-        
+
         ClipboardContent clipboardContent = new ClipboardContent();
         clipboardContent.putString(finalizedContent);
         Clipboard.getSystemClipboard().setContent(clipboardContent);
-        
+
         showToast("Copied all content to clipboard");
     }
-    
+
     private String compileAllContent() {
         StringJoiner contentJoiner = new StringJoiner("\n\n");
-        
-        // Add problem list
         addProblemListToContent(contentJoiner);
-        
-        // Add text areas content
         addTextAreasToContent(contentJoiner);
-        
         return contentJoiner.toString();
     }
-    
+
     private void addProblemListToContent(StringJoiner contentJoiner) {
-        ObservableList<String> problems = problemAction.getProblems();
-        if (!problems.isEmpty()) {
+        ObservableList<String> problems = Optional.ofNullable(problemAction)
+                                                  .map(ListProblemAction::getProblems)
+                                                  .orElse(null);
+        if (problems != null && !problems.isEmpty()) {
             StringBuilder problemBuilder = new StringBuilder("# Problem List (as of ")
                     .append(LocalDate.now().format(DateTimeFormatter.ISO_DATE))
                     .append(")\n");
-            
             problems.forEach(problem -> problemBuilder.append("- ").append(problem).append("\n"));
             contentJoiner.add(problemBuilder.toString().trim());
         }
     }
-    
+
     private void addTextAreasToContent(StringJoiner contentJoiner) {
-        List<TextArea> textAreas = textAreaManager.getTextAreas();
-        
+        List<TextArea> textAreas = Optional.ofNullable(textAreaManager)
+                                           .map(IttiaAppTextArea::getTextAreas)
+                                           .orElse(List.of()); // Return empty list if manager is null
+
         for (int i = 0; i < textAreas.size(); i++) {
             String uniqueText = TextFormatUtil.getUniqueLines(textAreas.get(i).getText());
             if (!uniqueText.isEmpty()) {
@@ -456,41 +375,71 @@ public class IttiaApp extends Application {
             }
         }
     }
-    
+
     private String getAreaTitle(int areaIndex) {
-        if (areaIndex < IttiaAppTextArea.TEXT_AREA_TITLES.length) {
-            return IttiaAppTextArea.TEXT_AREA_TITLES[areaIndex].replaceAll(">$", "");
-        }
-        return "Area " + (areaIndex + 1);
+        return (areaIndex < IttiaAppTextArea.TEXT_AREA_TITLES.length) ?
+                IttiaAppTextArea.TEXT_AREA_TITLES[areaIndex].replaceAll(">$", "") :
+                "Area " + (areaIndex + 1);
     }
-    
+
     // ================================
     // UTILITY METHODS
     // ================================
-    
+
+    private Path getRepoRoot() {
+        Path p = Paths.get("").toAbsolutePath();
+        while (p != null && !Files.exists(p.resolve("gradlew")) && !Files.exists(p.resolve(".git"))) {
+            p = p.getParent();
+        }
+        return (p != null) ? p : Paths.get("").toAbsolutePath();
+    }
+
+    private Path getDbPath(String fileName) {
+        return getRepoRoot().resolve("app").resolve("db").resolve(fileName);
+    }
+
     private void showToast(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK);
         alert.setHeaderText(null);
         alert.setTitle("Info");
         alert.showAndWait();
     }
-    
+
+    private void showFatalError(String title, String message, Throwable cause) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText("A fatal error occurred.");
+        alert.setContentText(message + "\n\nDetails: " + cause.getMessage());
+        alert.getDialogPane().setExpandableContent(new TextArea(formatStackTrace(cause)));
+        alert.showAndWait();
+        Platform.exit(); // Exit the application on fatal error
+    }
+
+    private String formatStackTrace(Throwable t) {
+        StringJoiner sj = new StringJoiner("\n");
+        sj.add(t.toString());
+        for (StackTraceElement element : t.getStackTrace()) {
+            sj.add("\tat " + element);
+        }
+        return sj.toString();
+    }
+
     // ================================
-    // GETTER METHODS
+    // GETTER METHODS (public for manager access)
     // ================================
-    
+
     public IttiaAppTextArea getTextAreaManager() {
         return textAreaManager;
     }
-    
+
     public Connection getDbConnection() {
         return dbConn;
     }
-    
+
     public Map<String, String> getAbbrevMap() {
         return abbrevMap;
     }
-    
+
     public IttiaAppFunctionkey getFunctionKeyHandler() {
         return functionKeyHandler;
     }

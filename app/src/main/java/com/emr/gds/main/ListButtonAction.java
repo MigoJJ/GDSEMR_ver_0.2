@@ -3,11 +3,13 @@ package com.emr.gds.main;
 import java.sql.Connection;		
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.emr.gds.AbbdbControl;
 import com.emr.gds.IttiaApp;
-import com.emr.gds.input.IttiaAppMain;
+import com.emr.gds.input.TextAreaManager;
 
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
@@ -22,13 +24,22 @@ import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 
 public class ListButtonAction {
+    // ---- Constants ----
+    private static final String TEMPLATE_MENU_TEXT = "Templates";
+    private static final String INSERT_TEMPLATE_BUTTON_TEXT = "Insert Template (Ctrl+I)";
+    private static final String AUTO_FORMAT_BUTTON_TEXT = "Auto Format (Ctrl+Shift+F)";
+    private static final String COPY_ALL_BUTTON_TEXT = "Copy All (Ctrl+Shift+C)";
+    private static final String MANAGE_ABBREV_BUTTON_TEXT = "Manage Abbrs...";
+    private static final String CLEAR_ALL_BUTTON_TEXT = "CE";
+    private static final String HINT_LABEL_TEXT = "Focus area: Ctrl+1..Ctrl+0 | Double-click problem to insert";
+    private static final int HPI_DEFAULT_FOCUS_AREA_INDEX = TextAreaManager.AREA_S; // Example: AREA_S (index 4) or AREA_O (index 5)
+    
     // ---- Instance Variables ----
     private final IttiaApp app;
     private final Connection dbConn;
     private final Map<String, String> abbrevMap;
 
     // ---- Constructor ----
-    // Modify the constructor
     public ListButtonAction(IttiaApp app, Connection dbConn, Map<String, String> abbrevMap) {
         this.app = app;
         this.dbConn = dbConn;
@@ -37,72 +48,66 @@ public class ListButtonAction {
 
     // ---- Public Methods ----
     public ToolBar buildTopBar() {
-        Button btnInsertTemplate = new Button("Insert Template (Ctrl+I)");
+        // Templates menu
+        MenuButton templatesMenu = new MenuButton(TEMPLATE_MENU_TEXT);
+        // --- 여기를 수정합니다: .filter(t -> !t.isSnippet()) 부분을 제거 ---
+        templatesMenu.getItems().addAll(Arrays.stream(TemplateLibrary.values())
+            .map(t -> {
+                MenuItem mi = new MenuItem(t.displayName());
+                mi.setOnAction(e -> app.insertTemplateIntoFocusedArea(t));
+                return mi;
+            }).collect(Collectors.toList()));
+    	
+    	Button btnInsertTemplate = new Button(INSERT_TEMPLATE_BUTTON_TEXT);
         btnInsertTemplate.setOnAction(e -> {
-            // (A) If you want to always focus a specific area first (e.g., index 5):
-            IttiaAppMain.maybeManager().ifPresent(mgr -> mgr.focusArea(5));
-
-            // (B) Then insert into whichever area currently has focus
-            app.insertTemplateIntoFocusedArea(TemplateLibrary.HPI);
+            app.getTextAreaManager().focusArea(HPI_DEFAULT_FOCUS_AREA_INDEX); // Focus a specific area
+            app.insertTemplateIntoFocusedArea(TemplateLibrary.HPI); // Insert into whichever area currently has focus
         });
 
-
-        Button btnFormat = new Button("Auto Format (Ctrl+Shift+F)");
+        Button btnFormat = new Button(AUTO_FORMAT_BUTTON_TEXT);
         btnFormat.setOnAction(e -> app.formatCurrentArea());
 
-        Button btnCopyAll = new Button("Copy All (Ctrl+Shift+C)");
+        Button btnCopyAll = new Button(COPY_ALL_BUTTON_TEXT);
         btnCopyAll.setOnAction(e -> app.copyAllToClipboard());
 
-        Button btnClearAll = new Button("CE");
-        btnClearAll.setOnAction(e -> app.clearAllText());
-
-        // START: ADD THIS CODE
-        Button btnManageDb = new Button("Manage Abbrs...");
+        Button btnManageDb = new Button(MANAGE_ABBREV_BUTTON_TEXT);
         btnManageDb.setOnAction(e -> {
-            // Get the main window to act as the owner for the modal dialog
             Stage ownerStage = (Stage) btnManageDb.getScene().getWindow();
             AbbdbControl controller = new AbbdbControl(dbConn, abbrevMap, ownerStage, app);
             controller.showDbManagerDialog();
         });
 
-        // Templates menu
-        MenuButton templatesMenu = new MenuButton("Templates");
-        for (TemplateLibrary t : TemplateLibrary.values()) {
-            MenuItem mi = new MenuItem(t.displayName());
-            mi.setOnAction(e -> app.insertTemplateIntoFocusedArea(t));
-            templatesMenu.getItems().add(mi);
-        }
+        Button btnClearAll = new Button(CLEAR_ALL_BUTTON_TEXT);
+        btnClearAll.setOnAction(e -> app.clearAllText());
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Label hint = new Label("Focus area: Ctrl+1..Ctrl+0 | Double-click problem to insert");
+        Label hint = new Label(HINT_LABEL_TEXT);
 
-        ToolBar tb = new ToolBar(
+        return new ToolBar(
                 templatesMenu,
                 btnInsertTemplate,
                 new Separator(),
                 btnFormat,
                 btnCopyAll,
-                btnManageDb, // Add the new button here
+                btnManageDb,
                 btnClearAll,
                 spacer,
                 hint
         );
-        return tb;
     }
 
     public ToolBar buildBottomBar() {
-        // 7 quick snippet buttons
-        Button b1 = quickSnippetButton("Vitals", TemplateLibrary.SNIPPET_VITALS.body());
-        Button b2 = quickSnippetButton("Meds", TemplateLibrary.SNIPPET_MEDS.body());
-        Button b3 = quickSnippetButton("Allergy", TemplateLibrary.SNIPPET_ALLERGY.body());
-        Button b4 = quickSnippetButton("Assessment", TemplateLibrary.SNIPPET_ASSESS.body());
-        Button b5 = quickSnippetButton("Plan", TemplateLibrary.SNIPPET_PLAN.body());
-        Button b6 = quickSnippetButton("F/U", TemplateLibrary.SNIPPET_FOLLOWUP.body());
-        Button b7 = quickSnippetButton("Signature", TemplateLibrary.SNIPPET_SIGNATURE.body());
-
-        ToolBar tb = new ToolBar(b1, b2, b3, b4, b5, b6, b7);
+        ToolBar tb = new ToolBar(
+            quickSnippetButton("Vitals", TemplateLibrary.SNIPPET_VITALS.body()),
+            quickSnippetButton("Meds", TemplateLibrary.SNIPPET_MEDS.body()),
+            quickSnippetButton("Allergy", TemplateLibrary.SNIPPET_ALLERGY.body()),
+            quickSnippetButton("Assessment", TemplateLibrary.SNIPPET_ASSESS.body()),
+            quickSnippetButton("Plan", TemplateLibrary.SNIPPET_PLAN.body()),
+            quickSnippetButton("F/U", TemplateLibrary.SNIPPET_FOLLOWUP.body()),
+            quickSnippetButton("Signature", TemplateLibrary.SNIPPET_SIGNATURE.body())
+        );
         tb.setPadding(new Insets(8, 0, 0, 0));
         return tb;
     }
@@ -125,47 +130,49 @@ public class ListButtonAction {
                 "- Aggravating/Relieving: \n" +
                 "- Associated Sx: \n" +
                 "- Context: \n" +
-                "- Notes: \n"),
+                "- Notes: \n", false),
         A_P("Assessment & Plan",
                 "# Assessment & Plan\n" +
                 "- Dx: \n" +
                 "- Severity: \n" +
-                "- Plan: meds / labs / imaging / follow-up\n"),
+                "- Plan: meds / labs / imaging / follow-up\n", false),
         LETTER("Letter Template",
                 "# Letter\n" +
                 "Patient: \nDOB: \nDate: " + LocalDate.now().format(DateTimeFormatter.ISO_DATE) + "\n\n" +
-                "Findings:\n- \n\nPlan:\n- \n\nSignature:\nMigoJJ, MD\n"),
+                "Findings:\n- \n\nPlan:\n- \n\nSignature:\nMigoJJ, MD\n", false),
         LAB_SUMMARY("Lab Summary",
                 "# Labs\n" +
                 "- FBS:  mg/dL\n" +
                 "- LDL:  mg/dL\n" +
                 "- HbA1c:  %\n" +
-                "- TSH:  uIU/mL\n"),
+                "- TSH:  uIU/mL\n", false),
         PROBLEM_LIST("Problem List Header",
-                "# Problem List\n- \n- \n- \n"),
+                "# Problem List\n- \n- \n- \n", false),
 
         // Quick snippets (bottom bar)
         SNIPPET_VITALS("Vitals",
-                "# Vitals\n- BP: / mmHg\n- HR: / min\n- Temp:  °C\n- RR: / min\n- SpO2:  %\n"),
+                "# Vitals\n- BP: / mmHg\n- HR: / min\n- Temp:  °C\n- RR: / min\n- SpO2:  %\n", true),
         SNIPPET_MEDS("Meds",
-                "# Medications\n- \n"),
+                "# Medications\n- \n", true),
         SNIPPET_ALLERGY("Allergy",
-                "# Allergy\n- NKDA\n"),
+                "# Allergy\n- NKDA\n", true),
         SNIPPET_ASSESS("Assessment",
-                "# Assessment\n- \n"),
+                "# Assessment\n- \n", true),
         SNIPPET_PLAN("Plan",
-                "# Plan\n- \n"),
+                "# Plan\n- \n", true),
         SNIPPET_FOLLOWUP("Follow-up",
-                "# Follow-up\n- Return in  weeks\n"),
+                "# Follow-up\n- Return in  weeks\n", true),
         SNIPPET_SIGNATURE("Signature",
-                "# Signature\nMigoJJ, MD\nEndocrinology\n");
+                "# Signature\nMigoJJ, MD\nEndocrinology\n", true);
 
         private final String display;
         private final String body;
+        private final boolean isSnippet; // Added to distinguish main templates from snippets
 
-        TemplateLibrary(String display, String body) {
+        TemplateLibrary(String display, String body, boolean isSnippet) {
             this.display = display;
             this.body = body;
+            this.isSnippet = isSnippet;
         }
 
         public String displayName() {
@@ -174,6 +181,10 @@ public class ListButtonAction {
 
         public String body() {
             return body;
+        }
+
+        public boolean isSnippet() {
+            return isSnippet;
         }
     }
 }
