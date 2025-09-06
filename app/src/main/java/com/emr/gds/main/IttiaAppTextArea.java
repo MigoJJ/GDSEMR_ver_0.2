@@ -18,7 +18,9 @@ import java.util.regex.Pattern;
 
 import com.emr.gds.input.FxTextAreaManager;
 import com.emr.gds.input.IttiaAppMain;
-import com.emr.gds.main.doubleclick.ChiefComplaintEditor;
+import com.emr.gds.input.TextAreaManager;
+import com.emr.gds.soap.ChiefComplaintEditor;
+import com.emr.gds.soap.EMRPMH;
 
 public class IttiaAppTextArea {
     // ---- Instance Variables ----
@@ -35,12 +37,16 @@ public class IttiaAppTextArea {
             "CC>", "PI>", "ROS>", "PMH>", "S>",
             "O>", "Physical Exam>", "A>", "P>", "Comment>"
     };
-    
-    // Light lemon gradient applied to the editable content of TextArea
-    private static final String LEMON_GRADIENT_STYLE =
-            "-fx-control-inner-background: linear-gradient(to bottom, #FFFFE0, #FFFACD);" +  // content area
+       
+ // Also add a focused style for better UX
+    private static final String LEMON_GRADIENT_STYLE = 
+            "-fx-control-inner-background: #F8FAFC;" +  // Slightly tinted when focused
+            "-fx-text-fill: #1A202C;" +
+            "-fx-border-color: #3B82F6;" +              // Blue border when focused
+            "-fx-border-width: 2;" +
             "-fx-background-insets: 0;" +
-            "-fx-background-radius: 6;";
+            "-fx-background-radius: 6;" +
+            "-fx-border-radius: 6;";
     
     // ---- Interface for Double-Click Handlers ----
     @FunctionalInterface
@@ -98,9 +104,9 @@ public class IttiaAppTextArea {
         for (int i = 0; i < rows * cols; i++) {
             TextArea ta = new TextArea();
             ta.setWrapText(true);
-            ta.setFont(Font.font("Monospaced", 13));
+            ta.setFont(Font.font("Monospaced", 11));
             ta.setPrefRowCount(10);
-            ta.setPrefColumnCount(48);
+            ta.setPrefColumnCount(55);
             
             // ✨ Apply light lemon gradient inside each TextArea
             ta.setStyle(LEMON_GRADIENT_STYLE);
@@ -223,17 +229,16 @@ public class IttiaAppTextArea {
         }
     }
     
+    
     private void executePastMedicalHistoryHandler(TextArea textArea, int index) {
         System.out.println("Executing Past Medical History Handler...");
         try {
-            Class<?> editorClass = Class.forName("com.emr.gds.main.PastMedicalHistoryEditor");
-            Object editor = editorClass.getConstructor(TextArea.class).newInstance(textArea);
-            editorClass.getMethod("show").invoke(editor);
-        } catch (ClassNotFoundException e) {
-            System.out.println("PastMedicalHistoryEditor class not found, using default action");
-            showDefaultDoubleClickAction("Past Medical History", textArea, index);
+            // Get the current TextAreaManager from IttiaAppMain
+            TextAreaManager manager = IttiaAppMain.getTextAreaManager();
+            EMRPMH pmhDialog = new EMRPMH(manager);
+            pmhDialog.setVisible(true);
         } catch (Exception e) {
-            System.err.println("Failed to launch Past Medical History Editor: " + e.getMessage());
+            System.err.println("Failed to launch PMH Editor: " + e.getMessage());
             showDefaultDoubleClickAction("Past Medical History", textArea, index);
         }
     }

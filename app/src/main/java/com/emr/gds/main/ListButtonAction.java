@@ -123,8 +123,8 @@ public class ListButtonAction {
     // ---- Nested Classes ----
     // ===== Template library =====
     public enum TemplateLibrary {
-        HPI("HPI",
-                "# HPI\n" +
+        HPI("New Patient",
+                "# 공단 검진 HPI\n" +
                 "- Onset: \n" +
                 "- Location: \n" +
                 "- Character: \n" +
