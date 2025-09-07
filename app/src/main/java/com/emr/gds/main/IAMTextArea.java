@@ -38,15 +38,16 @@ public class IAMTextArea {
             "O>", "Physical Exam>", "A>", "P>", "Comment>"
     };
        
- // Also add a focused style for better UX
-    private static final String LEMON_GRADIENT_STYLE = 
-            "-fx-control-inner-background: #F8FAFC;" +  // Slightly tinted when focused
-            "-fx-text-fill: #1A202C;" +
-            "-fx-border-color: #3B82F6;" +              // Blue border when focused
+ // A focused style with a softer, more subtle lemon gradient
+    private static final String FOCUSED_LEMON_GRADIENT_STYLE_SOFT = 
+            "-fx-background-color: linear-gradient(to bottom, #FEFBEB, #FEF3C7);" + // Soft, pale lemon gradient
+            "-fx-text-fill: #1E293B;" +                  // Dark slate text for a softer look than pure black
+            "-fx-border-color: #60A5FA;" +               // A slightly lighter blue border
             "-fx-border-width: 2;" +
             "-fx-background-insets: 0;" +
             "-fx-background-radius: 6;" +
             "-fx-border-radius: 6;";
+
     
     // ---- Interface for Double-Click Handlers ----
     @FunctionalInterface
@@ -105,11 +106,11 @@ public class IAMTextArea {
             TextArea ta = new TextArea();
             ta.setWrapText(true);
             ta.setFont(Font.font("Monospaced", 11));
-            ta.setPrefRowCount(10);
-            ta.setPrefColumnCount(55);
+            ta.setPrefRowCount(11);
+            ta.setPrefColumnCount(58);
             
             // ✨ Apply light lemon gradient inside each TextArea
-            ta.setStyle(LEMON_GRADIENT_STYLE);
+            ta.setStyle(FOCUSED_LEMON_GRADIENT_STYLE_SOFT);
             
             String title = (i < TEXT_AREA_TITLES.length) ? TEXT_AREA_TITLES[i] : "Area " + (i + 1);
             ta.setPromptText(title);

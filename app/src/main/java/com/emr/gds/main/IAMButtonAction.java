@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.emr.gds.AbbdbControl;
 import com.emr.gds.IttiaApp;
 import com.emr.gds.input.IAITextAreaManager;
 
@@ -74,7 +73,7 @@ public class IAMButtonAction {
         Button btnManageDb = new Button(MANAGE_ABBREV_BUTTON_TEXT);
         btnManageDb.setOnAction(e -> {
             Stage ownerStage = (Stage) btnManageDb.getScene().getWindow();
-            AbbdbControl controller = new AbbdbControl(dbConn, abbrevMap, ownerStage, app);
+            IAMAbbdbControl controller = new IAMAbbdbControl(dbConn, abbrevMap, ownerStage, app);
             controller.showDbManagerDialog();
         });
 

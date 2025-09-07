@@ -1,4 +1,4 @@
-package com.emr.gds;
+package com.emr.gds.main;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -6,6 +6,8 @@ import java.sql.SQLException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import com.emr.gds.IttiaApp;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -27,14 +29,14 @@ import javafx.stage.Stage;
  * This class provides a modal dialog for adding, editing, and deleting
  * abbreviations, and for viewing the full list.
  */
-public class AbbdbControl {
+public class IAMAbbdbControl {
 
     private final Connection dbConn;
     private final Map<String, String> abbrevMap;
     private final Stage ownerStage;
     private final IttiaApp parentApp; // Reference to the main app for UI updates
 
-    public AbbdbControl(Connection dbConn, Map<String, String> abbrevMap, Stage ownerStage, IttiaApp parentApp) {
+    public IAMAbbdbControl(Connection dbConn, Map<String, String> abbrevMap, Stage ownerStage, IttiaApp parentApp) {
         this.dbConn = dbConn;
         this.abbrevMap = abbrevMap;
         this.ownerStage = ownerStage;
