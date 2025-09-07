@@ -1,6 +1,7 @@
 package com.emr.gds.main;
 
-import javafx.application.Platform;			
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.input.KeyCode;
@@ -31,6 +32,7 @@ public class IAMTextArea {
     
     // Double-click handlers for each TextArea
     private final Map<Integer, TextAreaDoubleClickHandler> doubleClickHandlers = new HashMap<>();
+    
     
     // ---- Constants ----
     public static final String[] TEXT_AREA_TITLES = {
@@ -186,15 +188,28 @@ public class IAMTextArea {
     }
     
     // ---- Individual Double-Click Handler Implementations ----
-    
     private void executeChiefComplaintHandler(TextArea textArea, int index) {
-        System.out.println("Executing Chief Complaint Handler...");
+        System.out.println("Executing Chief Complaint Handler for TextArea at index: " + index);
         try {
-            // Launch Chief Complaint specialized class
+            // Create the editor with database integration - it will automatically load abbreviations
             ChiefComplaintEditor ccEditor = new ChiefComplaintEditor(textArea);
-            ccEditor.show();
+            ccEditor.showAndWait(); // Use showAndWait to block until editor is closed
+            
+            System.out.println("Chief Complaint Editor closed successfully.");
+            
         } catch (Exception e) {
             System.err.println("Failed to launch Chief Complaint Editor: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Show error alert to user
+            Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+            errorAlert.setTitle("Editor Error");
+            errorAlert.setHeaderText("Failed to open Chief Complaint Editor");
+            errorAlert.setContentText("Error: " + e.getMessage() + 
+                                     "\n\nFalling back to default editor...");
+            errorAlert.showAndWait();
+            
+            // Fallback to default double-click action
             showDefaultDoubleClickAction("Chief Complaint", textArea, index);
         }
     }
