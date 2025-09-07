@@ -10,11 +10,11 @@ import java.util.Objects;
  * JavaFX implementation of TextAreaManager.
  * Ensures all mutations run on the JavaFX Application Thread.
  */
-public class FxTextAreaManager implements TextAreaManager {
+public class IAIFxTextAreaManager implements IAITextAreaManager {
     private final List<TextArea> areas;
     private int focusedIndex = AREA_CC;
 
-    public FxTextAreaManager(List<TextArea> areas) {
+    public IAIFxTextAreaManager(List<TextArea> areas) {
         if (areas == null || areas.size() < areaCount()) {
             throw new IllegalArgumentException(
                 "areas must contain 10 TextAreas (CC, PI, ROS, PMH, S, O, PE, A, P, Comment)"

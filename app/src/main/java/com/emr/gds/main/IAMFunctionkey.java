@@ -1,4 +1,4 @@
-package com.emr.gds;
+package com.emr.gds.main;
 
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
@@ -9,11 +9,13 @@ import javafx.scene.control.ButtonType;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.emr.gds.IttiaApp;
+
 /**
  * Function Key Handler for IttiaApp
  * Manages F1-F12 key bindings and their corresponding actions
  */
-public class IttiaAppFunctionkey {
+public class IAMFunctionkey {
     
     private final IttiaApp mainApp;
     private final Map<KeyCode, FunctionKeyAction> functionKeyActions;
@@ -30,7 +32,7 @@ public class IttiaAppFunctionkey {
      * Constructor
      * @param mainApp Reference to the main IttiaApp instance
      */
-    public IttiaAppFunctionkey(IttiaApp mainApp) {
+    public IAMFunctionkey(IttiaApp mainApp) {
         this.mainApp = mainApp;
         this.functionKeyActions = new HashMap<>();
         initializeFunctionKeyActions();
@@ -138,7 +140,7 @@ public class IttiaAppFunctionkey {
         try {
             // Insert HPI template as default quick template
             mainApp.insertTemplateIntoFocusedArea(
-                com.emr.gds.main.ListButtonAction.TemplateLibrary.HPI
+                com.emr.gds.main.IAMButtonAction.TemplateLibrary.HPI
             );
             showToast("HPI template inserted");
         } catch (Exception e) {

@@ -19,14 +19,15 @@ import java.util.StringJoiner;
 
 import javax.swing.SwingUtilities;
 
-import com.emr.gds.input.FreqInputFrame;
-import com.emr.gds.input.FxTextAreaManager;
-import com.emr.gds.input.IttiaAppMain;
-import com.emr.gds.input.TextAreaManager; // Import the interface
-import com.emr.gds.main.IttiaAppTextArea;
-import com.emr.gds.main.ListButtonAction;
-import com.emr.gds.main.ListProblemAction;
-import com.emr.gds.main.TextFormatUtil;
+import com.emr.gds.input.IAIFreqFrame;
+import com.emr.gds.input.IAIFxTextAreaManager;
+import com.emr.gds.input.IAIMain;
+import com.emr.gds.input.IAITextAreaManager; // Import the interface
+import com.emr.gds.main.IAMFunctionkey;
+import com.emr.gds.main.IAMTextArea;
+import com.emr.gds.main.IAMButtonAction;
+import com.emr.gds.main.IAMProblemAction;
+import com.emr.gds.main.IAMTextFormatUtil;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -73,13 +74,13 @@ public class IttiaApp extends Application {
     // ================================
     // INSTANCE VARIABLES
     // ================================
-    private ListProblemAction problemAction;
-    private ListButtonAction buttonAction;
-    private IttiaAppTextArea textAreaManager; // Manages the UI text areas
+    private IAMProblemAction problemAction;
+    private IAMButtonAction buttonAction;
+    private IAMTextArea textAreaManager; // Manages the UI text areas
     private Connection dbConn;
     private final Map<String, String> abbrevMap = new HashMap<>();
-    private FreqInputFrame freqStage; // Vital window management (singleton pattern for reuse)
-    private IttiaAppFunctionkey functionKeyHandler;
+    private IAIFreqFrame freqStage; // Vital window management (singleton pattern for reuse)
+    private IAMFunctionkey functionKeyHandler;
 
     // ================================
     // APPLICATION LIFECYCLE
@@ -121,10 +122,10 @@ public class IttiaApp extends Application {
     private void initializeApplicationComponents() throws SQLException, IOException, ClassNotFoundException {
         initAbbrevDatabase();
         // Initialize managers using 'this' after DB is ready
-        problemAction = new ListProblemAction(this);
-        textAreaManager = new IttiaAppTextArea(abbrevMap, problemAction);
-        buttonAction = new ListButtonAction(this, dbConn, abbrevMap);
-        functionKeyHandler = new IttiaAppFunctionkey(this);
+        problemAction = new IAMProblemAction(this);
+        textAreaManager = new IAMTextArea(abbrevMap, problemAction);
+        buttonAction = new IAMButtonAction(this, dbConn, abbrevMap);
+        functionKeyHandler = new IAMFunctionkey(this);
     }
 
     private void initAbbrevDatabase() throws ClassNotFoundException, SQLException, IOException {
@@ -228,7 +229,7 @@ public class IttiaApp extends Application {
         }
 
         if (freqStage == null || !freqStage.isShowing()) {
-            freqStage = new FreqInputFrame();
+            freqStage = new IAIFreqFrame();
         } else {
             freqStage.requestFocus();
             freqStage.toFront();
@@ -237,7 +238,7 @@ public class IttiaApp extends Application {
 
     private void openTemplateEditor() {
         SwingUtilities.invokeLater(() -> {
-            FU_edit editor = new FU_edit(templateContent ->
+            IAFMainEdit editor = new IAFMainEdit(templateContent ->
                 Platform.runLater(() -> textAreaManager.parseAndAppendTemplate(templateContent))
             );
             editor.setVisible(true);
@@ -264,11 +265,11 @@ public class IttiaApp extends Application {
             throw new IllegalStateException("EMR text areas not initialized. buildCenterAreas() must run first.");
         }
         // Set the global static manager for external access
-        IttiaAppMain.setTextAreaManager(new FxTextAreaManager(areas));
+        IAIMain.setTextAreaManager(new IAIFxTextAreaManager(areas));
     }
 
     private boolean isBridgeReady() {
-        return Optional.ofNullable(IttiaAppMain.getTextAreaManager()).map(TextAreaManager::isReady).orElse(false);
+        return Optional.ofNullable(IAIMain.getTextAreaManager()).map(IAITextAreaManager::isReady).orElse(false);
     }
 
     // ================================
@@ -283,7 +284,7 @@ public class IttiaApp extends Application {
     private void installGlobalKeyboardShortcuts(Scene scene) {
         Map<KeyCombination, Runnable> shortcuts = new HashMap<>();
 
-        shortcuts.put(new KeyCodeCombination(KeyCode.I, KeyCombination.CONTROL_DOWN), () -> insertTemplateIntoFocusedArea(ListButtonAction.TemplateLibrary.HPI));
+        shortcuts.put(new KeyCodeCombination(KeyCode.I, KeyCombination.CONTROL_DOWN), () -> insertTemplateIntoFocusedArea(IAMButtonAction.TemplateLibrary.HPI));
         shortcuts.put(new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN), this::formatCurrentArea);
         shortcuts.put(new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN), this::copyAllToClipboard);
 
@@ -305,7 +306,7 @@ public class IttiaApp extends Application {
     // TEXT MANIPULATION METHODS
     // ================================
 
-    public void insertTemplateIntoFocusedArea(ListButtonAction.TemplateLibrary template) {
+    public void insertTemplateIntoFocusedArea(IAMButtonAction.TemplateLibrary template) {
         textAreaManager.insertTemplateIntoFocusedArea(template);
     }
 
@@ -323,7 +324,7 @@ public class IttiaApp extends Application {
 
     public void clearAllText() {
         textAreaManager.clearAllTextAreas();
-        Optional.ofNullable(problemAction).ifPresent(ListProblemAction::clearScratchpad);
+        Optional.ofNullable(problemAction).ifPresent(IAMProblemAction::clearScratchpad);
         showToast("All text cleared");
     }
 
@@ -333,7 +334,7 @@ public class IttiaApp extends Application {
 
     public void copyAllToClipboard() {
         String compiledContent = compileAllContent();
-        String finalizedContent = TextFormatUtil.finalizeForEMR(compiledContent);
+        String finalizedContent = IAMTextFormatUtil.finalizeForEMR(compiledContent);
 
         ClipboardContent clipboardContent = new ClipboardContent();
         clipboardContent.putString(finalizedContent);
@@ -351,7 +352,7 @@ public class IttiaApp extends Application {
 
     private void addProblemListToContent(StringJoiner contentJoiner) {
         ObservableList<String> problems = Optional.ofNullable(problemAction)
-                                                  .map(ListProblemAction::getProblems)
+                                                  .map(IAMProblemAction::getProblems)
                                                   .orElse(null);
         if (problems != null && !problems.isEmpty()) {
             StringBuilder problemBuilder = new StringBuilder("# Problem List (as of ")
@@ -364,11 +365,11 @@ public class IttiaApp extends Application {
 
     private void addTextAreasToContent(StringJoiner contentJoiner) {
         List<TextArea> textAreas = Optional.ofNullable(textAreaManager)
-                                           .map(IttiaAppTextArea::getTextAreas)
+                                           .map(IAMTextArea::getTextAreas)
                                            .orElse(List.of()); // Return empty list if manager is null
 
         for (int i = 0; i < textAreas.size(); i++) {
-            String uniqueText = TextFormatUtil.getUniqueLines(textAreas.get(i).getText());
+            String uniqueText = IAMTextFormatUtil.getUniqueLines(textAreas.get(i).getText());
             if (!uniqueText.isEmpty()) {
                 String title = getAreaTitle(i);
                 contentJoiner.add("# " + title + "\n" + uniqueText);
@@ -377,8 +378,8 @@ public class IttiaApp extends Application {
     }
 
     private String getAreaTitle(int areaIndex) {
-        return (areaIndex < IttiaAppTextArea.TEXT_AREA_TITLES.length) ?
-                IttiaAppTextArea.TEXT_AREA_TITLES[areaIndex].replaceAll(">$", "") :
+        return (areaIndex < IAMTextArea.TEXT_AREA_TITLES.length) ?
+                IAMTextArea.TEXT_AREA_TITLES[areaIndex].replaceAll(">$", "") :
                 "Area " + (areaIndex + 1);
     }
 
@@ -428,7 +429,7 @@ public class IttiaApp extends Application {
     // GETTER METHODS (public for manager access)
     // ================================
 
-    public IttiaAppTextArea getTextAreaManager() {
+    public IAMTextArea getTextAreaManager() {
         return textAreaManager;
     }
 
@@ -440,7 +441,7 @@ public class IttiaApp extends Application {
         return abbrevMap;
     }
 
-    public IttiaAppFunctionkey getFunctionKeyHandler() {
+    public IAMFunctionkey getFunctionKeyHandler() {
         return functionKeyHandler;
     }
 }

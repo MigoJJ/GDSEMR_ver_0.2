@@ -8,7 +8,7 @@ package com.emr.gds.input;
  * providing a consistent way for different parts of the application to interact with
  * the input fields without direct coupling.
  */
-public interface TextAreaManager {
+public interface IAITextAreaManager {
 
     // ---- Section indices (avoid magic numbers for better readability) ----
     int AREA_CC      = 0; // Chief Complaint

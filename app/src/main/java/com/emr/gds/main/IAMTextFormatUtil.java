@@ -9,9 +9,9 @@ import java.util.function.UnaryOperator;
  * <p>This class provides methods for normalization, duplicate line removal,
  * bullet/whitespace cleanup, and EMR-safe final formatting. It cannot be instantiated.</p>
  */
-public final class TextFormatUtil {
+public final class IAMTextFormatUtil {
     /** Prevent instantiation. */
-    private TextFormatUtil() {}
+    private IAMTextFormatUtil() {}
     // -------------------------------------------------------------------------
     // Basic String Normalization
     // -------------------------------------------------------------------------

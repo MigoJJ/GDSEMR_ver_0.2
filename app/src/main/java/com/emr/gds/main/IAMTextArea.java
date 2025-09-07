@@ -16,18 +16,18 @@ import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
-import com.emr.gds.input.FxTextAreaManager;
-import com.emr.gds.input.IttiaAppMain;
-import com.emr.gds.input.TextAreaManager;
+import com.emr.gds.input.IAIFxTextAreaManager;
+import com.emr.gds.input.IAIMain;
+import com.emr.gds.input.IAITextAreaManager;
 import com.emr.gds.soap.ChiefComplaintEditor;
 import com.emr.gds.soap.EMRPMH;
 
-public class IttiaAppTextArea {
+public class IAMTextArea {
     // ---- Instance Variables ----
     private final List<TextArea> areas = new ArrayList<>(10);
     private TextArea lastFocusedArea = null;
     private final Map<String, String> abbrevMap;
-    private ListProblemAction problemAction;
+    private IAMProblemAction problemAction;
     
     // Double-click handlers for each TextArea
     private final Map<Integer, TextAreaDoubleClickHandler> doubleClickHandlers = new HashMap<>();
@@ -55,7 +55,7 @@ public class IttiaAppTextArea {
     }
     
     // ---- Constructor ----
-    public IttiaAppTextArea(Map<String, String> abbrevMap, ListProblemAction problemAction) {
+    public IAMTextArea(Map<String, String> abbrevMap, IAMProblemAction problemAction) {
         this.abbrevMap = abbrevMap;
         this.problemAction = problemAction;
         initializeDoubleClickHandlers();
@@ -159,7 +159,7 @@ public class IttiaAppTextArea {
             });
             
             // 수정된 TextFormatter 적용 - TextFormatUtil 사용
-            ta.setTextFormatter(new TextFormatter<>(TextFormatUtil.filterControlChars()));
+            ta.setTextFormatter(new TextFormatter<>(IAMTextFormatUtil.filterControlChars()));
             
             grid.add(ta, i % cols, i / cols);
             areas.add(ta);
@@ -234,7 +234,7 @@ public class IttiaAppTextArea {
         System.out.println("Executing Past Medical History Handler...");
         try {
             // Get the current TextAreaManager from IttiaAppMain
-            TextAreaManager manager = IttiaAppMain.getTextAreaManager();
+            IAITextAreaManager manager = IAIMain.getTextAreaManager();
             EMRPMH pmhDialog = new EMRPMH(manager);
             pmhDialog.setVisible(true);
         } catch (Exception e) {
@@ -381,7 +381,7 @@ public class IttiaAppTextArea {
     }
     
     // ---- Text Actions ----
-    public void insertTemplateIntoFocusedArea(ListButtonAction.TemplateLibrary t) {
+    public void insertTemplateIntoFocusedArea(IAMButtonAction.TemplateLibrary t) {
         insertBlockIntoFocusedArea(t.body());
     }
     
@@ -408,7 +408,7 @@ public class IttiaAppTextArea {
         }
         
         // TextFormatUtil의 autoFormat 메서드 사용 (중복 제거)
-        ta.setText(TextFormatUtil.autoFormat(ta.getText()));
+        ta.setText(IAMTextFormatUtil.autoFormat(ta.getText()));
     }
     
     public void clearAllTextAreas() {
@@ -433,17 +433,17 @@ public class IttiaAppTextArea {
     }
     
     public List<TextArea> getTextAreas() {
-        IttiaAppMain.setTextAreaManager(new FxTextAreaManager(areas));
+        IAIMain.setTextAreaManager(new IAIFxTextAreaManager(areas));
         return this.areas;
     }
     
     // TextFormatUtil에 있는 기능과 중복이므로 제거하거나 단순히 위임
     public String getUniqueLines(String text) {
-        return TextFormatUtil.getUniqueLines(text);
+        return IAMTextFormatUtil.getUniqueLines(text);
     }
     
     public static String normalizeLine(String s) {
-        return TextFormatUtil.normalizeLine(s);
+        return IAMTextFormatUtil.normalizeLine(s);
     }
     
     /**

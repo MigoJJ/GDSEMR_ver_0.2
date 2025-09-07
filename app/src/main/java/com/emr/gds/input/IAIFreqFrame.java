@@ -32,7 +32,7 @@ import java.util.Set;
  * - Vitals are saved to O> (index 5).
  * - HbA1c status line is appended to A> (index 7).
  */
-public class FreqInputFrame extends Stage {
+public class IAIFreqFrame extends Stage {
 
     // ------------------------------------------------------------
     // BMI section
@@ -74,7 +74,7 @@ public class FreqInputFrame extends Stage {
     // ------------------------------------------------------------
     // Constructor (build & show)
     // ------------------------------------------------------------
-    public FreqInputFrame() {
+    public IAIFreqFrame() {
         initStyle(StageStyle.UNDECORATED);
         setTitle("Frequent Data Input");
 
@@ -172,7 +172,7 @@ public class FreqInputFrame extends Stage {
                 return;
             }
             // Insert into the currently focused area (do not force a section change)
-            IttiaAppMain.getTextAreaManager().insertBlockIntoFocusedArea(details);
+            IAIMain.getTextAreaManager().insertBlockIntoFocusedArea(details);
 
             for (TextField f : bmiInputs) f.clear();
             bmiInputs[0].requestFocus();
@@ -291,8 +291,8 @@ public class FreqInputFrame extends Stage {
             if (hba1c > Double.parseDouble(status[0])) {
                 if (!bridgeReady()) return;
                 final String line = "\n...now [ " + status[1] + " ] controlled glucose status";
-                IttiaAppMain.getTextAreaManager().focusArea(9); // A>
-                IttiaAppMain.getTextAreaManager().insertLineIntoFocusedArea(line);
+                IAIMain.getTextAreaManager().focusArea(9); // A>
+                IAIMain.getTextAreaManager().insertLineIntoFocusedArea(line);
                 break;
             }
         }
@@ -312,11 +312,11 @@ public class FreqInputFrame extends Stage {
             return;
         }
         // O> index 5 (Objective)
-        IttiaAppMain.getTextAreaManager().focusArea(5);
+        IAIMain.getTextAreaManager().focusArea(5);
         if (text.contains("\n")) {
-            IttiaAppMain.getTextAreaManager().insertBlockIntoFocusedArea(text + "\n");
+            IAIMain.getTextAreaManager().insertBlockIntoFocusedArea(text + "\n");
         } else {
-            IttiaAppMain.getTextAreaManager().insertLineIntoFocusedArea(text);
+            IAIMain.getTextAreaManager().insertLineIntoFocusedArea(text);
         }
     }
 
@@ -457,12 +457,12 @@ public class FreqInputFrame extends Stage {
         }
 
         // Target O> index = 5
-        IttiaAppMain.getTextAreaManager().focusArea(5);
+        IAIMain.getTextAreaManager().focusArea(5);
         if (!desc.isEmpty()) {
-            IttiaAppMain.getTextAreaManager().insertLineIntoFocusedArea(desc);
+            IAIMain.getTextAreaManager().insertLineIntoFocusedArea(desc);
         }
         if (!out.isEmpty()) {
-            IttiaAppMain.getTextAreaManager().insertLineIntoFocusedArea("\t" + out);
+            IAIMain.getTextAreaManager().insertLineIntoFocusedArea("\t" + out);
         }
         resetVitalsFields();
     }
@@ -500,7 +500,7 @@ public class FreqInputFrame extends Stage {
     // ============================================================
     private static boolean bridgeReady() {
         try {
-            return IttiaAppMain.getTextAreaManager().isReady();
+            return IAIMain.getTextAreaManager().isReady();
         } catch (Throwable t) {
             return false;
         }

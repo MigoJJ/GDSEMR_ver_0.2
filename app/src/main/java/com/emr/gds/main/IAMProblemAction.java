@@ -20,9 +20,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import com.emr.gds.IttiaApp;
-import com.emr.gds.main.IttiaAppTextArea;
+import com.emr.gds.main.IAMTextArea;
 
-public class ListProblemAction {
+public class IAMProblemAction {
     // ==== Layout tuning (adjust as you like) ====
     private static final double SIDEBAR_WIDTH_PX = 460;     // overall width of this left pane
     private static final int    SCRATCHPAD_ROWS   = 35;      // fewer rows = shorter TextArea
@@ -57,7 +57,7 @@ public class ListProblemAction {
     }
 
     // ---- Constructor ----
-    public ListProblemAction(IttiaApp app) {
+    public IAMProblemAction(IttiaApp app) {
         this.app = app;
         initProblemListDatabase();
         loadProblemsFromDb();
@@ -196,7 +196,7 @@ public class ListProblemAction {
         TextField input = new TextField();
         input.setPromptText("Add problem and press Enter");
         input.setOnAction(e -> {
-            String text = IttiaAppTextArea.normalizeLine(input.getText());
+            String text = IAMTextArea.normalizeLine(input.getText());
             if (!text.isBlank()) {
                 addProblem(text); // Persist to DB and update UI
                 input.clear();
@@ -271,7 +271,7 @@ public class ListProblemAction {
     public void redrawScratchpad() {
         if (scratchpadArea == null) return;
 
-        List<String> orderedTitles = Arrays.asList(IttiaAppTextArea.TEXT_AREA_TITLES);
+        List<String> orderedTitles = Arrays.asList(IAMTextArea.TEXT_AREA_TITLES);
         StringJoiner sj = new StringJoiner("\n");
 
         for (String title : orderedTitles) {

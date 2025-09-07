@@ -18,7 +18,7 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class FU_edit extends JFrame {
+public class IAFMainEdit extends JFrame {
     // === Canonical section titles (labels) ===
     public static final String[] TEXT_AREA_TITLES = {
             "CC>", "PI>", "ROS>", "PMH>", "S>",
@@ -63,7 +63,7 @@ public class FU_edit extends JFrame {
         return repoRoot().resolve("app").resolve("db").resolve("emr_templates.db");
     }
 
-    public FU_edit(Consumer<String> onTemplateSelectedCallback) {
+    public IAFMainEdit(Consumer<String> onTemplateSelectedCallback) {
         this.onTemplateSelectedCallback = onTemplateSelectedCallback;
         dbManager = new DatabaseManager();
         dbManager.ensureDbDirectory();
@@ -86,7 +86,7 @@ public class FU_edit extends JFrame {
     // Optional local test harness
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() ->
-                new FU_edit(content -> {
+                new IAFMainEdit(content -> {
                     JTextArea preview = new JTextArea(content, 25, 80);
                     preview.setFont(new Font("Monospaced", Font.PLAIN, 12));
                     preview.setLineWrap(true);

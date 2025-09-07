@@ -17,7 +17,7 @@ import java.util.Map;
  * Manages the central grid of TextAreas for the EMR application.
  * This class handles the creation, layout, and event handling for the note-taking areas.
  */
-public class CenterPaneManager {
+public class IAMCenterPaneManager {
     public static final String[] TEXT_AREA_TITLES = {
             "CC>", "PI>", "ROS>", "PMH>", "S>",
             "O>", "Physical Exam>", "A>", "P>", "Comment>"
@@ -29,10 +29,10 @@ public class CenterPaneManager {
     private TextArea lastFocusedArea = null;
 
     private final Map<String, String> abbrevMap;
-    private final ListProblemAction problemAction;
+    private final IAMProblemAction problemAction;
 
     // ---- Constructor ----
-    public CenterPaneManager(Map<String, String> abbrevMap, ListProblemAction problemAction) {
+    public IAMCenterPaneManager(Map<String, String> abbrevMap, IAMProblemAction problemAction) {
         this.abbrevMap = abbrevMap;
         this.problemAction = problemAction;
         this.gridPane = buildCenterAreas();
@@ -99,7 +99,7 @@ public class CenterPaneManager {
     public void formatFocusedArea() {
         TextArea ta = getFocusedArea();
         if (ta == null) return;
-        ta.setText(TextFormatUtil.autoFormat(ta.getText()));
+        ta.setText(IAMTextFormatUtil.autoFormat(ta.getText()));
     }
 
     /**
@@ -141,7 +141,7 @@ public class CenterPaneManager {
             // Add abbreviation expansion logic
             addAbbreviationHandler(ta);
 
-            ta.setTextFormatter(new TextFormatter<>(TextFormatUtil.filterControlChars()));
+            ta.setTextFormatter(new TextFormatter<>(IAMTextFormatUtil.filterControlChars()));
 
             grid.add(ta, i % cols, i / cols);
             areas.add(ta);

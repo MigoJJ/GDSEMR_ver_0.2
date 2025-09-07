@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 import com.emr.gds.AbbdbControl;
 import com.emr.gds.IttiaApp;
-import com.emr.gds.input.TextAreaManager;
+import com.emr.gds.input.IAITextAreaManager;
 
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
@@ -23,7 +23,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 
-public class ListButtonAction {
+public class IAMButtonAction {
     // ---- Constants ----
     private static final String TEMPLATE_MENU_TEXT = "Templates";
     private static final String INSERT_TEMPLATE_BUTTON_TEXT = "Insert Template (Ctrl+I)";
@@ -32,7 +32,7 @@ public class ListButtonAction {
     private static final String MANAGE_ABBREV_BUTTON_TEXT = "Manage Abbrs...";
     private static final String CLEAR_ALL_BUTTON_TEXT = "CE";
     private static final String HINT_LABEL_TEXT = "Focus area: Ctrl+1..Ctrl+0 | Double-click problem to insert";
-    private static final int HPI_DEFAULT_FOCUS_AREA_INDEX = TextAreaManager.AREA_S; // Example: AREA_S (index 4) or AREA_O (index 5)
+    private static final int HPI_DEFAULT_FOCUS_AREA_INDEX = IAITextAreaManager.AREA_S; // Example: AREA_S (index 4) or AREA_O (index 5)
     
     // ---- Instance Variables ----
     private final IttiaApp app;
@@ -40,7 +40,7 @@ public class ListButtonAction {
     private final Map<String, String> abbrevMap;
 
     // ---- Constructor ----
-    public ListButtonAction(IttiaApp app, Connection dbConn, Map<String, String> abbrevMap) {
+    public IAMButtonAction(IttiaApp app, Connection dbConn, Map<String, String> abbrevMap) {
         this.app = app;
         this.dbConn = dbConn;
         this.abbrevMap = abbrevMap;

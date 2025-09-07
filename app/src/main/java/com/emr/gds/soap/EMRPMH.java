@@ -6,13 +6,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ItemEvent;
 import java.util.*;
 import javax.swing.*;
-import com.emr.gds.input.TextAreaManager;
+import com.emr.gds.input.IAITextAreaManager;
 
 /**
  * Compact EMR Past Medical History (PMH) dialog.
  */
 public class EMRPMH extends JFrame {
-    private final TextAreaManager textAreaManager;
+    private final IAITextAreaManager textAreaManager;
 
     private final JTextArea selectedArea = textArea(6, 10, true);
     private final JTextArea displayArea  = textArea(12, 50, false);
@@ -37,7 +37,7 @@ public class EMRPMH extends JFrame {
     private final Map<String, JCheckBox> boxes = new LinkedHashMap<>();
     private final Map<String, Boolean>   selectionMap = new LinkedHashMap<>();
 
-    public EMRPMH(TextAreaManager manager) {
+    public EMRPMH(IAITextAreaManager manager) {
         this.textAreaManager = manager;
         initFrame();
         buildCheckBoxes();
@@ -141,7 +141,7 @@ public class EMRPMH extends JFrame {
         block.append(renderGrid(true));
 
         try {
-            textAreaManager.insertBlockIntoArea(TextAreaManager.AREA_PMH, block.toString(), true);
+            textAreaManager.insertBlockIntoArea(IAITextAreaManager.AREA_PMH, block.toString(), true);
             JOptionPane.showMessageDialog(this, "Past Medical History text and selections appended and saved.");
             dispose();
         } catch (Exception ex) {

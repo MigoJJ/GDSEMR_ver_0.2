@@ -8,20 +8,20 @@ import java.util.concurrent.atomic.AtomicReference;
  * Global holder for the TextAreaManager bridge.
  * Register once after the 10 TextAreas are created.
  */
-public final class IttiaAppMain {
-    private static final AtomicReference<TextAreaManager> MANAGER = new AtomicReference<>(null);
+public final class IAIMain {
+    private static final AtomicReference<IAITextAreaManager> MANAGER = new AtomicReference<>(null);
 
-    private IttiaAppMain() {}
+    private IAIMain() {}
 
     /** Register the bridge. Must be called after the 10 TextAreas exist. */
-    public static void setTextAreaManager(TextAreaManager manager) {
+    public static void setTextAreaManager(IAITextAreaManager manager) {
         Objects.requireNonNull(manager, "TextAreaManager must not be null");
         MANAGER.set(manager);
     }
 
     /** Get the bridge or throw if missing. */
-    public static TextAreaManager getTextAreaManager() {
-        TextAreaManager m = MANAGER.get();
+    public static IAITextAreaManager getTextAreaManager() {
+        IAITextAreaManager m = MANAGER.get();
         if (m == null) {
             throw new IllegalStateException(
                 "TextAreaManager not set. Call IttiaAppMain.setTextAreaManager(...) after creating the 10 EMR TextAreas."
@@ -31,7 +31,7 @@ public final class IttiaAppMain {
     }
 
     /** Optional getter without exception. */
-    public static Optional<TextAreaManager> maybeManager() {
+    public static Optional<IAITextAreaManager> maybeManager() {
         return Optional.ofNullable(MANAGER.get());
     }
 
