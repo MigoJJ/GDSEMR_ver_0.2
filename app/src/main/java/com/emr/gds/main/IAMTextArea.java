@@ -21,6 +21,7 @@ import com.emr.gds.input.IAIMain;
 import com.emr.gds.input.IAITextAreaManager;
 import com.emr.gds.soap.ChiefComplaintEditor;
 import com.emr.gds.soap.EMRPMH;
+import com.emr.gds.soap.IMSPresentIllness;
 
 /**
  * Manages the central text areas in the EMR application.
@@ -228,7 +229,12 @@ public class IAMTextArea {
     }
 
     private void executePresentIllnessHandler(TextArea textArea, int index) {
-        executeReflectionBasedEditor("com.emr.gds.main.PresentIllnessEditor", "Present Illness", textArea, index);
+        try {
+        	IMSPresentIllness pi = new IMSPresentIllness(textArea);
+            pi.showAndWait();
+        } catch (Exception e) {
+            handleEditorException("Chief Complaint", textArea, index, e);
+        }    
     }
 
     private void executeReviewOfSystemsHandler(TextArea textArea, int index) {
