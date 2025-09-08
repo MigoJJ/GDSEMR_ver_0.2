@@ -42,7 +42,8 @@ public class ChiefComplaintEditor {
     private final String[] ccTemplates = {
             "Chest pain", "Shortness of breath", "Abdominal pain",
             "Headache", "Back pain", "Nausea and vomiting",
-            "Fever", "Cough", "Dizziness", "Fatigue",
+            "Fever", "Cough", "Dizziness", "Fatigue","Vertigo","Palpitation",
+            "Myalgia", "Sorethroat", "BP fluctuation", "Cholesterol LDL F/U",
              };
     
     public ChiefComplaintEditor(TextArea sourceTextArea) {
