@@ -19,6 +19,7 @@ import java.util.StringJoiner;
 
 import javax.swing.SwingUtilities;
 
+import com.emr.gds.fourgate.DEXA;
 import com.emr.gds.input.IAIFreqFrame;
 import com.emr.gds.input.IAIFxTextAreaManager;
 import com.emr.gds.input.IAIMain;
@@ -184,10 +185,14 @@ public class IttiaApp extends Application {
 
         Button vitalButton = new Button("Vital BP & HbA1c");
         vitalButton.setOnAction(e -> openVitalWindow());
+        
+        Button dexaButton = new Button("DEXA");
+        dexaButton.setOnAction(e -> DEXA.main(null));
 
         topBar.getItems().addAll(
             new Separator(), templateButton,
-            new Separator(), vitalButton
+            new Separator(), vitalButton,
+            new Separator(), dexaButton
         );
         return topBar;
     }
