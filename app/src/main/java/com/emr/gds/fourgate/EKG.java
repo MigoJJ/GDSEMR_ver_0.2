@@ -1,6 +1,6 @@
 package com.emr.gds.fourgate;
 
-import javax.swing.*;
+import javax.swing.*;	
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 

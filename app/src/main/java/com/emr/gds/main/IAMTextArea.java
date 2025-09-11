@@ -40,17 +40,16 @@ public class IAMTextArea {
             "O>", "Physical Exam>", "A>", "P>", "Comment>"
     };
 
- // ---- Paul Gauguin Theme (warm earth + tropical sea) ----
     private static final String BASE_TEXT_TWEAKS =
-            "-fx-prompt-text-fill: rgba(0,0,0,0.55);" +   // keep
-            "-fx-highlight-fill: rgba(0,0,0,0.15);" +     // keep
-            "-fx-highlight-text-fill: #000000;";          // keep
+            "-fx-prompt-text-fill: rgba(0,0,0,0.55);" +
+            "-fx-highlight-fill: rgba(0,0,0,0.15);" +
+            "-fx-highlight-text-fill: #000000;";
 
     // Unfocused: sun-washed sand/ochre
     private static final String STYLE_UNFOCUSED =
-            "-fx-background-color: linear-gradient(135deg,#F7E6B5,#EED28A,#DCC06A);" +
-            "-fx-text-fill: #0A2540;" +                  // keep font color
-            "-fx-border-color: #C97B2B;" +               // burnt sienna edge
+            "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #F7E6B5, #EED28A, #DCC06A);" +
+            "-fx-text-fill: #0A2540;" +
+            "-fx-border-color: #C97B2B;" +
             "-fx-border-width: 1.5;" +
             "-fx-background-insets: 0;" +
             "-fx-background-radius: 9;" +
@@ -60,9 +59,9 @@ public class IAMTextArea {
 
     // Focused: bold saffron → coral (high attention)
     private static final String STYLE_FOCUSED =
-            "-fx-background-color: linear-gradient(135deg,#FFD27E,#FFB45A,#FF8A4C);" +
-            "-fx-text-fill: #0A2540;" +                  // keep font color for readability
-            "-fx-border-color: #8C3B2E;" +               // mahogany accent
+            "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #FFD27E, #FFB45A, #FF8A4C);" +
+            "-fx-text-fill: #0A2540;" +
+            "-fx-border-color: #8C3B2E;" +
             "-fx-border-width: 3;" +
             "-fx-background-insets: 0;" +
             "-fx-background-radius: 9;" +
@@ -72,16 +71,15 @@ public class IAMTextArea {
 
     // Hover: tropical lagoon teals
     private static final String STYLE_HOVER =
-            "-fx-background-color: linear-gradient(135deg,#CFE9DF,#A7D8C6,#7FC6B3);" +
-            "-fx-text-fill: #0A2540;" +                  // keep font color
-            "-fx-border-color: #2C8C7A;" +               // deep teal ring
+            "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #CFE9DF, #A7D8C6, #7FC6B3);" +
+            "-fx-text-fill: #0A2540;" +
+            "-fx-border-color: #2C8C7A;" +
             "-fx-border-width: 2;" +
             "-fx-background-insets: 0;" +
             "-fx-background-radius: 9;" +
             "-fx-border-radius: 9;" +
             "-fx-effect: dropshadow(gaussian, rgba(44,140,122,0.40), 10, 0.25, 0, 1);" +
             BASE_TEXT_TWEAKS;
-
 
 
     // ================================
