@@ -1,6 +1,6 @@
 package com.emr.gds.fourgate;
 
-import javafx.application.Platform;
+import javafx.application.Platform;	
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -250,40 +250,76 @@ public class ChestPA extends Stage {
             }
         }
         String customText = customTextArea.getText().trim();
-        if (!customText.isEmpty()) selectedFindings.add(customText);
-        return selectedFindings.isEmpty() ? "Clear" : String.join(", ", selectedFindings);
+        if (!customText.isEmpty()) {
+            selectedFindings.add(customText);
+        }
+        return selectedFindings.isEmpty() ? "" : String.join(", ", selectedFindings);
     }
 
     private String generateReport(String trachea, String bones, String cardiac, String diaphragm,
                                   String effusions, String devices, String comparison, String history,
                                   String rulf, String rmlf, String rllf, String lulf, String lmlf, String lllf) {
         StringBuilder sb = new StringBuilder("CHEST PA SYSTEMATIC REVIEW\n----------------------------\n\n");
-        appendSection(sb, "A. Airways", "Trachea", trachea);
-        appendSection(sb, "B. Bones", "Findings", bones);
-        appendSection(sb, "C. Cardiac", "Findings", cardiac);
-        appendSection(sb, "D. Diaphragm", "Findings", diaphragm);
-        appendSection(sb, "E. Effusions/Fields", "Findings", effusions);
-        appendSection(sb, "Devices and Foreign Bodies", "Findings", devices);
-        sb.append("Comparison and Review:\n")
-                .append("   - Comparison: ").append(isEmpty(comparison) ? "Not documented" : comparison).append("\n")
-                .append("   - History: ").append(isEmpty(history) ? "Not documented" : history).append("\n\n")
-                .append("Structured Lung Field Documentation:\n");
-        appendLungField(sb, "RULF", rulf);
-        appendLungField(sb, "RMLF", rmlf);
-        appendLungField(sb, "RLLF", rllf);
-        appendLungField(sb, "LULF", lulf);
-        appendLungField(sb, "LMLF", lmlf);
-        appendLungField(sb, "LLLF", lllf);
+
+        // Only append sections with non-empty, non-"Not documented" findings
+        if (!isEmpty(trachea) && !trachea.equals("Not documented")) {
+            appendSection(sb, "✓. Airways", "Trachea", trachea);
+        }
+        if (!isEmpty(bones) && !bones.equals("Not documented")) {
+            appendSection(sb, "✓. Bones", "Findings", bones);
+        }
+        if (!isEmpty(cardiac) && !cardiac.equals("Not documented")) {
+            appendSection(sb, "✓. Cardiac", "Findings", cardiac);
+        }
+        if (!isEmpty(diaphragm) && !diaphragm.equals("Not documented")) {
+            appendSection(sb, "✓. Diaphragm", "Findings", diaphragm);
+        }
+        if (!isEmpty(effusions) && !effusions.equals("Not documented")) {
+            appendSection(sb, "✓. Effusions/Fields", "Findings", effusions);
+        }
+        if (!isEmpty(devices) && !devices.equals("Not documented")) {
+            appendSection(sb, "Devices and Foreign Bodies", "Findings", devices);
+        }
+
+        // Append Comparison and Review section only if comparison or history has valid data
+        boolean hasComparisonOrHistory = (!isEmpty(comparison) && !comparison.equals("Not documented")) ||
+                                        (!isEmpty(history) && !history.equals("Not documented"));
+        if (hasComparisonOrHistory) {
+            sb.append("Comparison and Review:\n");
+            if (!isEmpty(comparison) && !comparison.equals("Not documented")) {
+                sb.append("   - Comparison: ").append(comparison).append("\n");
+            }
+            if (!isEmpty(history) && !history.equals("Not documented")) {
+                sb.append("   - History: ").append(history).append("\n");
+            }
+            sb.append("\n");
+        }
+
+        // Only append lung field section if there are findings
+        boolean hasLungFindings = !isEmpty(rulf) || !isEmpty(rmlf) || !isEmpty(rllf) || 
+                                 !isEmpty(lulf) || !isEmpty(lmlf) || !isEmpty(lllf);
+        if (hasLungFindings) {
+            sb.append("Structured Lung Field Documentation:\n");
+            appendLungField(sb, "RULF", rulf);
+            appendLungField(sb, "RMLF", rmlf);
+            appendLungField(sb, "RLLF", rllf);
+            appendLungField(sb, "LULF", lulf);
+            appendLungField(sb, "LMLF", lmlf);
+            appendLungField(sb, "LLLF", lllf);
+        }
+
         return sb.toString();
     }
 
     private void appendSection(StringBuilder sb, String section, String name, String text) {
         sb.append(section).append(":\n   - ").append(name).append(": ")
-                .append(isEmpty(text) ? "Not documented" : text).append("\n\n");
+                .append(text).append("\n\n");
     }
 
     private void appendLungField(StringBuilder sb, String zone, String findings) {
-        sb.append("   - ").append(zone).append(": ").append(isEmpty(findings) ? "Clear" : findings).append("\n");
+        if (!isEmpty(findings)) {
+            sb.append("   - ").append(zone).append(": ").append(findings).append("\n");
+        }
     }
 
     private static boolean isEmpty(String s) { return s == null || s.trim().isEmpty(); }
