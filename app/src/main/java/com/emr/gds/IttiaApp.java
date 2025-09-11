@@ -1,6 +1,6 @@
 package com.emr.gds;
 
-import java.io.IOException;	
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -19,16 +19,17 @@ import java.util.StringJoiner;
 
 import javax.swing.SwingUtilities;
 
+import com.emr.gds.fourgate.ChestPA;
 import com.emr.gds.fourgate.DEXA;
 import com.emr.gds.fourgate.EKG;
 import com.emr.gds.input.IAIFreqFrame;
 import com.emr.gds.input.IAIFxTextAreaManager;
 import com.emr.gds.input.IAIMain;
 import com.emr.gds.input.IAITextAreaManager; // Import the interface
-import com.emr.gds.main.IAMFunctionkey;
-import com.emr.gds.main.IAMTextArea;
 import com.emr.gds.main.IAMButtonAction;
+import com.emr.gds.main.IAMFunctionkey;
 import com.emr.gds.main.IAMProblemAction;
+import com.emr.gds.main.IAMTextArea;
 import com.emr.gds.main.IAMTextFormatUtil;
 
 import javafx.application.Application;
@@ -83,6 +84,7 @@ public class IttiaApp extends Application {
     private final Map<String, String> abbrevMap = new HashMap<>();
     private IAIFreqFrame freqStage; // Vital window management (singleton pattern for reuse)
     private IAMFunctionkey functionKeyHandler;
+    private Stage mainStage;
 
     // ================================
     // APPLICATION LIFECYCLE
@@ -93,15 +95,16 @@ public class IttiaApp extends Application {
     }
 
     @Override
-    public void start(Stage stage) {
-        stage.setTitle(APP_TITLE);
+    public void start(Stage primaryStage) {
+        this.mainStage = primaryStage;
+        primaryStage.setTitle(APP_TITLE);
 
         try {
             initializeApplicationComponents(); // Initialize data, managers, DB
             BorderPane root = buildRootLayout(); // Build UI
             Scene scene = new Scene(root, SCENE_WIDTH, SCENE_HEIGHT);
-            stage.setScene(scene);
-            stage.show();
+            primaryStage.setScene(scene);
+            primaryStage.show();
             configurePostShow(scene); // Setup after showing stage
         } catch (Exception e) {
             showFatalError("Application Startup Error", "Failed to start the application: " + e.getMessage(), e);
@@ -192,12 +195,20 @@ public class IttiaApp extends Application {
         
         Button ekgButton = new Button("EKG");
         ekgButton.setOnAction(e -> EKG.main(null));
-
+        
+        Button cpaButton = new Button("ChestPA");
+        cpaButton.setOnAction(event -> {
+            // Use the class field 'mainStage' here
+            ChestPA chestPAWindow = new ChestPA(mainStage);
+            chestPAWindow.show();
+        });
+        
         topBar.getItems().addAll(
             new Separator(), templateButton,
             new Separator(), vitalButton,
             new Separator(), dexaButton,
-            new Separator(), ekgButton
+            new Separator(), ekgButton,
+            new Separator(), cpaButton
 
         );
         return topBar;
