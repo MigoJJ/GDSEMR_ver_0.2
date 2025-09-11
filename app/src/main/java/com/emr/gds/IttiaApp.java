@@ -20,6 +20,7 @@ import java.util.StringJoiner;
 import javax.swing.SwingUtilities;
 
 import com.emr.gds.fourgate.DEXA;
+import com.emr.gds.fourgate.EKG;
 import com.emr.gds.input.IAIFreqFrame;
 import com.emr.gds.input.IAIFxTextAreaManager;
 import com.emr.gds.input.IAIMain;
@@ -188,11 +189,16 @@ public class IttiaApp extends Application {
         
         Button dexaButton = new Button("DEXA");
         dexaButton.setOnAction(e -> DEXA.main(null));
+        
+        Button ekgButton = new Button("EKG");
+        ekgButton.setOnAction(e -> EKG.main(null));
 
         topBar.getItems().addAll(
             new Separator(), templateButton,
             new Separator(), vitalButton,
-            new Separator(), dexaButton
+            new Separator(), dexaButton,
+            new Separator(), ekgButton
+
         );
         return topBar;
     }
