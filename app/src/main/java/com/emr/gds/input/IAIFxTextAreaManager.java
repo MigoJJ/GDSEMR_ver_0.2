@@ -1,6 +1,6 @@
 package com.emr.gds.input;
 
-import javafx.application.Platform;
+import javafx.application.Platform;	
 import javafx.scene.control.TextArea;
 
 import java.util.List;

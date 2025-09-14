@@ -129,6 +129,7 @@ public class IAMButtonAction {
         
         // Add any special-purpose buttons that don't come from the template library
         tb.getItems().add(createVaccineButton("Vaccine"));
+        tb.getItems().add(createKCD9Button("KCD-9"));
         
         tb.setPadding(new Insets(8, 0, 0, 0));
         return tb;
@@ -162,12 +163,23 @@ public class IAMButtonAction {
     private Button createVaccineButton(String title) {
         Button b = new Button(title);
         b.setOnAction(e -> {
-            // This button has a custom action to call another program's main method.
-            com.emr.gds.fourgate.vaccine.VaccineMain.main(new String[]{});
+            try {
+                com.emr.gds.fourgate.vaccine.VaccineMain.main(new String[]{});
+            } catch (Exception ex) {
+                System.err.println("Failed to launch Vaccine application: " + ex.getMessage());
+                // You could also show a dialog to the user here.
+            }
         });
         return b;
     }
 
+    private Button createKCD9Button(String title) {
+        Button b = new Button(title);
+        b.setOnAction(e -> {
+            com.emr.gds.fourgate.KCDdatabase.KCDDatabaseManagerSwing.main(null);
+        });
+        return b;
+    }
     /**
      * Opens the abbreviation manager dialog.
      */
