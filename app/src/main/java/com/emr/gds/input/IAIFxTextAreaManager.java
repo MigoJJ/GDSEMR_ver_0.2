@@ -1,6 +1,6 @@
 package com.emr.gds.input;
 
-import javafx.application.Platform;	
+import javafx.application.Platform;		
 import javafx.scene.control.TextArea;
 
 import java.util.List;
@@ -76,4 +76,10 @@ public class IAIFxTextAreaManager implements IAITextAreaManager {
     private static String ensureTrailingNewline(String s) {
         return s.endsWith("\n") ? s : (s + "\n");
     }
+
+	@Override
+	public void appendTextToSection(int index, String text) {
+		// TODO Auto-generated method stub
+		
+	}
 }

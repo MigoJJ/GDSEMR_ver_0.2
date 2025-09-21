@@ -1,3 +1,4 @@
+// File: app/src/main/java/com/emr/gds/input/IAITextAreaManager.java
 package com.emr.gds.input;
 
 /**
@@ -49,11 +50,18 @@ public interface IAITextAreaManager {
     // ---- Optional conveniences / defaults ----
 
     /**
-     * Same as {@link #insertBlockIntoFocusedArea(String)}; provided for API symmetry
-     * when an insertion might not require immediately moving focus.
-     * @param block The string block to insert.
+     * Appends text to a specific text area.
+     * @param index The index of the target text area.
+     * @param text The string to append.
      */
-    default void insertBlockIntoFocusedAreaNoFocus(String block) {
+    public static void appendTextToSection(String section, String text) {
+    }
+    static int getIndexForSection(String section) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	default void insertBlockIntoFocusedAreaNoFocus(String block) {
         insertBlockIntoFocusedArea(block);
     }
 
@@ -95,4 +103,5 @@ public interface IAITextAreaManager {
         if (moveFocus) focusArea(index);
         insertLineIntoFocusedArea(line);
     }
-}
+
+    void appendTextToSection(int section, String text);	}

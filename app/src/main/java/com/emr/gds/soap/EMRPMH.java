@@ -37,9 +37,9 @@ public class EMRPMH extends JFrame {
             {"Cancer", "Operation", "Thyroid Disease"},
             {"Asthma", "Pneumonia", "Tuberculosis"},
             {"GERD", "Hepatitis A / B", "Gout"},
-            {"CVA", "Depression", "Cognitive Disorder"},
             {"AMI", "Angina Pectoris", "Arrhythmia"},
-            {"Arthritis", "Hearing Loss", "Parkinson's Disease"},
+            {"CVA", "Depression", "Cognitive Disorder"},
+            {"Anxiety", "Hearing Loss", "Parkinson's Disease"},
             {"Allergy", "All denied allergies..."},
             {"Food", "Injection", "Medication"}
     };
@@ -182,7 +182,7 @@ public class EMRPMH extends JFrame {
         
         // Add the grid with actual selection state (not all empty boxes)
         block.append(renderGrid(true));
-        
+        block.append("---------------------------\n");
         return block.toString();
     }
     

@@ -1,6 +1,8 @@
 package com.emr.gds.main;
 
 import javafx.application.Platform;
+import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextFormatter;
@@ -9,7 +11,9 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
+import javafx.stage.Stage;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -22,6 +26,7 @@ import com.emr.gds.input.IAITextAreaManager;
 import com.emr.gds.soap.ChiefComplaintEditor;
 import com.emr.gds.soap.EMRPMH;
 import com.emr.gds.soap.IMSPresentIllness;
+import com.emr.gds.soap.IMSFollowUp.PlanFollowupAction;
 
 /**
  * Manages the central text areas in the EMR application.
@@ -266,8 +271,15 @@ public class IAMTextArea {
     }
 
     private void executePlanHandler(TextArea textArea, int index) {
-        executeReflectionBasedEditor("com.emr.gds.main.PlanEditor", "Plan", textArea, index);
+        try {
+            IAITextAreaManager manager = IAIMain.getTextAreaManager();
+            PlanFollowupAction planFollowupAction = new PlanFollowupAction(manager, problemAction);
+            planFollowupAction.showAndWait();
+        } catch (Exception e) {
+            handleEditorException("Plan & Follow-up Assistant", textArea, index, e);
+        }
     }
+     
 
     private void executeCommentHandler(TextArea textArea, int index) {
         executeReflectionBasedEditor("com.emr.gds.main.CommentEditor", "Comment", textArea, index);

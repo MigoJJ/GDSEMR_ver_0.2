@@ -1,0 +1,6 @@
+--- Checking Versions ---
+Ubuntu: Ubuntu 25.04
+Java: 21.0.8
+JavaFX: 11.0.11+1-6
+Gradle: 9.0.0
+Git: 2.51.0
