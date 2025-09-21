@@ -1,192 +1,102 @@
-좋습니다 👍 지금까지 분석한 `IttiaApp.java`와 현재 \*\*최신 구조(멀티모듈 Gradle + JavaFX 21 + 분리 클래스 구조)\*\*를 기준으로, 개발자용 README/개발자 가이드 문서를 작성해 드리겠습니다.
-이 문서는 **새로 합류한 개발자**가 프로젝트 구조와 주요 클래스 책임을 빠르게 이해하고, 확장/수정 포인트를 알 수 있도록 구성했습니다.
+Got it 👍 I unpacked your uploaded file **`Ittia.zip`** and analyzed the project.
+Here’s a **summary list** of its structure and purpose:
 
 ---
 
-# 📖 GDSEMR Ittia – 개발자 가이드 (최신 구조 기준)
+## 📦 **Project Analysis: Ittia.zip**
 
-## 1. 프로젝트 개요
+### 1. **Overall Purpose**
 
-**GDSEMR Ittia**는 JavaFX 기반 **전자 의료 기록(EMR) 프로토타입**입니다.
-의료 기록 입력을 효율화하기 위해:
+* Prototype of an **EMR (Electronic Medical Record) application** called **GDSEMRittia**.
+* Built for **physicians**, focusing on:
 
-* **10개 텍스트 섹션(CC, PI, ROS, PMH, S, O, Physical Exam, A, P, Comment)** 제공
-* **약어 자동 확장(\:key → full text)** 지원
-* **템플릿 삽입 / 자동 포맷팅 / 클립보드 복사** 기능 내장
-* **SQLite 기반 약어 DB 관리** 내장
-* **문제 리스트 관리 + 보조 입력 위젯**과 연동
-
----
-
-## 2. 모듈 및 디렉토리 구조
-
-```
-GDSEMRittia/
- ├── app/                 # 메인 애플리케이션
- │    └── src/main/java/com/emr/gds/
- │         ├── IttiaApp.java          # JavaFX Application 엔트리포인트
- │         ├── IttiaAppTextArea.java  # 10개 TextArea 관리 + 약어 확장
- │         ├── input/
- │         │     ├── IttiaAppMain.java    # 글로벌 브리지 (TextAreaManager 등록)
- │         │     └── TextAreaManager.java # 브리지 인터페이스
- │         ├── main/
- │         │     ├── ListButtonAction.java # 툴바/버튼 액션 관리
- │         │     └── ListProblemAction.java # 문제리스트 관리
- │         ├── data/
- │         │     └── AbbrevDb.java        # 약어 DB UI/CRUD 관리
- │         └── soap/ ...                  # 외부 팝업 다이얼로그 (CC, PMH 등)
- │
- ├── list/                # Problem List 서브모듈
- ├── utilities/           # 공통 유틸 모듈
- └── build-logic/         # Gradle convention plugins
-```
+  * Simplified text input
+  * Abbreviation expansion
+  * Generating standardized letters
+  * Reducing time spent on manual documentation
 
 ---
 
-## 3. 주요 클래스 책임
+### 2. **Technology Stack**
 
-### 🔹 `IttiaApp.java`
-
-* JavaFX **애플리케이션 엔트리포인트**
-* `Stage` 초기화 및 전체 레이아웃 구성
-* 구성 요소 연결:
-
-  * **TextArea 패널** → `IttiaAppTextArea`
-  * **Toolbar** → `ListButtonAction`
-  * **Problem List 패널** → `ListProblemAction`
-* DB 초기화(`AbbrevDb` 경유) 및 `abbrevMap` 주입
-* **전역 단축키** 설치 (`Ctrl+I`, `Ctrl+Shift+F`, `Ctrl+Shift+C`, `Ctrl+숫자`)
+* **Java** (main programming language)
+* **JavaFX** (primary UI framework, replacing Swing in newer parts)
+* **SQLite** (local database for abbreviations, problem lists, ICD codes, etc.)
+* **Gradle multi-module** build (app, utilities, list, build-logic)
 
 ---
 
-### 🔹 `IttiaAppTextArea.java`
+### 3. **Main Features**
 
-* 10개 TextArea 생성 & 배치
-* 약어 확장(:키 입력 → `abbrevMap` 매핑 or 동적 토큰 처리)
-* `TextFormatter`로 입력 정규화 (제어문자 필터)
-* 마지막 포커스 TextArea 추적
-* 외부 클래스가 텍스트 삽입 시 \*\*브리지(IttiaAppMain)\*\*를 통해 연결
+* **Text Area Management**
 
----
+  * 10 central EMR sections (CC, PI, ROS, PMH, S, O, PE, A, P, Comment)
+  * Abbreviation auto-expansion (e.g., "\:cd" → current date)
+  * Focus switching and double-click expansion
 
-### 🔹 `IttiaAppMain.java`
+* **Problem List Management**
 
-* **싱글톤 브리지 클래스**
-* `TextAreaManager`를 전역 등록/조회
-* 외부 팝업 다이얼로그(CC, PMH, Vital 등)에서 메인 10개 TextArea로 텍스트 삽입 가능
+  * SQLite-backed DB (`prolist.db`) for managing diagnoses
+  * F/U (follow-up) templates and editing functions
 
----
+* **Template System**
 
-### 🔹 `ListButtonAction.java`
+  * Pre-defined **SOAP** (Subjective, Objective, Assessment, Plan) note structures
+  * Letter generation for patient documentation
 
-* **Toolbar 빌더**
+* **Bridge System (`IttiaAppMain`)**
 
-  * 템플릿 삽입 버튼
-  * 자동 포맷 버튼
-  * 전체 복사 버튼
-  * Clear 버튼
-* 각 버튼의 이벤트 처리
+  * Connects UI components (10 TextAreas) with helper dialogs and modules
+  * Ensures consistency across the EMR
 
----
+* **Helper Modules**
 
-### 🔹 `ListProblemAction.java`
-
-* **문제리스트 관리 패널**
-* 문제 추가/삭제/편집
-* Problem List를 전체 EMR 텍스트와 함께 복사 가능
+  * `EMRPMH` (Past Medical History manager)
+  * `ChiefComplaintEditor`
+  * `FreqInputFrame` (Vitals, BMI, HbA1c calculator)
+  * `VaccineSideEffect` (adverse effect tracker)
 
 ---
 
-### 🔹 `AbbrevDb.java`
+### 4. **Databases**
 
-* **약어 DB UI** (추가/삭제/편집)
-* `abbrevMap` 업데이트 반영
-* SQLite (`abbreviations.db`) 연결 관리
-
----
-
-## 4. 핵심 기능 요약
-
-1. **약어 확장**
-
-   * `:c` → hypercholesterolemia
-   * `:cd` → 현재 날짜
-   * `:to` → hypothyroidism
-   * 사용자 정의 약어 DB 기반
-
-2. **템플릿 삽입**
-
-   * `Ctrl+I` 단축키 또는 버튼으로 HPI 등 삽입
-
-3. **자동 포맷팅**
-
-   * 중복 라인 제거
-   * 불필요한 공백/줄바꿈 정리
-   * EMR 출력 표준화
-
-4. **클립보드 복사**
-
-   * 문제 리스트 + 모든 TextArea 내용을 통합
-   * `# 섹션 제목` 헤더 포함
-   * EMR 최종 출력 형식으로 변환 후 복사
-
-5. **단축키**
-
-   * `Ctrl+I`: 템플릿 삽입
-   * `Ctrl+Shift+F`: 현재 영역 포맷
-   * `Ctrl+Shift+C`: 전체 복사
-   * `Ctrl+1~0`: 특정 TextArea 포커스
+* **Abbreviation DB** (`abbreviations.db`) – expands shorthand into medical terms.
+* **Problem List DB** (`prolist.db`) – structured follow-up problems.
+* **ICD/KCD DBs** (e.g., `icd11.db`, `kcd8db.db`) – for diagnostic coding.
 
 ---
 
-## 5. 데이터베이스 관리
+### 5. **Directory Structure**
 
-* **DB 위치**: 기본적으로 `src/main/resources/database/abbreviations.db` (개발용)
-* 배포 시: `$HOME/.ittia/abbreviations.db`
-* 초기 실행 시:
-
-  * 스키마 생성 (`abbreviations` 테이블)
-  * seed 데이터 삽입
-* DB UI (`AbbrevDb`)로 런타임 추가/편집 가능
+* **`app/`** → main EMR application code (JavaFX).
+* **`list/`** → data structures (problem lists, disease codes).
+* **`utilities/`** → common utility classes (DB managers, converters).
+* **`build-logic/`** → custom Gradle convention plugins.
+* **`resources/`** → databases (`.db`), templates, images.
 
 ---
 
-## 6. 확장 포인트 (개발자 TODO)
+### 6. **UI Design Principles**
 
-* ✅ IME(한글) 안전 약어 확장 (완성 텍스트 기반)
-* ✅ DB 로드/저장 **비동기 처리** (`Task/Service`)
-* ⬜ `ExportService`: 복사 외에도 `.docx` / `.rtf` / `.md` 내보내기
-* ⬜ TemplateParser: 입력 텍스트 → 섹션별 파싱/정규화 로직 분리 + 유닛테스트
-* ⬜ 키맵 사용자 설정 (Ctrl vs Alt 선택)
-* ⬜ DB/파일 접근 실패 시 **Alert + 로그 기록**
+* Minimal, physician-friendly layout.
+* Toolbar with quick-action buttons (Vitals, Templates, Copy All).
+* Abbreviation expansion **in-place** (reduces typing effort).
+* Style themes (Sky Blue, Lemon gradient, Van Gogh-inspired).
 
 ---
 
-## 7. 실행 방법
+### 7. **Current Development Focus**
 
-```bash
-./gradlew :app:run
-```
-
-* JVM: OpenJDK 21+
-* JavaFX 21+ 필요 (`javafx.controls`, `javafx.fxml`)
-* 첫 실행 시 `~/.ittia/abbreviations.db` 생성됨
+* Migrating from Swing → JavaFX (`IttiaAppTextArea`, `IAMTextArea`).
+* Improving **TextArea manager** with better parsing and formatting.
+* Enhancing **template insertion** and **auto-format** functions.
+* Managing `.gitignore` rules for DB files (keep some in repo, ignore others).
 
 ---
 
-## 8. 개발 팁
-
-* **UI 수정**: `IttiaAppTextArea` 또는 `ListButtonAction`부터 접근
-* **DB 관련**: `AbbrevDb` → `abbrevMap` 갱신 확인
-* **외부 다이얼로그 ↔ 메인 연동**: 반드시 `IttiaAppMain.getTextAreaManager()` 사용
-* **디버깅**: DB 연결/약어 매핑 오류 시 `System.out.println` 대신 `Logger` 활용 권장
+✅ **In summary**:
+This project is an **EMR prototype** built with **JavaFX + SQLite**, structured in a **Gradle multi-module** setup. Its main innovations are in **text entry simplification (abbreviation expansion, templates, SOAP structure)** and **integration of helper medical modules** (problem list, vitals, vaccines, ICD/KCD databases).
 
 ---
 
-👉 이 문서를 \*\*`README.md`\*\*에 그대로 두면 신규 개발자가 10분 안에 전체 구조와 확장 포인트를 파악할 수 있습니다.
-
----
-
-제가 여기서 바로 **`README.md` 초안 파일 텍스트**로 변환해 드릴 수도 있고, 원하시면 `.md` 형식 파일로 변환해서 드릴 수도 있습니다.
-
-👉 원하시는 출력 형태가 **설명용 텍스트**일까요, 아니면 **실제 `README.md` 파일**로 드려야 할까요?
+👉 Do you want me to also make a **visual directory tree** of the project (like `tree` output) so you see the full layout at a glance?
