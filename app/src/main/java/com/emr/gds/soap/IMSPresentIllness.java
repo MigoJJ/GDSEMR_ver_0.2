@@ -264,16 +264,23 @@ public class IMSPresentIllness {
     }
 
     private void applyChanges() {
-        String originalText = editorTextArea.getText();
-        String expandedText = expandAbbreviations(originalText);
-        boolean expansionOccurred = !originalText.equals(expandedText);
-        boolean proceed = !expansionOccurred; // If no expansion, proceed automatically
+        final String originalText = editorTextArea.getText();
+        final String expandedTextRaw = expandAbbreviations(originalText);
+        final String expandedText = expandedTextRaw == null ? "" : expandedTextRaw.trim();
+
+        boolean expansionOccurred = !java.util.Objects.equals(originalText, expandedTextRaw);
+        boolean proceed = !expansionOccurred;
+
+        if (expandedText.isEmpty()) {
+            showError("Nothing to apply. Please enter a value.");
+            return;
+        }
 
         if (expansionOccurred) {
             Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
             confirm.setTitle("Abbreviation Expansion");
             confirm.setHeaderText("Abbreviations will be expanded:");
-            confirm.setContentText("Original: " + originalText + "\n\nExpanded: " + expandedText + "\n\nApply changes?");
+            confirm.setContentText("Original:\n" + originalText + "\n\nExpanded:\n" + expandedText + "\n\nApply changes?");
             proceed = confirm.showAndWait().filter(b -> b == ButtonType.OK).isPresent();
         }
 

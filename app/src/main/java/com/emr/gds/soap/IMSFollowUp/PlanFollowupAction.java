@@ -412,30 +412,29 @@ public class PlanFollowupAction {
 
         Runnable doAppend = () -> {
             try {
-                // 1) Append to P>
-                textAreaManager.appendTextToSection(IAITextAreaManager.AREA_P, toAppend);
+                // 1) Set text in P>
+                textAreaManager.insertBlockIntoArea(IAITextAreaManager.AREA_P, toAppend, true);
 
                 // 2) Optional scratchpad update
                 if (problemAction != null) {
                     problemAction.updateAndRedrawScratchpad("P>", toAppend);
                 }
 
-                // 3) Persist asynchronously (don’t block FX thread)
-                new Thread(() -> {
-                    try {
-                        String patientId = null; // TODO: wire real patient id if available
-                        String encounterDate = LocalDate.now().toString();
-                        if (planRepo != null) {
-                            planRepo.savePlan("P>", toAppend, patientId, encounterDate);
-                        }
-                    } catch (Exception ex) {
-                        System.err.println("Plan history save failed: " + ex.getMessage());
-                    }
-                }, "plan-save-thread").start();
-
-                editorStage.close();
-                System.out.println("Text appended & persisted:\n" + toAppend);
-            } catch (Exception ex) {
+                            // 3) Persist asynchronously (don’t block FX thread)
+                            new Thread(() -> {
+                                try {
+                                    String patientId = null; // TODO: wire real patient id if available
+                                    String encounterDate = LocalDate.now().toString();
+                                    if (planRepo != null) {
+                                        planRepo.savePlan("", toAppend, patientId, encounterDate);
+                                    }
+                                } catch (Exception ex) {
+                                    System.err.println("Plan history save failed: " + ex.getMessage());
+                                }
+                            }, "plan-save-thread").start();
+                            
+                            editorStage.close();
+                            System.out.println("Text appended & persisted:\n" + toAppend);            } catch (Exception ex) {
                 showError("Failed to append/persist: " + ex.getMessage());
             }
         };

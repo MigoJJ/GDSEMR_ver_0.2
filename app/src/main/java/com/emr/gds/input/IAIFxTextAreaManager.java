@@ -77,9 +77,16 @@ public class IAIFxTextAreaManager implements IAITextAreaManager {
         return s.endsWith("\n") ? s : (s + "\n");
     }
 
-	@Override
-	public void appendTextToSection(int index, String text) {
-		// TODO Auto-generated method stub
-		
-	}
+    @Override
+    public void appendTextToSection(int index, String text) {
+        if (!isValidIndex(index) || text == null || text.isEmpty()) return;
+        
+        // JavaFX 스레드에서 UI 변경을 실행
+        runFx(() -> {
+            TextArea ta = areas.get(index);
+            String add = ensureTrailingNewline(normalizeNewlines(text));
+            ta.appendText(add); // 텍스트를 끝에 추가
+            // ta.setText("");  <-- Clear 로직은 여기에 없어야 함
+        });
+    }
 }
