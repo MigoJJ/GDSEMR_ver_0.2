@@ -136,7 +136,7 @@ public final class VaccineSideEffect {
         });
 
         stage.setOnCloseRequest(e -> stage = null);
-        stage.setScene(new Scene(root, 560, 520));
+        stage.setScene(new Scene(root, 560, 640));
         stage.show();
     }
 

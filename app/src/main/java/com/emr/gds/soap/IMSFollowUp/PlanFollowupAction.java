@@ -1,6 +1,6 @@
 package com.emr.gds.soap.IMSFollowUp;
 
-import com.emr.gds.input.IAITextAreaManager;
+import com.emr.gds.input.IAITextAreaManager;	
 import com.emr.gds.main.IAMProblemAction;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
@@ -53,7 +53,7 @@ public class PlanFollowupAction {
     private static final int GRID_RIGHT_PADDING = 5;
     private static final int GRID_BOTTOM_PADDING = 10;
     private static final int GRID_LEFT_PADDING = 5;
-    private static final Font FIELD_FONT = Font.font("Arial", FontWeight.BOLD, 12);
+    private static final Font FIELD_FONT = Font.font("Malgun Gothic", FontWeight.BOLD, 12);
 
     // Quick templates and phrases
     private static final String[] planTemplates = {
@@ -275,13 +275,13 @@ public class PlanFollowupAction {
         editorTextArea = new TextArea();
         editorTextArea.setWrapText(true);
         editorTextArea.setPrefRowCount(10);
-        editorTextArea.setStyle("-fx-font-family: 'Consolas', 'Monaco', monospace; -fx-font-size: 12px;");
+        editorTextArea.setStyle("-fx-font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Nanum Gothic', 'Source Han Sans', 'Consolas', 'Monaco', monospace; -fx-font-size: 12px;");
 
         TextArea previewArea = new TextArea();
         previewArea.setWrapText(true);
         previewArea.setPrefRowCount(4);
         previewArea.setEditable(false);
-        previewArea.setStyle("-fx-font-family: 'Consolas', 'Monaco', monospace; -fx-font-size: 12px; -fx-background-color: #f5f5f5;");
+        previewArea.setStyle("-fx-font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Nanum Gothic', 'Source Han Sans', 'Consolas', 'Monaco', monospace; -fx-font-size: 12px; -fx-background-color: #f5f5f5;");
 
         editorTextArea.textProperty().addListener((obs, oldText, newText) -> previewArea.setText(expandAbbreviations(newText)));
         previewArea.setText(expandAbbreviations(editorTextArea.getText()));
@@ -468,7 +468,7 @@ public class PlanFollowupAction {
 
     private static String ensurePlanFormatting(String s) {
         // Ensure block is clearly separated and labeled as P>
-        String body = s.startsWith("P>") ? s : "P> " + s;
+        String body = s.startsWith("P>") ? s : "" + s;
         return "\n" + body.trim() + "\n";
     }
 

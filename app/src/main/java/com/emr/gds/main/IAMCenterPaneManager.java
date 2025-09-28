@@ -121,7 +121,7 @@ public class IAMCenterPaneManager {
         for (int i = 0; i < rows * cols; i++) {
             TextArea ta = new TextArea();
             ta.setWrapText(true);
-            ta.setFont(Font.font("Consolas", 11));
+            ta.setFont(Font.font("Malgun Gothic", 11));
             ta.setPrefRowCount(8);
             ta.setPrefColumnCount(40);
             ta.setPromptText(TEXT_AREA_TITLES[i]);

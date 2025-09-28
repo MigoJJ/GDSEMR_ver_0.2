@@ -1,9 +1,7 @@
 package com.emr.gds.soap;
 
-import javax.swing.*;	
-
+import javax.swing.*;		
 import com.emr.gds.input.IAITextAreaManager;
-
 import java.awt.*;
 import java.awt.event.ItemEvent;
 import java.io.IOException;
@@ -72,8 +70,8 @@ public class EMRPMH extends JFrame {
     }
 
     private void setFonts() {
-        selectedArea.setFont(new Font("Consolas", Font.PLAIN, 12));
-        outputArea.setFont(new Font("Consolas", Font.PLAIN, 12));
+        selectedArea.setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
+        outputArea.setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
     }
 
     private void buildCheckBoxes() {

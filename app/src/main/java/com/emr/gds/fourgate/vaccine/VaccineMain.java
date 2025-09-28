@@ -36,8 +36,8 @@ public class VaccineMain {
     private static final String FRAME_TITLE = "Vaccinations";
 
     // Fonts & Colors
-    private static final Font LABEL_FONT = new Font("Consolas", Font.BOLD, 14);
-    private static final Font BUTTON_FONT = new Font("Consolas", Font.PLAIN, 12);
+    private static final Font LABEL_FONT = new Font("Malgun Gothic", Font.BOLD, 14);
+    private static final Font BUTTON_FONT = new Font("Malgun Gothic", Font.PLAIN, 12);
 
     private static final Color HEADER_BG_COLOR = new Color(220, 230, 240);
     private static final Color VACCINE_BG_COLOR = Color.WHITE;

@@ -129,7 +129,7 @@ public class KCDDatabaseManagerSwing extends JFrame {
     private void initializeStatusBar() {
         statusLabel = new JLabel("Ready - Database connection established");
         statusLabel.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 10));
-        statusLabel.setFont(statusLabel.getFont().deriveFont(Font.BOLD, 12f));
+        statusLabel.setFont(new Font("Malgun Gothic", Font.BOLD, 12));
         statusLabel.setForeground(new Color(0x333333));
     }
 
@@ -138,7 +138,7 @@ public class KCDDatabaseManagerSwing extends JFrame {
     	this.repaint();
 
         JButton button = new JButton(text);
-        button.setFont(button.getFont().deriveFont(Font.BOLD, 13f));
+        button.setFont(new Font("Malgun Gothic", Font.BOLD, 13));
         button.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
         button.setFocusPainted(false);
         button.setToolTipText(tooltip);
@@ -497,7 +497,7 @@ public class KCDDatabaseManagerSwing extends JFrame {
     private void showEMRPreview(String emrEntry, KCDRecord record) {
         JTextArea textArea = new JTextArea(emrEntry);
         textArea.setEditable(false);
-        textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        textArea.setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
         textArea.setRows(10);
         textArea.setColumns(50);
 
@@ -542,7 +542,7 @@ public class KCDDatabaseManagerSwing extends JFrame {
 
         JTextArea textArea = new JTextArea(record.toDetailedString());
         textArea.setEditable(false);
-        textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        textArea.setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
 
         JScrollPane scrollPane = new JScrollPane(textArea);
         scrollPane.setPreferredSize(new Dimension(600, 300));
@@ -770,7 +770,7 @@ public class KCDDatabaseManagerSwing extends JFrame {
                     if (initialData != null) noteTextArea.setText(initialData.getNote());
                 } else {
                     fields[i] = new JTextField(30);
-                    fields[i].setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+                    fields[i].setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
 
                     if (initialData != null) {
                         switch (i) {

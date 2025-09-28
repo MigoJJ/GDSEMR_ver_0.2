@@ -210,13 +210,13 @@ public class IMSPresentIllness {
         editorTextArea = new TextArea(sourceTextArea.getText());
         editorTextArea.setWrapText(true);
         editorTextArea.setPrefRowCount(10);
-        editorTextArea.setStyle("-fx-font-family: 'Consolas', 'Monaco', monospace; -fx-font-size: 12px;");
+        editorTextArea.setStyle("-fx-font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Nanum Gothic', 'Source Han Sans', 'Consolas', 'Monaco', monospace; -fx-font-size: 12px;");
         
         TextArea previewArea = new TextArea();
         previewArea.setWrapText(true);
         previewArea.setPrefRowCount(4);
         previewArea.setEditable(false);
-        previewArea.setStyle("-fx-font-family: 'Consolas', 'Monaco', monospace; -fx-font-size: 12px; -fx-background-color: #f5f5f5;");
+        previewArea.setStyle("-fx-font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', 'Nanum Gothic', 'Source Han Sans', 'Consolas', 'Monaco', monospace; -fx-font-size: 12px; -fx-background-color: #f5f5f5;");
 
         editorTextArea.textProperty().addListener((obs, oldText, newText) -> previewArea.setText(expandAbbreviations(newText)));
         previewArea.setText(expandAbbreviations(editorTextArea.getText())); // Initial preview

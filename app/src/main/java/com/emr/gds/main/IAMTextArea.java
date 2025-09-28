@@ -136,7 +136,7 @@ public class IAMTextArea {
             final int idx = i;
             TextArea ta = new TextArea();
             ta.setWrapText(true);
-            ta.setFont(Font.font("Consolas", 12));
+            ta.setFont(Font.font("Malgun Gothic", 12));
             ta.setPrefRowCount(11);
             ta.setPrefColumnCount(58);
             ta.setPromptText(i < TEXT_AREA_TITLES.length ? TEXT_AREA_TITLES[i] : "Area " + (i + 1));
@@ -280,7 +280,6 @@ public class IAMTextArea {
         }
     }
      
-
     private void executeCommentHandler(TextArea textArea, int index) {
         executeReflectionBasedEditor("com.emr.gds.main.CommentEditor", "Comment", textArea, index);
     }

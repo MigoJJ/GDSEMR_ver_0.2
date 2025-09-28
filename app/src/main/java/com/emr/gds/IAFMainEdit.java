@@ -107,7 +107,7 @@ public class IAFMainEdit extends JFrame {
 
         templateNameField = new JTextField(28);
         templateContentArea = new JTextArea();
-        templateContentArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        templateContentArea.setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
         templateContentArea.setLineWrap(true);
         templateContentArea.setWrapStyleWord(true);
     }
