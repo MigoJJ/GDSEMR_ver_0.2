@@ -1,6 +1,6 @@
 package com.emr.gds.main;
 
-import com.emr.gds.IttiaApp;
+import com.emr.gds.IttiaApp;	
 import com.emr.gds.input.IAITextAreaManager;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
@@ -15,7 +15,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
-
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 /**
  * Manages the creation and actions for the top and bottom toolbars of the application.
  * This class handles UI controls like buttons and menus for template insertion, text formatting,
@@ -28,7 +29,7 @@ public class IAMButtonAction {
     //================================================================================
 
     private static final String TEMPLATE_MENU_TEXT = "Templates";
-    private static final String INSERT_TEMPLATE_BUTTON_TEXT = "Insert Template (Ctrl+I)";
+    private static final String INSERT_TEMPLATE_BUTTON_TEXT = "Date (Ctrl+I)";
     private static final String AUTO_FORMAT_BUTTON_TEXT = "Auto Format (Ctrl+Shift+F)";
     private static final String COPY_ALL_BUTTON_TEXT = "Copy All (Ctrl+Shift+C)";
     private static final String MANAGE_ABBREV_BUTTON_TEXT = "Manage Abbrs...";
@@ -75,12 +76,18 @@ public class IAMButtonAction {
         );
 
         // 2. Individual Buttons
+//        Button btnInsertTemplate = new Button(INSERT_TEMPLATE_BUTTON_TEXT);
+//        btnInsertTemplate.setOnAction(e -> {
+//            app.getTextAreaManager().focusArea(HPI_DEFAULT_FOCUS_AREA_INDEX);
+//            app.insertTemplateIntoFocusedArea(TemplateLibrary.HPI);
+//        });
+
         Button btnInsertTemplate = new Button(INSERT_TEMPLATE_BUTTON_TEXT);
         btnInsertTemplate.setOnAction(e -> {
-            app.getTextAreaManager().focusArea(HPI_DEFAULT_FOCUS_AREA_INDEX);
-            app.insertTemplateIntoFocusedArea(TemplateLibrary.HPI);
+            String currentDateString = " [ " + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + " ]";
+            app.insertLineIntoFocusedArea(currentDateString);
         });
-
+        
         Button btnFormat = new Button(AUTO_FORMAT_BUTTON_TEXT);
         btnFormat.setOnAction(e -> app.formatCurrentArea());
 
