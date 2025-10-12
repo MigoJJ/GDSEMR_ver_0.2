@@ -200,15 +200,12 @@ public class IAMButtonAction {
      */
     public enum TemplateLibrary {
         // --- Full Templates (isSnippet = false) ---
-        HPI("New Patient",
-            "# 공단 검진 HPI\n" +
-            "- Onset: \n" +
-            "- Location: \n" +
-            "- Character: \n" +
-            "- Aggravating/Relieving: \n" +
-            "- Associated Sx: \n" +
-            "- Context: \n" +
-            "- Notes: \n", false),
+        HPI("DM  F/U checking",
+            "# DM  F/U check List\n" +
+            "   - Retinopathy : no NPDR [  ]\n" +
+            "   - Peripheral neuropathy : denied [ :cd ]\n" +
+            "   - Nephrolathy : CKD A  G  [  ] : \n" +
+            "   - Automonic neuropathy : denied [ :cd ] \n", false),
         A_P("Assessment & Plan",
             "# Assessment & Plan\n" +
             "- Dx: \n" +
