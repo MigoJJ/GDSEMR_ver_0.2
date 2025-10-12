@@ -306,7 +306,10 @@ public class IttiaApp extends Application {
     private void installGlobalKeyboardShortcuts(Scene scene) {
         Map<KeyCombination, Runnable> shortcuts = new HashMap<>();
 
-        shortcuts.put(new KeyCodeCombination(KeyCode.I, KeyCombination.CONTROL_DOWN), () -> insertTemplateIntoFocusedArea(IAMButtonAction.TemplateLibrary.HPI));
+                shortcuts.put(new KeyCodeCombination(KeyCode.I, KeyCombination.CONTROL_DOWN), () -> {
+            String currentDateString = " [ " + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + " ]";
+            insertLineIntoFocusedArea(currentDateString);
+        });
         shortcuts.put(new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN), this::formatCurrentArea);
         shortcuts.put(new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN), this::copyAllToClipboard);
 
