@@ -43,7 +43,7 @@ public class EMRFMH extends JFrame {
     private static final Path GENETIC_FILE = DATA_DIR.resolve("genetic.txt");
 
     // MODIFIED: Constructor now accepts the text area manager
-    public EMRFMH(Object object) {
+    public EMRFMH(IAITextAreaManager textAreaManager) {
         this.textAreaManager = textAreaManager; // Store the manager instance
 
         setTitle("Endocrinology - Family Medical History");
