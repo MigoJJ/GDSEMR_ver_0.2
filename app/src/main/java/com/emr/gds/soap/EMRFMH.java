@@ -1,5 +1,6 @@
 package com.emr.gds.soap;
 
+import com.emr.gds.input.IAITextAreaManager; // Added import from your snippet	
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -18,7 +19,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * An EMR Family Medical History (FMH) input form for an Endocrinologist.
@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 public class EMRFMH extends JFrame {
 
     private final JTextArea historyTextArea;
+    private IAITextAreaManager textAreaManager = null;
 
     // Data lists for each category
     private ObservableList<String> endocrineConditions;
@@ -41,25 +42,45 @@ public class EMRFMH extends JFrame {
     private static final Path CARDIO_FILE = DATA_DIR.resolve("cardiovascular.txt");
     private static final Path GENETIC_FILE = DATA_DIR.resolve("genetic.txt");
 
+    // MODIFIED: Constructor now accepts the text area manager
+    public EMRFMH(Object object) {
+        this.textAreaManager = textAreaManager; // Store the manager instance
 
-    public EMRFMH() {
         setTitle("Endocrinology - Family Medical History");
-        setSize(950, 850); // Increased size for the new layout
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(950, 850);
+        // Changed to DISPOSE_ON_CLOSE so it doesn't exit the whole app
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); 
         setLocationRelativeTo(null);
 
-        // Load all condition lists from files or defaults
         loadAllConditions();
 
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         historyTextArea = new JTextArea(15, 80);
-        historyTextArea.setEditable(false);
+        historyTextArea.setEditable(true); // MODIFIED: Text area is now editable
         historyTextArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
         historyTextArea.setBorder(BorderFactory.createTitledBorder("Family History Report"));
         mainPanel.add(new JScrollPane(historyTextArea), BorderLayout.CENTER);
 
         final JFXPanel fxPanel = new JFXPanel();
         mainPanel.add(fxPanel, BorderLayout.NORTH);
+
+        // --- NEW: Add Clear, Save, and Quit buttons ---
+        JPanel buttonPanel = new JPanel(); // Uses FlowLayout by default
+        JButton clearButton = new JButton("Clear");
+        JButton saveButton = new JButton("Save");
+        JButton quitButton = new JButton("Quit");
+
+        buttonPanel.add(clearButton);
+        buttonPanel.add(saveButton);
+        buttonPanel.add(quitButton);
+
+        // Add actions to the new buttons
+        clearButton.addActionListener(e -> historyTextArea.setText(""));
+        saveButton.addActionListener(e -> onSave());
+        quitButton.addActionListener(e -> dispose()); // dispose() safely closes this window
+
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH); // Add button panel to the bottom
+        // --- END OF NEW BUTTONS SECTION ---
 
         setContentPane(mainPanel);
 
@@ -70,6 +91,31 @@ public class EMRFMH extends JFrame {
         VBox root = createFamilyHistoryForm();
         Scene scene = new Scene(root);
         fxPanel.setScene(scene);
+    }
+    
+    // --- NEW: Method to handle saving the text area content ---
+    private void onSave() {
+        if (textAreaManager == null) {
+            error("Error: TextAreaManager was not provided.");
+            return;
+        }
+        try {
+            // Get the final text from the editable text area
+            String familyHistoryText = historyTextArea.getText();
+            
+            // Using your provided save logic
+            textAreaManager.insertBlockIntoArea(IAITextAreaManager.AREA_PMH, familyHistoryText, true);
+            
+            JOptionPane.showMessageDialog(this, "Family History saved successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+            dispose(); // Close the window after a successful save
+        } catch (Exception ex) {
+            error("Failed to save: " + ex.getMessage());
+        }
+    }
+    
+    // --- NEW: Helper method for showing error dialogs ---
+    private void error(String message) {
+        JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
     /**
@@ -263,15 +309,16 @@ public class EMRFMH extends JFrame {
             showAlert(Alert.AlertType.WARNING, "Action Needed", "Please select a condition to delete.");
             return;
         }
-        String selected = activeListView.getSelectionModel().getSelectedItem();
+        List<String> selectedItems = new ArrayList<>(activeListView.getSelectionModel().getSelectedItems());
+        
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Confirm Deletion");
-        confirm.setHeaderText("Delete '" + selected + "'?");
-        confirm.setContentText("Are you sure you want to permanently delete this condition from the list?");
+        confirm.setHeaderText("Delete " + selectedItems.size() + " selected item(s)?");
+        confirm.setContentText("Are you sure you want to permanently delete these conditions from the list?");
         
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            ((ObservableList<String>)((FilteredList<String>)activeListView.getItems()).getSource()).remove(selected);
+            ((ObservableList<String>)((FilteredList<String>)activeListView.getItems()).getSource()).removeAll(selectedItems);
         }
     }
 
@@ -344,9 +391,13 @@ public class EMRFMH extends JFrame {
     private List<String> getDefaultCardiovascular() { return Arrays.asList("Coronary Artery Disease", "Hypertension", "Myocardial Infarction", "Stroke", "Heart Failure", "Atrial Fibrillation", "Arrhythmia", "Hyperlipidemia", "Peripheral Artery Disease", "Aortic Aneurysm", "Deep Vein Thrombosis", "Congenital Heart Defect"); }
     private List<String> getDefaultGenetic() { return Arrays.asList("Cystic Fibrosis", "Huntington's Disease", "Down Syndrome", "Sickle Cell Anemia", "Thalassemia", "Marfan Syndrome", "Phenylketonuria (PKU)", "Hemophilia A", "Duchenne Muscular Dystrophy", "Tay-Sachs Disease", "Fragile X Syndrome", "Neurofibromatosis"); }
 
+    // MODIFIED: Main method updated to show how to launch the frame now
     public static void main(String[] args) {
+        // This main method is for standalone testing.
+        // The constructor now requires an IAITextAreaManager.
+        // We pass null here for demonstration purposes. The "Save" button will show an error in this mode.
         SwingUtilities.invokeLater(() -> {
-            EMRFMH frame = new EMRFMH();
+            EMRFMH frame = new EMRFMH(null); 
             frame.setVisible(true);
         });
     }

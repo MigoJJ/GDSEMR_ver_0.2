@@ -1,25 +1,42 @@
 package com.emr.gds.soap;
 
-import javax.swing.*;			
-import com.emr.gds.input.IAITextAreaManager;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridLayout;
 import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
+
+import com.emr.gds.input.IAIMain;
+import com.emr.gds.input.IAITextAreaManager;
+
 /**
  * Compact EMR Past Medical History (PMH) dialog.
  */
-public class EMRPMH extends JFrame {
-    // UI Components
+public class EMRPMH extends JFrame implements ItemListener {    // UI Components
     private final IAITextAreaManager textAreaManager;
     private final JTextArea selectedArea = createTextArea(6, 10, true);
     // MODIFIED: outputArea is now editable by changing the last parameter to 'true'.
@@ -45,6 +62,9 @@ public class EMRPMH extends JFrame {
     // Constructor
     public EMRPMH(IAITextAreaManager manager) {
         this.textAreaManager = manager;
+        if (manager == null) {
+            System.err.println("Warning: IAITextAreaManager is null. Save functionality will be limited.");
+        }
         initialize();
     }
 
@@ -108,6 +128,8 @@ public class EMRPMH extends JFrame {
         add(buttons, BorderLayout.SOUTH);
     }
 
+    
+    
     // Event Handlers
     private void onToggle(ItemEvent e) {
         JCheckBox src = (JCheckBox) e.getItemSelectable();
@@ -115,16 +137,28 @@ public class EMRPMH extends JFrame {
         refreshAll();
     }
 
-    /**
-     * Creates and displays the Family Medical History (FMH) window.
-     */
+   
     private void openFamilyHistoryForm() {
-        // Create an instance of your custom JFrame
-        EMRFMH familyHistoryFrame = new EMRFMH();
-
-        // Make it visible
-        familyHistoryFrame.setVisible(true);
+        try {
+            IAITextAreaManager textAreaManager = IAIMain.getTextAreaManager();
+            if (textAreaManager != null && textAreaManager.isReady()) {
+                SwingUtilities.invokeLater(() -> {
+                    EMRFMH familyHistoryFrame = new EMRFMH(textAreaManager);
+                    familyHistoryFrame.setVisible(true);
+                });
+            } else {
+                JOptionPane.showMessageDialog(
+                    this,
+                    "The text area manager is not ready. Please try again later.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+                );
+            }
+        } catch (Exception e) {
+            error("Failed to open Family History form: " + e.getMessage());
+        }
     }
+
     
     private void onClear() {
         selectionMap.keySet().forEach(k -> selectionMap.put(k, false));
@@ -264,17 +298,24 @@ public class EMRPMH extends JFrame {
     }
 
     // Abbreviation and Database Logic (Unchanged)
-    private void initAbbrevDatabase() throws ClassNotFoundException, SQLException, IOException {
-        Class.forName("org.sqlite.JDBC");
-        Path dbFile = getDbPath("abbreviations.db");
-        Files.createDirectories(dbFile.getParent());
-        String url = "jdbc:sqlite:" + dbFile.toAbsolutePath();
-        try (Connection conn = DriverManager.getConnection(url);
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT * FROM abbreviations")) {
-            while (rs.next()) {
-                abbrevMap.put(rs.getString("short"), rs.getString("full"));
+    private void initAbbrevDatabase() {
+        try {
+            Class.forName("org.sqlite.JDBC");
+            Path dbFile = getDbPath("abbreviations.db");
+            Files.createDirectories(dbFile.getParent());
+            String url = "jdbc:sqlite:" + dbFile.toAbsolutePath();
+            try (Connection conn = DriverManager.getConnection(url);
+                 Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery("SELECT * FROM abbreviations")) {
+                while (rs.next()) {
+                    abbrevMap.put(rs.getString("short"), rs.getString("full"));
+                }
             }
+        } catch (ClassNotFoundException e) {
+            error("SQLite JDBC driver not found. Please add dependency.");
+        } catch (SQLException | IOException e) {
+            error("Failed to initialize abbreviation database: " + e.getMessage());
+            // Continue without abbreviations rather than crashing
         }
     }
 
@@ -306,4 +347,12 @@ public class EMRPMH extends JFrame {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new EMRPMH(null).setVisible(true));
     }
+
+	@Override
+	public void itemStateChanged(ItemEvent e) {
+			        JCheckBox src = (JCheckBox) e.getItemSelectable();
+	        selectionMap.put(src.getText(), e.getStateChange() == ItemEvent.SELECTED);
+	        refreshAll();
+	    		
+	}
 }
