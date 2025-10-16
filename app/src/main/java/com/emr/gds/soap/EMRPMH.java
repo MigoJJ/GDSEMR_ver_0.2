@@ -1,6 +1,6 @@
 package com.emr.gds.soap;
 
-import javax.swing.*;		
+import javax.swing.*;			
 import com.emr.gds.input.IAITextAreaManager;
 import java.awt.*;
 import java.awt.event.ItemEvent;
@@ -93,6 +93,8 @@ public class EMRPMH extends JFrame {
         topText.add(new JScrollPane(outputArea));
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        
+        buttons.add(new JButton("Family History") {{addActionListener(e -> openFamilyHistoryForm()); }});
         buttons.add(new JButton("Clear") {{ addActionListener(e -> onClear()); }});
         buttons.add(new JButton("Append Selection") {{ addActionListener(e -> onAppendSelection()); }});
         buttons.add(new JButton("Generate Report") {{ addActionListener(e -> onGenerateReport()); }});
@@ -113,6 +115,17 @@ public class EMRPMH extends JFrame {
         refreshAll();
     }
 
+    /**
+     * Creates and displays the Family Medical History (FMH) window.
+     */
+    private void openFamilyHistoryForm() {
+        // Create an instance of your custom JFrame
+        EMRFMH familyHistoryFrame = new EMRFMH();
+
+        // Make it visible
+        familyHistoryFrame.setVisible(true);
+    }
+    
     private void onClear() {
         selectionMap.keySet().forEach(k -> selectionMap.put(k, false));
         boxes.values().forEach(b -> b.setSelected(false));
