@@ -171,7 +171,8 @@ public class IAMButtonAction {
         Button b = new Button(title);
         b.setOnAction(e -> {
             try {
-                com.emr.gds.fourgate.vaccine.VaccineMain.main(new String[]{});
+            	com.emr.gds.fourgate.vaccine.VaccineAction.open();
+//                com.emr.gds.fourgate.vaccine.VaccineMain.main(new String[]{});
             } catch (Exception ex) {
                 System.err.println("Failed to launch Vaccine application: " + ex.getMessage());
                 // You could also show a dialog to the user here.

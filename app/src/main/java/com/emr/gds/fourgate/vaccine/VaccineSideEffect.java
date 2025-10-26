@@ -1,7 +1,7 @@
 // VaccineSideEffect.java (JavaFX 전용 유틸)
 package com.emr.gds.fourgate.vaccine;
 
-import javafx.application.Platform;
+import javafx.application.Platform;	
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;

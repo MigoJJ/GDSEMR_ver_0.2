@@ -10,59 +10,32 @@ import javafx.scene.layout.VBox;
 
 import java.util.function.Consumer;
 
+// Import the new constants class
+import com.emr.gds.fourgate.vaccine.VaccineConstants;
+
 public class VaccineSelector extends VBox {
 
-    private static final String[] UI_ELEMENTS = {
-        "### Respiratory Vaccines",
-        "Pneumovax 23 (PPSV23, pneumococcal polysaccharide vaccine)",
-        "COVID-19 vaccine (mRNA, viral vector, or protein subunit)",
-        "RSV vaccine (Arexvy, Abrysvo)",
-        "Prevena 13 (pneumococcal vaccine (PCV13))",
-
-        "### Travel / Endemic Disease Vaccines",
-        "MMR (Measles, Mumps, Rubella)",
-        "Varicella (Chickenpox) vaccine",
-        "Japanese Encephalitis vaccine",
-        "Yellow Fever vaccine",
-        "Typhoid vaccine (oral or injectable)",
-        "Meningococcal vaccine (MenACWY)",
-        "Meningococcal vaccine (MenB)",
-        "Rabies vaccine (pre-exposure prophylaxis)",
-
-        "### Occupational / High-Risk Vaccines",
-        "HPV vaccine (Gardasil 9, adults up to age 45)",
-        "Anthrax vaccine",
-        "Smallpox/Mpox vaccine (JYNNEOS)",
-
-        "### Booster / Additional Doses",
-        "HAV vaccine #2/2",
-        "HBV vaccine #2/3",
-        "HBV vaccine #3/3",
-        "Shingles Vaccine (Shingrix) #2/2",
-        "TdaP (Tetanus, Diphtheria, Pertussis)",
-        "Td booster (Tetanus, Diphtheria)",
-
-        "### Regional / Seasonal Vaccines",
-        "Tick-borne Encephalitis vaccine",
-        "Cholera vaccine",
-        "Polio vaccine (IPV, for travelers to endemic areas)",
-
-        "### Actions",
-        "Side Effect",
-        "Quit"
-    };
+    // --- This local definition has been removed ---
+    // private static final String[] UI_ELEMENTS = { ... };
 
     private final ComboBox<String> comboBox;
     private Consumer<String> onSelected; // 선택 콜백
 
     public VaccineSelector() {
-        comboBox = new ComboBox<>(FXCollections.observableArrayList(UI_ELEMENTS));
+        // Use the imported VaccineConstants.UI_ELEMENTS array
+        comboBox = new ComboBox<>(FXCollections.observableArrayList(VaccineConstants.UI_ELEMENTS));
 
         // 헤더/액션을 비활성 헤더처럼 렌더링
         comboBox.setCellFactory(cb -> new ListCell<>() {
-            @Override protected void updateItem(String item, boolean empty) {
+            @Override
+            protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) { setText(null); setDisable(false); setStyle(""); return; }
+                if (empty || item == null) {
+                    setText(null);
+                    setDisable(false);
+                    setStyle("");
+                    return;
+                }
                 if (isHeaderOrAction(item)) {
                     setText(stripHeader(item));
                     setStyle("-fx-font-weight: bold; -fx-background-color: #e0e0e0;");
@@ -77,7 +50,8 @@ public class VaccineSelector extends VBox {
 
         // 버튼셀
         comboBox.setButtonCell(new ListCell<>() {
-            @Override protected void updateItem(String item, boolean empty) {
+            @Override
+            protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null || isHeaderOrAction(item)) setText(null);
                 else setText(item);
@@ -120,13 +94,17 @@ public class VaccineSelector extends VBox {
         });
     }
 
-    public String getSelectedVaccine() { return comboBox.getValue(); }
+    public String getSelectedVaccine() {
+        return comboBox.getValue();
+    }
 
     // ===== 내부 유틸 =====
     private static boolean isHeaderOrAction(String s) {
         if (s.startsWith("###")) return true;
+        // These "magic strings" are also part of UI_ELEMENTS, so this is fine.
         return "Side Effect".equals(s) || "Quit".equals(s);
     }
+
     private static String stripHeader(String s) {
         return s.startsWith("###") ? s.replace("###", "").trim() : s;
     }
