@@ -1,268 +1,246 @@
 package com.emr.gds.fourgate;
 
-import javax.swing.*;
-
 import com.emr.gds.input.IAIMain;
+import com.emr.gds.input.IAITextAreaManager;
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.stage.Stage;
 
-import java.awt.*;
-import java.awt.event.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-public class DEXA extends JFrame implements ActionListener {
+/**
+ * A JavaFX application for Osteoporosis Risk Assessment based on DEXA scan results.
+ * This tool calculates a diagnosis based on T-Score or Z-Score and other clinical factors.
+ */
+public class DEXA extends Application {
 
-    private JTextField scoreField, ageField;
-    private JComboBox<String> genderComboBox;
-    private JTextArea outputTextArea;
-    private JCheckBox fragilityFractureCheckBox, menopauseCheckBox, hrtCheckBox, tahCheckBox, stonesCheckBox;
-    private ButtonGroup scoreTypeButtonGroup;
-    private JRadioButton tScoreRadioButton, zScoreRadioButton;
+    private TextField scoreField, ageField;
+    private ComboBox<String> genderComboBox;
+    private TextArea outputTextArea;
+    private CheckBox fragilityFractureCheckBox, menopauseCheckBox, hrtCheckBox, tahCheckBox, stonesCheckBox;
+    private ToggleGroup scoreTypeToggleGroup;
+    private RadioButton tScoreRadioButton, zScoreRadioButton;
 
-    public DEXA() {
-        setTitle("Osteoporosis Risk Assessment");
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLayout(new BorderLayout());
-
-        initComponents();
-        createLayout();
-        addListeners();
-
-        pack();
-        setLocationRelativeTo(null);
-        setVisible(true);
-        scoreField.requestFocusInWindow();
-    }
-
-    private void initComponents() {
-        scoreField = new JTextField(10);
-        ageField = new JTextField(10);
-        genderComboBox = new JComboBox<>(new String[]{"Female", "Male"});
-        outputTextArea = new JTextArea(10, 40);
-        outputTextArea.setEditable(false);
-        outputTextArea.setBackground(new Color(250, 250, 250)); // Light Sky Blue
-
-        fragilityFractureCheckBox = new JCheckBox();
-        menopauseCheckBox = new JCheckBox();
-        hrtCheckBox = new JCheckBox();
-        tahCheckBox = new JCheckBox();
-        stonesCheckBox = new JCheckBox();
-
-        scoreTypeButtonGroup = new ButtonGroup();
-        tScoreRadioButton = new JRadioButton("T-Score", true);
-        zScoreRadioButton = new JRadioButton("Z-Score");
-
-        // Set font to bold and larger
-        Font boldFont = new Font("SansSerif", Font.BOLD, 14); // Example size, adjust as needed
-        scoreField.setFont(boldFont);
-        ageField.setFont(boldFont);
-
-        // Center the text within the JTextFields
-        scoreField.setHorizontalAlignment(JTextField.CENTER);
-        ageField.setHorizontalAlignment(JTextField.CENTER);
-        
-        scoreTypeButtonGroup.add(tScoreRadioButton);
-        scoreTypeButtonGroup.add(zScoreRadioButton);
-    }
-
-    private void addListeners() {
-        scoreField.addKeyListener(new KeyAdapter() {
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    ageField.requestFocusInWindow();
-                }
-            }
-        });
-
-        ageField.addKeyListener(new KeyAdapter() {
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    genderComboBox.requestFocusInWindow();
-                }
-            }
-        });
-    }
-
-    private void createLayout() {
-        add(new JScrollPane(outputTextArea), BorderLayout.NORTH); // Output Area
-        add(createWestPanel(), BorderLayout.WEST);
-        add(createInputPanel(), BorderLayout.CENTER);
-
-        JPanel buttonPanel = new JPanel();
-        String[] buttonNames = {"Assess Risk", "Clear", "Save", "Quit"};
-        for (String name : buttonNames) {
-            JButton button = new JButton(name);
-            button.addActionListener(this);
-            buttonPanel.add(button);
-        }
-        add(buttonPanel, BorderLayout.SOUTH);
-    }
-
-    private JPanel createWestPanel() {
-        JTextArea zScoreInfo = new JTextArea("""
-                Z-Score:
-                - Children/adolescents
-                - Premenopausal women (<50)
-                - Men under 50
-
-                Key Tests:
-                * Calcium & Phosphorus
-                * Vitamin D
-                * Kidney Function (eGFR, Cr)
-                * Bone Turnover Markers (CTX/NTX, BSAP)
-                """);
-
-        zScoreInfo.setEditable(false);
-        zScoreInfo.setBackground(new Color(205, 206, 250));
-
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Z-Score Explanation"));
-        panel.add(zScoreInfo, BorderLayout.CENTER);
-        panel.setPreferredSize(new Dimension(300, 100));
-
-        return panel;
-    }
-
-    private JPanel createInputPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Input Data"));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        addField(panel, gbc, "Score:", scoreField, 0);
-        addField(panel, gbc, "Age:", ageField, 1);
-        addField(panel, gbc, "Gender:", genderComboBox, 2);
-        addField(panel, gbc, "Menopause:", menopauseCheckBox, 3);
-        addField(panel, gbc, "Fracture:", fragilityFractureCheckBox, 4);
-        addField(panel, gbc, "HRT:", hrtCheckBox, 5);
-        addField(panel, gbc, "TAH:", tahCheckBox, 6);
-        addField(panel, gbc, "Kidney Stones:", stonesCheckBox, 7);
-        addField(panel, gbc, "Score Type:", tScoreRadioButton, 8);
-
-        gbc.gridx = 2;
-        gbc.gridy = 8;
-        panel.add(zScoreRadioButton, gbc);
-
-        return panel;
-    }
-
-    private void addField(JPanel panel, GridBagConstraints gbc, String labelText, Component comp, int y) {
-        JLabel label = new JLabel(labelText);
-        gbc.gridx = 0;
-        gbc.gridy = y;
-        panel.add(label, gbc);
-
-        gbc.gridx = 1;
-        panel.add(comp, gbc);
+    public static void main(String[] args) {
+        launch(args);
     }
 
     @Override
-    public void actionPerformed(ActionEvent e) {
-        String command = e.getActionCommand();
+    public void start(Stage primaryStage) {
+        primaryStage.setTitle("Osteoporosis Risk Assessment (DEXA)");
 
-        switch (command) {
-            case "Assess Risk" -> processInput();
-            case "Clear" -> clearFields();
-            case "Save" -> saveToEMR();
-            case "Quit" -> dispose();
-        }
+        initComponents();
+        Scene scene = new Scene(createLayout(), 800, 600);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+        scoreField.requestFocus();
+    }
+
+    private void initComponents() {
+        scoreField = new TextField();
+        scoreField.setPrefWidth(100);
+        ageField = new TextField();
+        ageField.setPrefWidth(100);
+
+        genderComboBox = new ComboBox<>();
+        genderComboBox.getItems().addAll("Female", "Male");
+        genderComboBox.setValue("Female");
+
+        outputTextArea = new TextArea();
+        outputTextArea.setEditable(false);
+        outputTextArea.setStyle("-fx-control-inner-background: #FAFAFA;");
+
+        fragilityFractureCheckBox = new CheckBox("Fragility Fracture");
+        menopauseCheckBox = new CheckBox("Postmenopausal");
+        hrtCheckBox = new CheckBox("On HRT");
+        tahCheckBox = new CheckBox("TAH (Total Abdominal Hysterectomy)");
+        stonesCheckBox = new CheckBox("History of Kidney Stones");
+
+        scoreTypeToggleGroup = new ToggleGroup();
+        tScoreRadioButton = new RadioButton("T-Score");
+        tScoreRadioButton.setToggleGroup(scoreTypeToggleGroup);
+        tScoreRadioButton.setSelected(true);
+        zScoreRadioButton = new RadioButton("Z-Score");
+        zScoreRadioButton.setToggleGroup(scoreTypeToggleGroup);
+
+        Font boldFont = Font.font("SanSerif", FontWeight.BOLD, 14);
+        scoreField.setFont(boldFont);
+        ageField.setFont(boldFont);
+        scoreField.setStyle("-fx-alignment: CENTER;");
+        ageField.setStyle("-fx-alignment: CENTER;");
+    }
+
+    private BorderPane createLayout() {
+        BorderPane borderPane = new BorderPane();
+        borderPane.setTop(new ScrollPane(outputTextArea));
+        borderPane.setLeft(createWestPanel());
+        borderPane.setCenter(createInputPanel());
+        borderPane.setBottom(createButtonPanel());
+        return borderPane;
+    }
+
+    private VBox createWestPanel() {
+        TextArea zScoreInfo = new TextArea("\nZ-Score is used for:\n" +
+                "- Children/adolescents\n" +
+                "- Premenopausal women (<50)\n" +
+                "- Men under 50\n\n" +
+                "Key Lab Tests to Consider:\n" +
+                "* Calcium & Phosphorus\n" +
+                "* Vitamin D (25-OH)\n" +
+                "* Kidney Function (eGFR, Cr)\n" +
+                "* Bone Turnover Markers (CTX/NTX, BSAP)");
+        zScoreInfo.setEditable(false);
+        zScoreInfo.setWrapText(true);
+        zScoreInfo.setStyle("-fx-control-inner-background: #E8E8FF;");
+
+        VBox panel = new VBox(zScoreInfo);
+        panel.setPadding(new Insets(10));
+        panel.setBorder(new Border(new BorderStroke(Color.LIGHTGRAY, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths.DEFAULT)));
+        panel.setPrefWidth(300);
+        return panel;
+    }
+
+    private GridPane createInputPanel() {
+        GridPane panel = new GridPane();
+        panel.setPadding(new Insets(10));
+        panel.setHgap(10);
+        panel.setVgap(8);
+
+        panel.add(new Label("Score:"), 0, 0);
+        panel.add(scoreField, 1, 0);
+        panel.add(new Label("Age:"), 0, 1);
+        panel.add(ageField, 1, 1);
+        panel.add(new Label("Gender:"), 0, 2);
+        panel.add(genderComboBox, 1, 2);
+        panel.add(new Label("Score Type:"), 0, 3);
+        panel.add(new HBox(10, tScoreRadioButton, zScoreRadioButton), 1, 3);
+
+        // Clinical Factors Section
+        VBox clinicalFactorsBox = new VBox(8, menopauseCheckBox, fragilityFractureCheckBox, hrtCheckBox, tahCheckBox, stonesCheckBox);
+        TitledPane titledPane = new TitledPane("Clinical Factors", clinicalFactorsBox);
+        titledPane.setCollapsible(false);
+        panel.add(titledPane, 0, 4, 2, 1);
+
+        return panel;
+    }
+
+    private HBox createButtonPanel() {
+        Button assessButton = new Button("Assess Risk");
+        assessButton.setOnAction(e -> processInput());
+        Button clearButton = new Button("Clear");
+        clearButton.setOnAction(e -> clearFields());
+        Button saveButton = new Button("Save to EMR");
+        saveButton.setOnAction(e -> saveToEMR());
+        Button quitButton = new Button("Quit");
+        quitButton.setOnAction(e -> ((Stage) quitButton.getScene().getWindow()).close());
+
+        HBox buttonPanel = new HBox(10, assessButton, clearButton, saveButton, quitButton);
+        buttonPanel.setPadding(new Insets(10));
+        return buttonPanel;
     }
 
     private void saveToEMR() {
-        final String out = outputTextArea.getText().trim();
-        if (out.isEmpty()) return;
-
-        if (!bridgeReady()) {
-            showError("Cannot save data: EMR text areas not ready.");
+        String reportText = outputTextArea.getText();
+        if (reportText == null || reportText.trim().isEmpty()) {
+            showError("There is no report to save.");
             return;
         }
 
-        // Target O> index = 5
-        IAIMain.getTextAreaManager().focusArea(5);
-        IAIMain.getTextAreaManager().insertLineIntoFocusedArea("\t" + out);
-        clearFields();
-    }
-
-    private boolean bridgeReady() {
-        // Placeholder for checking if the EMR bridge is ready
-        // Replace with actual implementation
-        return true;
+        try {
+            IAITextAreaManager emrManager = IAIMain.getTextAreaManager();
+            if (emrManager == null || !emrManager.isReady()) {
+                showError("Cannot save data: EMR connection is not ready.");
+                return;
+            }
+            // Target the 'O>' (Objective) text area, which is at index 5
+            emrManager.focusArea(5);
+            emrManager.insertLineIntoFocusedArea("\n" + reportText.trim());
+            clearFields();
+        } catch (Exception e) {
+            showError("An error occurred while saving to the EMR: " + e.getMessage());
+        }
     }
 
     private void showError(String message) {
-        JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     private void processInput() {
         try {
             double score = Double.parseDouble(scoreField.getText());
             int age = Integer.parseInt(ageField.getText());
-            String gender = (String) genderComboBox.getSelectedItem();
-            boolean fracture = fragilityFractureCheckBox.isSelected();
-            boolean menopause = menopauseCheckBox.isSelected();
-            boolean hrt = hrtCheckBox.isSelected();
-            boolean tah = tahCheckBox.isSelected();
-            boolean stones = stonesCheckBox.isSelected();
+            String gender = genderComboBox.getValue();
+            boolean hasFracture = fragilityFractureCheckBox.isSelected();
+            boolean isMenopausal = menopauseCheckBox.isSelected();
+            boolean isOnHrt = hrtCheckBox.isSelected();
+            boolean hasTah = tahCheckBox.isSelected();
+            boolean hasStones = stonesCheckBox.isSelected();
             String scoreType = tScoreRadioButton.isSelected() ? "T-Score" : "Z-Score";
 
-            outputTextArea.setText(formatReport(score, scoreType, age, gender, fracture, menopause, hrt, tah, stones));
+            String report = formatReport(score, scoreType, age, gender, hasFracture, isMenopausal, isOnHrt, hasTah, hasStones);
+            outputTextArea.setText(report);
         } catch (NumberFormatException ex) {
-            outputTextArea.setText("Invalid input. Enter numeric values for score and age.");
+            showError("Invalid input. Please enter numeric values for score and age.");
         }
     }
 
-    private String formatReport(double score, String scoreType, int age, String gender, boolean fracture, boolean menopause, boolean hrt, boolean tah, boolean stones) {
+    private String formatReport(double score, String scoreType, int age, String gender, boolean hasFracture, boolean isMenopausal, boolean isOnHrt, boolean hasTah, boolean hasStones) {
         String diagnosis;
-
-        if (scoreType.equals("T-Score")) {
-             diagnosis = (score <= -2.5 && fracture) ? "Severe Osteoporosis" :
-                    (score <= -2.5 ? "Osteoporosis" :
-                            (score < -1.0 ? "Osteopenia" : "Normal Bone Density"));
-        } else { // Z-Score
-            if (score > -2.0) {
-                diagnosis = "Normal: Z-score greater than -2.0";
-            } else if (score <= -2.0) {
-                diagnosis = "Below the expected range for age: Z-score less than or equal to -2.0";
-            } else { // This condition should ideally not happen but included for completeness.
-                diagnosis = "Above the expected range for age: Z-score significantly above the mean";
+        if ("T-Score".equals(scoreType)) {
+            if (score <= -2.5) {
+                diagnosis = hasFracture ? "Severe Osteoporosis" : "Osteoporosis";
+            } else if (score < -1.0) {
+                diagnosis = "Osteopenia";
+            } else {
+                diagnosis = "Normal Bone Density";
             }
+        } else { // Z-Score
+            diagnosis = (score <= -2.0) ? "Below the expected range for age" : "Within the expected range for age";
         }
 
-        String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy.MM.dd"));
+        String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
         StringBuilder report = new StringBuilder();
-        report.append("< DEXA >\n");
-        report.append(String.format("\t%s %s [%.1f]\n", diagnosis, scoreType, score));
-        report.append(String.format("\tAge: [%d]  Gender: [%s]\n", age, gender));
+        report.append(String.format("< DEXA Report - %s >\n", date));
+        report.append(String.format("\tDiagnosis: %s (%s: %.1f)\n", diagnosis, scoreType, score));
+        report.append(String.format("\tPatient: %d-year-old %s\n", age, gender));
 
-        if (gender.equals("Female")) {
-            report.append(String.format("\tMenopause: [%s]  Fracture: [%s]\n", menopause ? "Postmenopausal" : "Premenopausal", fracture ? "+" : "-"));
-            report.append(String.format("\tHRT: [%s]  TAH: [%s]  Stones: [%s]\n", hrt ? "+" : "-", tah ? "+" : "-", stones ? "+" : "-"));
+        if ("Female".equals(gender)) {
+            report.append(String.format("\tClinical Factors: Menopausal: %s, Fragility Fracture: %s, On HRT: %s, TAH: %s, Kidney Stones: %s\n",
+                    isMenopausal ? "Yes" : "No", hasFracture ? "Yes" : "No", isOnHrt ? "Yes" : "No", hasTah ? "Yes" : "No", hasStones ? "Yes" : "No"));
         } else { // Male
-            report.append(String.format("\tFracture: [%s]  Stones: [%s]\n", fracture ? "+" : "-", stones ? "+" : "-"));
+            report.append(String.format("\tClinical Factors: Fragility Fracture: %s, Kidney Stones: %s\n",
+                    hasFracture ? "Yes" : "No", hasStones ? "Yes" : "No"));
         }
 
-        report.append("Comment>\n");
-        report.append(String.format("# %s %s [%.1f]   %s\n", diagnosis, scoreType, score, date));
+        report.append("\nComment>\n");
+        report.append(String.format("# %s based on %s of %.1f.\n", diagnosis, scoreType, score));
 
         return report.toString();
     }
 
     private void clearFields() {
-        scoreField.setText("");
-        ageField.setText("");
-        genderComboBox.setSelectedIndex(0);
+        scoreField.clear();
+        ageField.clear();
+        genderComboBox.getSelectionModel().selectFirst();
         fragilityFractureCheckBox.setSelected(false);
         menopauseCheckBox.setSelected(false);
         hrtCheckBox.setSelected(false);
         tahCheckBox.setSelected(false);
         stonesCheckBox.setSelected(false);
         tScoreRadioButton.setSelected(true);
-        outputTextArea.setText("");
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(DEXA::new);
+        outputTextArea.clear();
+        scoreField.requestFocus();
     }
 }

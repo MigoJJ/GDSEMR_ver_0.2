@@ -20,42 +20,27 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
- * JavaFX tool-window for quick vaccine logging.
- * <p>
- * • Bottom-right overlay style (JavaFX Stage).<br>
- * • “Side Effect” opens a JavaFX modal (VaccineSideEffect.open).<br>
- * • All other buttons insert a short note into the EMR text-areas.
- * </p>
+ * A JavaFX tool window for quickly logging vaccine administrations.
+ * This window appears as a bottom-right overlay and provides buttons for common vaccines.
  */
 public class VaccineAction {
 
-    /* --------------------------------------------------------------------- *
-     * UI constants
-     * --------------------------------------------------------------------- */
+    // UI Constants
     private static final double FRAME_WIDTH = 500;
     private static final double FRAME_HEIGHT = 900;
     private static final String FRAME_TITLE = "Vaccinations";
-
-    // JavaFX Fonts
     private static final Font LABEL_FONT = Font.font("Malgun Gothic", FontWeight.BOLD, 14);
     private static final Font BUTTON_FONT = Font.font("Malgun Gothic", FontWeight.NORMAL, 12);
+    private static final String HEADER_STYLE = "-fx-background-color: #DCE6F0; -fx-padding: 6 0 6 0;";
+    private static final String VACCINE_BUTTON_STYLE = "-fx-background-color: #FFFFFF;";
+    private static final String SIDEEFFECT_BUTTON_STYLE = "-fx-background-color: #FFFBE1;";
+    private static final String QUIT_BUTTON_STYLE = "-fx-background-color: #FFE0E0;";
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
 
-    // JavaFX CSS Hex Colors
-    private static final String HEADER_BG = "-fx-background-color: #DCE6F0;"; // 220, 230, 240
-    private static final String VACCINE_BG = "-fx-background-color: #FFFFFF;";
-    private static final String SIDEEFFECT_BG = "-fx-background-color: #FFFBE1;"; // 255, 250, 225
-    private static final String QUIT_BG = "-fx-background-color: #FFE0E0;"; // 255, 224, 224
-
-    private static final SimpleDateFormat DATE_FMT = new SimpleDateFormat("yyyy-MM-dd");
-
-    /* --------------------------------------------------------------------- *
-     * State
-     * --------------------------------------------------------------------- */
     private static Stage activeStage;
 
     /**
-     * Entry point to open the Vaccine window.
-     * Prevents multiple instances from being opened.
+     * Opens the vaccine logging window. If the window is already open, it brings it to the front.
      */
     public static void open() {
         if (activeStage != null) {
@@ -63,31 +48,31 @@ public class VaccineAction {
             return;
         }
         activeStage = createStage();
-        activeStage.setOnHidden(e -> activeStage = null); // Allow re-opening
-        positionBottomRight(activeStage);
+        activeStage.setOnHidden(e -> activeStage = null); // Allow re-opening after being closed
+        positionStageAtBottomRight(activeStage);
         activeStage.show();
     }
 
     /**
-     * Creates the JavaFX Stage and populates its content.
+     * Creates and configures the main JavaFX Stage for the tool window.
      */
     private static Stage createStage() {
         Stage stage = new Stage();
         stage.setTitle(FRAME_TITLE);
         stage.setWidth(FRAME_WIDTH);
         stage.setHeight(FRAME_HEIGHT);
-        stage.initStyle(StageStyle.UTILITY); // A simple window style
+        stage.initStyle(StageStyle.UTILITY);
 
-        VBox root = new VBox(4); // 4px spacing, similar to Swing's vgap
-        root.setStyle("-fx-background-color: #333333;"); // Dark Gray
-        root.setPadding(new Insets(0));
+        VBox root = new VBox(4);
+        root.setStyle("-fx-background-color: #333333;");
+        root.setPadding(Insets.EMPTY);
 
-        // Build UI from the external constants
-        for (String txt : VaccineConstants.UI_ELEMENTS) {
-            if (txt.startsWith("###")) {
-                root.getChildren().add(createHeaderLabel(txt));
+        // Build UI from constants
+        for (String text : VaccineConstants.UI_ELEMENTS) {
+            if (text.startsWith("###")) {
+                root.getChildren().add(createHeaderLabel(text));
             } else {
-                root.getChildren().add(createActionButton(txt));
+                root.getChildren().add(createActionButton(text));
             }
         }
 
@@ -95,113 +80,100 @@ public class VaccineAction {
         scrollPane.setFitToWidth(true);
         scrollPane.setStyle("-fx-background-color: transparent;");
 
-        Scene scene = new Scene(scrollPane);
-        stage.setScene(scene);
+        stage.setScene(new Scene(scrollPane));
         return stage;
     }
 
-    private static Label createHeaderLabel(String txt) {
-        Label hdr = new Label(txt.replace("###", "").trim());
-        hdr.setFont(LABEL_FONT);
-        hdr.setStyle(HEADER_BG + "; -fx-padding: 6 0 6 0;");
-        hdr.setAlignment(Pos.CENTER);
-        hdr.setMaxWidth(Double.MAX_VALUE);
-        return hdr;
+    private static Label createHeaderLabel(String text) {
+        Label header = new Label(text.replace("###", "").trim());
+        header.setFont(LABEL_FONT);
+        header.setStyle(HEADER_STYLE);
+        header.setAlignment(Pos.CENTER);
+        header.setMaxWidth(Double.MAX_VALUE);
+        return header;
     }
 
-    private static Button createActionButton(String txt) {
-        Button btn = new Button(txt);
-        btn.setFont(BUTTON_FONT);
-        btn.setFocusTraversable(false);
-        btn.setMaxWidth(Double.MAX_VALUE);
+    private static Button createActionButton(String text) {
+        Button button = new Button(text);
+        button.setFont(BUTTON_FONT);
+        button.setFocusTraversable(false);
+        button.setMaxWidth(Double.MAX_VALUE);
 
-        // Apply styles
-        if ("Side Effect".equals(txt)) {
-            btn.setStyle(SIDEEFFECT_BG);
-        } else if ("Quit".equals(txt)) {
-            btn.setStyle(QUIT_BG);
-        } else {
-            btn.setStyle(VACCINE_BG);
+        // Apply styles based on button type
+        switch (text) {
+            case "Side Effect" -> button.setStyle(SIDEEFFECT_BUTTON_STYLE);
+            case "Quit" -> button.setStyle(QUIT_BUTTON_STYLE);
+            default -> button.setStyle(VACCINE_BUTTON_STYLE);
         }
 
-        // Set the action
-        btn.setOnAction(e -> handleButtonClick(txt));
-        return btn;
+        button.setOnAction(e -> handleButtonClick(text));
+        return button;
     }
 
     /**
      * Positions the stage at the lower-right corner of the primary screen.
      */
-    private static void positionBottomRight(Stage stage) {
+    private static void positionStageAtBottomRight(Stage stage) {
         var screenBounds = Screen.getPrimary().getVisualBounds();
-        double x = screenBounds.getMaxX() - stage.getWidth();
-        double y = screenBounds.getMaxY() - stage.getHeight();
-        stage.setX(x);
-        stage.setY(y);
+        stage.setX(screenBounds.getMaxX() - stage.getWidth());
+        stage.setY(screenBounds.getMaxY() - stage.getHeight());
     }
 
     /**
-     * Handles all button click events.
+     * Central handler for all button click events.
      */
-    private static void handleButtonClick(String btnText) {
-        if ("Quit".equals(btnText)) {
-            if (activeStage != null) {
-                activeStage.close();
-            }
+    private static void handleButtonClick(String buttonText) {
+        switch (buttonText) {
+            case "Quit":
+                if (activeStage != null) activeStage.close();
+                break;
+            case "Side Effect":
+                VaccineSideEffect.open();
+                break;
+            default:
+                insertVaccineRecord(buttonText);
+                break;
+        }
+    }
+
+    /**
+     * Inserts a standardized vaccine record into the EMR text areas.
+     * @param vaccineName The name of the vaccine from the button text.
+     */
+    private static void insertVaccineRecord(String vaccineName) {
+        IAITextAreaManager emrManager = IAIMain.getTextAreaManager();
+        if (emrManager == null) {
+            showError("EMR Connection Error", "EMR text-area manager is not available.");
             return;
         }
 
-        if ("Side Effect".equals(btnText)) {
-            // Opens the side-effect entry modal
-            VaccineSideEffect.open();
-            return;
-        }
-
-        // -----------------------------------------------------------------
-        // 1. Build the three note fragments
-        // -----------------------------------------------------------------
-        String today = DATE_FMT.format(new Date());
-
-        String subjective = """
+        String today = DATE_FORMAT.format(new Date());
+        String subjectiveNote = """
                 The patient visits for Vaccination
-                  [ ✔ ]  no allergy to eggs, chicken
-                               , or any other component of the vaccine.
+                  [ ✔ ]  no allergy to eggs, chicken, or any other component of the vaccine.
                   [ ✔ ]  no s/p Guillain-Barré syndrome.
                   [ ✔ ]  no adverse reactions to previous vaccines.
                   [ ✔ ]  no immunosuppression.
                 """;
+        String assessmentNote = "\n #  " + vaccineName + "  [" + today + "]";
+        String planNote = "...Vaccination as scheduled";
 
-        String assessment = "\n #  " + btnText + "  [" + today + "]";
-        String plan = "...Vaccination as scheduled";
+        // Insert fragments into their respective EMR areas
+        emrManager.focusArea(1); // PI (Present Illness)
+        emrManager.insertBlockIntoFocusedArea(subjectiveNote);
 
-        // -----------------------------------------------------------------
-        // 2. Obtain the EMR text-area manager (once)
-        // -----------------------------------------------------------------
-        IAITextAreaManager mgr = IAIMain.getTextAreaManager();
-        if (mgr == null) {
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Error");
-            alert.setHeaderText("EMR Connection Error");
-            alert.setContentText("EMR text-area manager is not available.");
-            alert.showAndWait();
-            return;
-        }
+        emrManager.focusArea(7); // A (Assessment)
+        emrManager.insertLineIntoFocusedArea(assessmentNote);
 
-        // -----------------------------------------------------------------
-        // 3. Insert each fragment into its target area
-        //    (Assumes we are already on the FX Thread)
-        // -----------------------------------------------------------------
+        emrManager.focusArea(8); // P (Plan)
+        emrManager.insertLineIntoFocusedArea(planNote);
+    }
 
-        // Subjective → area 1 (PI)
-        mgr.focusArea(1);
-        mgr.insertBlockIntoFocusedArea(subjective);
-
-        // Assessment → area 7 (A)
-        mgr.focusArea(7);
-        mgr.insertLineIntoFocusedArea(assessment);
-
-        // Plan → area 8 (P)
-        mgr.focusArea(8);
-        mgr.insertLineIntoFocusedArea(plan);
+    private static void showError(String title, String content) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error");
+        alert.setHeaderText(title);
+        alert.setContentText(content);
+        alert.showAndWait();
     }
 }

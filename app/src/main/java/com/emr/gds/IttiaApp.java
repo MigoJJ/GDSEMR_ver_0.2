@@ -1,37 +1,17 @@
 package com.emr.gds;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.StringJoiner;
-
-import javax.swing.SwingUtilities;
-
 import com.emr.gds.fourgate.ChestPA;
 import com.emr.gds.fourgate.DEXA;
 import com.emr.gds.fourgate.EKG;
 import com.emr.gds.input.IAIFreqFrame;
 import com.emr.gds.input.IAIFxTextAreaManager;
 import com.emr.gds.input.IAIMain;
-import com.emr.gds.input.IAITextAreaManager; // Import the interface
+import com.emr.gds.input.IAITextAreaManager;
 import com.emr.gds.main.IAMButtonAction;
 import com.emr.gds.main.IAMFunctionkey;
 import com.emr.gds.main.IAMProblemAction;
 import com.emr.gds.main.IAMTextArea;
 import com.emr.gds.main.IAMTextFormatUtil;
-
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
@@ -54,14 +34,39 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import javax.swing.SwingUtilities;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.StringJoiner;
+
 /**
  * Main JavaFX Application for GDSEMR ITTIA - EMR Prototype.
- * Handles UI layout, database initialization, and user interactions.
+ * This class serves as the entry point for the application and is responsible for:
+ * - Initializing the main application window.
+ * - Setting up the user interface, including toolbars, text areas, and panels.
+ * - Managing database connections and loading initial data.
+ * - Handling user interactions, such as button clicks and keyboard shortcuts.
+ * - Coordinating communication between different UI components and managers.
  */
 public class IttiaApp extends Application {
 
     // ================================
-    // CONSTANTS
+    // Constants
     // ================================
     private static final String APP_TITLE = "GDSEMR ITTIA – EMR Prototype (JavaFX)";
     private static final int SCENE_WIDTH = 1350;
@@ -72,48 +77,66 @@ public class IttiaApp extends Application {
     private static final String DB_DRIVER = "org.sqlite.JDBC";
     private static final String DEFAULT_ABBREV_C = "hypercholesterolemia";
     private static final String DEFAULT_ABBREV_TO = "hypothyroidism";
-    private static final int INITIAL_FOCUS_AREA = 0; // First text area
+    private static final int INITIAL_FOCUS_AREA = 0; // Corresponds to the first text area
 
     // ================================
-    // INSTANCE VARIABLES
+    // UI and Core Logic Components
     // ================================
     private IAMProblemAction problemAction;
     private IAMButtonAction buttonAction;
-    private IAMTextArea textAreaManager; // Manages the UI text areas
+    private IAMTextArea textAreaManager;
     private Connection dbConn;
     private final Map<String, String> abbrevMap = new HashMap<>();
-    private IAIFreqFrame freqStage; // Vital window management (singleton pattern for reuse)
+    private IAIFreqFrame freqStage; // Manages the vital signs window
     private IAMFunctionkey functionKeyHandler;
     private Stage mainStage;
 
     // ================================
-    // APPLICATION LIFECYCLE
+    // Application Lifecycle
     // ================================
 
+    /**
+     * Main entry point for the JavaFX application.
+     * @param args Command-line arguments.
+     */
     public static void main(String[] args) {
         launch(args);
     }
 
+    /**
+     * Initializes and starts the primary stage of the application.
+     * @param primaryStage The primary stage for this application.
+     */
     @Override
     public void start(Stage primaryStage) {
         this.mainStage = primaryStage;
         primaryStage.setTitle(APP_TITLE);
 
         try {
-            initializeApplicationComponents(); // Initialize data, managers, DB
-            BorderPane root = buildRootLayout(); // Build UI
+            // Initialize core components before building the UI
+            initializeApplicationComponents();
+            
+            // Build the main layout
+            BorderPane root = buildRootLayout();
             Scene scene = new Scene(root, SCENE_WIDTH, SCENE_HEIGHT);
+            
             primaryStage.setScene(scene);
             primaryStage.show();
-            configurePostShow(scene); // Setup after showing stage
+            
+            // Perform setup tasks after the stage is visible
+            configurePostShow(scene);
         } catch (Exception e) {
-            showFatalError("Application Startup Error", "Failed to start the application: " + e.getMessage(), e);
+            showFatalError("Application Startup Error", "Failed to start the application.", e);
         }
     }
 
+    /**
+     * Cleans up resources when the application is closed.
+     */
     @Override
     public void stop() throws Exception {
         super.stop();
+        // Ensure the database connection is closed
         if (dbConn != null && !dbConn.isClosed()) {
             dbConn.close();
             System.out.println("Database connection closed.");
@@ -121,22 +144,27 @@ public class IttiaApp extends Application {
     }
 
     // ================================
-    // INITIALIZATION METHODS
+    // Initialization Methods
     // ================================
 
+    /**
+     * Initializes database connection and core application managers.
+     */
     private void initializeApplicationComponents() throws SQLException, IOException, ClassNotFoundException {
         initAbbrevDatabase();
-        // Initialize managers using 'this' after DB is ready
         problemAction = new IAMProblemAction(this);
         textAreaManager = new IAMTextArea(abbrevMap, problemAction);
         buttonAction = new IAMButtonAction(this, dbConn, abbrevMap);
         functionKeyHandler = new IAMFunctionkey(this);
     }
 
+    /**
+     * Sets up the connection to the abbreviations SQLite database.
+     */
     private void initAbbrevDatabase() throws ClassNotFoundException, SQLException, IOException {
         Class.forName(DB_DRIVER);
         Path dbFile = getDbPath(DB_FILENAME);
-        Files.createDirectories(dbFile.getParent());
+        Files.createDirectories(dbFile.getParent()); // Ensure the directory exists
         String url = DB_URL_PREFIX + dbFile.toAbsolutePath();
         System.out.println("[DB PATH] abbreviations -> " + dbFile.toAbsolutePath());
 
@@ -145,14 +173,21 @@ public class IttiaApp extends Application {
         loadAbbreviations();
     }
 
+    /**
+     * Creates the abbreviations table if it doesn't exist and inserts default values.
+     */
     private void createAbbreviationTable() throws SQLException {
         try (Statement stmt = dbConn.createStatement()) {
             stmt.execute("CREATE TABLE IF NOT EXISTS " + DB_TABLE_NAME + " (short TEXT PRIMARY KEY, full TEXT)");
+            // Insert default abbreviations if they don't already exist
             stmt.execute("INSERT OR IGNORE INTO " + DB_TABLE_NAME + " (short, full) VALUES ('c', '" + DEFAULT_ABBREV_C + "')");
             stmt.execute("INSERT OR IGNORE INTO " + DB_TABLE_NAME + " (short, full) VALUES ('to', '" + DEFAULT_ABBREV_TO + "')");
         }
     }
 
+    /**
+     * Loads all abbreviations from the database into the in-memory map.
+     */
     private void loadAbbreviations() throws SQLException {
         abbrevMap.clear();
         try (Statement stmt = dbConn.createStatement();
@@ -164,9 +199,12 @@ public class IttiaApp extends Application {
     }
 
     // ================================
-    // UI LAYOUT METHODS
+    // UI Layout Methods
     // ================================
 
+    /**
+     * Constructs the root BorderPane layout for the main scene.
+     */
     private BorderPane buildRootLayout() {
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
@@ -176,14 +214,19 @@ public class IttiaApp extends Application {
         root.setCenter(buildCenterPanel());
         root.setBottom(buildBottomPanel());
 
-        establishBridgeConnection(); // Setup bridge connection after UI is built
+        // Establish the connection bridge for inter-component communication
+        establishBridgeConnection();
 
         return root;
     }
 
+    /**
+     * Builds the top toolbar with action buttons.
+     */
     private ToolBar buildTopToolBar() {
         ToolBar topBar = buttonAction.buildTopBar();
 
+        // Create and configure additional buttons
         Button templateButton = new Button("Load Template");
         templateButton.setOnAction(e -> openTemplateEditor());
 
@@ -198,40 +241,49 @@ public class IttiaApp extends Application {
         
         Button cpaButton = new Button("ChestPA");
         cpaButton.setOnAction(event -> {
-            // Use the class field 'mainStage' here
             ChestPA chestPAWindow = new ChestPA(mainStage);
             chestPAWindow.show();
         });
         
+        // Add buttons to the toolbar
         topBar.getItems().addAll(
             new Separator(), templateButton,
             new Separator(), vitalButton,
             new Separator(), dexaButton,
             new Separator(), ekgButton,
             new Separator(), cpaButton
-
         );
         return topBar;
     }
 
+    /**
+     * Builds the left panel containing the problem list.
+     */
     private VBox buildLeftPanel() {
         VBox leftPanel = problemAction.buildProblemPane();
         BorderPane.setMargin(leftPanel, new Insets(0, 10, 0, 0));
         return leftPanel;
     }
 
+    /**
+     * Builds the center panel with the main EMR text areas.
+     */
     private GridPane buildCenterPanel() {
         GridPane centerPane = textAreaManager.buildCenterAreas();
         centerPane.setStyle("-fx-background-color: linear-gradient(to bottom right, #FFFACD, #FAFAD2);");
         return centerPane;
     }
 
+    /**
+     * Builds the bottom toolbar.
+     */
     private ToolBar buildBottomPanel() {
         try {
             return buttonAction.buildBottomBar();
         } catch (Exception e) {
             System.err.println("Error building bottom panel: " + e.getMessage());
             e.printStackTrace();
+            // Provide a fallback UI in case of an error
             ToolBar fallbackToolBar = new ToolBar();
             Label errorLabel = new Label("Error loading bottom panel");
             errorLabel.setStyle("-fx-text-fill: red; -fx-font-size: 12px;");
@@ -241,15 +293,19 @@ public class IttiaApp extends Application {
     }
 
     // ================================
-    // WINDOW MANAGEMENT
+    // Window Management
     // ================================
 
+    /**
+     * Opens or focuses the vital signs window.
+     */
     public void openVitalWindow() {
         if (!isBridgeReady()) {
             showToast("Text areas not ready yet. Please try again in a moment.");
             return;
         }
 
+        // Use a singleton pattern for the vital signs window
         if (freqStage == null || !freqStage.isShowing()) {
             freqStage = new IAIFreqFrame();
         } else {
@@ -258,9 +314,14 @@ public class IttiaApp extends Application {
         }
     }
 
+    /**
+     * Opens the EMR template editor.
+     */
     private void openTemplateEditor() {
         SwingUtilities.invokeLater(() -> {
+            // The editor runs in the Swing EDT
             IAFMainEdit editor = new IAFMainEdit(templateContent ->
+                // When a template is selected, update the JavaFX UI on the FX Application Thread
                 Platform.runLater(() -> textAreaManager.parseAndAppendTemplate(templateContent))
             );
             editor.setVisible(true);
@@ -268,12 +329,16 @@ public class IttiaApp extends Application {
     }
 
     // ================================
-    // POST-INITIALIZATION SETUP
+    // Post-Initialization Setup
     // ================================
 
+    /**
+     * Configures the application after the main stage is shown.
+     */
     private void configurePostShow(Scene scene) {
         Platform.runLater(() -> {
-            if (!isBridgeReady()) { // Re-check or ensure bridge after UI is shown
+            // Ensure the bridge is ready and set initial focus
+            if (!isBridgeReady()) {
                 establishBridgeConnection();
             }
             textAreaManager.focusArea(INITIAL_FOCUS_AREA);
@@ -281,54 +346,79 @@ public class IttiaApp extends Application {
         installAllKeyboardShortcuts(scene);
     }
 
+    /**
+     * Establishes a static bridge to allow external components (like Swing windows)
+     * to interact with the JavaFX text areas.
+     */
     private void establishBridgeConnection() {
         var areas = textAreaManager.getTextAreas();
-        if (areas == null || areas.isEmpty()) { // Check for empty, not just size
+        if (areas == null || areas.isEmpty()) {
             throw new IllegalStateException("EMR text areas not initialized. buildCenterAreas() must run first.");
         }
         // Set the global static manager for external access
         IAIMain.setTextAreaManager(new IAIFxTextAreaManager(areas));
     }
 
+    /**
+     * Checks if the text area bridge is ready for interaction.
+     */
     private boolean isBridgeReady() {
-        return Optional.ofNullable(IAIMain.getTextAreaManager()).map(IAITextAreaManager::isReady).orElse(false);
+        return Optional.ofNullable(IAIMain.getTextAreaManager())
+                       .map(IAITextAreaManager::isReady)
+                       .orElse(false);
     }
 
     // ================================
-    // KEYBOARD SHORTCUTS
+    // Keyboard Shortcuts
     // ================================
 
+    /**
+     * Installs all keyboard shortcuts for the application.
+     */
     private void installAllKeyboardShortcuts(Scene scene) {
         installGlobalKeyboardShortcuts(scene);
-        functionKeyHandler.installFunctionKeyShortcuts(scene); // Simplified call
+        functionKeyHandler.installFunctionKeyShortcuts(scene);
     }
 
+    /**
+     * Installs global shortcuts like date insertion, formatting, and copying.
+     */
     private void installGlobalKeyboardShortcuts(Scene scene) {
         Map<KeyCombination, Runnable> shortcuts = new HashMap<>();
 
-                shortcuts.put(new KeyCodeCombination(KeyCode.I, KeyCombination.CONTROL_DOWN), () -> {
+        // Ctrl+I: Insert current date
+        shortcuts.put(new KeyCodeCombination(KeyCode.I, KeyCombination.CONTROL_DOWN), () -> {
             String currentDateString = " [ " + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + " ]";
             insertLineIntoFocusedArea(currentDateString);
         });
+        
+        // Ctrl+Shift+F: Format current text area
         shortcuts.put(new KeyCodeCombination(KeyCode.F, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN), this::formatCurrentArea);
+        
+        // Ctrl+Shift+C: Copy all content to clipboard
         shortcuts.put(new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN), this::copyAllToClipboard);
 
         addAreaFocusShortcuts(shortcuts);
 
+        // Register all shortcuts with the scene
         shortcuts.forEach((keyCombination, action) -> scene.getAccelerators().put(keyCombination, action));
     }
 
+    /**
+     * Adds shortcuts (Ctrl+1 through Ctrl+0) to focus specific text areas.
+     */
     private void addAreaFocusShortcuts(Map<KeyCombination, Runnable> shortcuts) {
         for (int i = 1; i <= 9; i++) {
             final int areaIndex = i - 1;
             shortcuts.put(new KeyCodeCombination(KeyCode.getKeyCode(String.valueOf(i)), KeyCombination.CONTROL_DOWN),
                           () -> textAreaManager.focusArea(areaIndex));
         }
+        // Ctrl+0 focuses the 10th area
         shortcuts.put(new KeyCodeCombination(KeyCode.DIGIT0, KeyCombination.CONTROL_DOWN), () -> textAreaManager.focusArea(9));
     }
 
     // ================================
-    // TEXT MANIPULATION METHODS
+    // Text Manipulation Methods
     // ================================
 
     public void insertTemplateIntoFocusedArea(IAMButtonAction.TemplateLibrary template) {
@@ -354,9 +444,12 @@ public class IttiaApp extends Application {
     }
 
     // ================================
-    // CLIPBOARD OPERATIONS
+    // Clipboard Operations
     // ================================
 
+    /**
+     * Compiles all EMR content, formats it, and copies it to the system clipboard.
+     */
     public void copyAllToClipboard() {
         String compiledContent = compileAllContent();
         String finalizedContent = IAMTextFormatUtil.finalizeForEMR(compiledContent);
@@ -368,6 +461,9 @@ public class IttiaApp extends Application {
         showToast("Copied all content to clipboard");
     }
 
+    /**
+     * Gathers content from the problem list and all text areas.
+     */
     private String compileAllContent() {
         StringJoiner contentJoiner = new StringJoiner("\n\n");
         addProblemListToContent(contentJoiner);
@@ -375,23 +471,29 @@ public class IttiaApp extends Application {
         return contentJoiner.toString();
     }
 
+    /**
+     * Appends the formatted problem list to the content joiner.
+     */
     private void addProblemListToContent(StringJoiner contentJoiner) {
-        ObservableList<String> problems = Optional.ofNullable(problemAction)
-                                                  .map(IAMProblemAction::getProblems)
-                                                  .orElse(null);
-        if (problems != null && !problems.isEmpty()) {
-            StringBuilder problemBuilder = new StringBuilder("# Problem List (as of ")
-                    .append(LocalDate.now().format(DateTimeFormatter.ISO_DATE))
-                    .append(")\n");
-            problems.forEach(problem -> problemBuilder.append("- ").append(problem).append("\n"));
-            contentJoiner.add(problemBuilder.toString().trim());
-        }
+        Optional.ofNullable(problemAction)
+                .map(IAMProblemAction::getProblems)
+                .filter(problems -> !problems.isEmpty())
+                .ifPresent(problems -> {
+                    StringBuilder problemBuilder = new StringBuilder("# Problem List (as of ")
+                            .append(LocalDate.now().format(DateTimeFormatter.ISO_DATE))
+                            .append(")\n");
+                    problems.forEach(problem -> problemBuilder.append("- ").append(problem).append("\n"));
+                    contentJoiner.add(problemBuilder.toString().trim());
+                });
     }
 
+    /**
+     * Appends content from each text area to the content joiner.
+     */
     private void addTextAreasToContent(StringJoiner contentJoiner) {
         List<TextArea> textAreas = Optional.ofNullable(textAreaManager)
                                            .map(IAMTextArea::getTextAreas)
-                                           .orElse(List.of()); // Return empty list if manager is null
+                                           .orElse(List.of());
 
         for (int i = 0; i < textAreas.size(); i++) {
             String uniqueText = IAMTextFormatUtil.getUniqueLines(textAreas.get(i).getText());
@@ -402,28 +504,41 @@ public class IttiaApp extends Application {
         }
     }
 
+    /**
+     * Retrieves the title for a given text area index.
+     */
     private String getAreaTitle(int areaIndex) {
-        return (areaIndex < IAMTextArea.TEXT_AREA_TITLES.length) ?
-                IAMTextArea.TEXT_AREA_TITLES[areaIndex].replaceAll(">$", "") :
-                "Area " + (areaIndex + 1);
+        return (areaIndex < IAMTextArea.TEXT_AREA_TITLES.length)
+                ? IAMTextArea.TEXT_AREA_TITLES[areaIndex].replaceAll(">$", "")
+                : "Area " + (areaIndex + 1);
     }
 
     // ================================
-    // UTILITY METHODS
+    // Utility Methods
     // ================================
 
+    /**
+     * Finds the root directory of the repository.
+     */
     private Path getRepoRoot() {
         Path p = Paths.get("").toAbsolutePath();
+        // Traverse up until a marker file is found
         while (p != null && !Files.exists(p.resolve("gradlew")) && !Files.exists(p.resolve(".git"))) {
             p = p.getParent();
         }
         return (p != null) ? p : Paths.get("").toAbsolutePath();
     }
 
+    /**
+     * Constructs the full path to a database file within the project structure.
+     */
     private Path getDbPath(String fileName) {
         return getRepoRoot().resolve("app").resolve("db").resolve(fileName);
     }
 
+    /**
+     * Displays a simple informational pop-up message.
+     */
     private void showToast(String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK);
         alert.setHeaderText(null);
@@ -431,27 +546,30 @@ public class IttiaApp extends Application {
         alert.showAndWait();
     }
 
+    /**
+     * Displays a fatal error message and exits the application.
+     */
     private void showFatalError(String title, String message, Throwable cause) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
         alert.setHeaderText("A fatal error occurred.");
         alert.setContentText(message + "\n\nDetails: " + cause.getMessage());
-        alert.getDialogPane().setExpandableContent(new TextArea(formatStackTrace(cause)));
+        
+        // Add expandable stack trace
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        cause.printStackTrace(pw);
+        TextArea textArea = new TextArea(sw.toString());
+        textArea.setEditable(false);
+        textArea.setWrapText(true);
+        alert.getDialogPane().setExpandableContent(textArea);
+        
         alert.showAndWait();
-        Platform.exit(); // Exit the application on fatal error
-    }
-
-    private String formatStackTrace(Throwable t) {
-        StringJoiner sj = new StringJoiner("\n");
-        sj.add(t.toString());
-        for (StackTraceElement element : t.getStackTrace()) {
-            sj.add("\tat " + element);
-        }
-        return sj.toString();
+        Platform.exit();
     }
 
     // ================================
-    // GETTER METHODS (public for manager access)
+    // Getters for Component Access
     // ================================
 
     public IAMTextArea getTextAreaManager() {

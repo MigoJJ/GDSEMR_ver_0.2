@@ -1,4 +1,3 @@
-// VaccineSelector.java
 package com.emr.gds.fourgate.vaccine;
 
 import javafx.collections.FXCollections;
@@ -10,23 +9,43 @@ import javafx.scene.layout.VBox;
 
 import java.util.function.Consumer;
 
-// Import the new constants class
-import com.emr.gds.fourgate.vaccine.VaccineConstants;
-
+/**
+ * A custom JavaFX VBox component that provides a ComboBox for selecting vaccines.
+ * It uses a predefined list of vaccines from {@link VaccineConstants} and handles
+ * header and action items appropriately.
+ */
 public class VaccineSelector extends VBox {
 
-    // --- This local definition has been removed ---
-    // private static final String[] UI_ELEMENTS = { ... };
-
     private final ComboBox<String> comboBox;
-    private Consumer<String> onSelected; // 선택 콜백
+    private Consumer<String> onSelectedCallback;
 
     public VaccineSelector() {
-        // Use the imported VaccineConstants.UI_ELEMENTS array
+        // Initialize the ComboBox with items from the constants file
         comboBox = new ComboBox<>(FXCollections.observableArrayList(VaccineConstants.UI_ELEMENTS));
+        comboBox.setPromptText("Select a vaccine...");
 
-        // 헤더/액션을 비활성 헤더처럼 렌더링
-        comboBox.setCellFactory(cb -> new ListCell<>() {
+        // Customize the rendering of ComboBox cells to handle headers and actions
+        configureCellFactory();
+        configureButtonCell();
+
+        // Set the action to be performed when a vaccine is selected
+        comboBox.setOnAction(e -> {
+            String selectedItem = comboBox.getValue();
+            if (selectedItem != null && !isHeaderOrAction(selectedItem) && onSelectedCallback != null) {
+                onSelectedCallback.accept(selectedItem);
+            }
+        });
+
+        getChildren().addAll(new Label("Vaccine Selection:"), comboBox);
+        setSpacing(10);
+    }
+
+    /**
+     * Configures the cell factory for the ComboBox dropdown list.
+     * Headers and actions are rendered as disabled, styled text.
+     */
+    private void configureCellFactory() {
+        comboBox.setCellFactory(listView -> new ListCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -34,78 +53,99 @@ public class VaccineSelector extends VBox {
                     setText(null);
                     setDisable(false);
                     setStyle("");
-                    return;
-                }
-                if (isHeaderOrAction(item)) {
+                } else if (isHeaderOrAction(item)) {
                     setText(stripHeader(item));
-                    setStyle("-fx-font-weight: bold; -fx-background-color: #e0e0e0;");
-                    setDisable(true); // 선택 불가
+                    setStyle("-fx-font-weight: bold; -fx-background-color: #f0f0f0;");
+                    setDisable(true); // Make headers unselectable
                 } else {
                     setText(item);
-                    setStyle("");
                     setDisable(false);
+                    setStyle("");
                 }
             }
         });
+    }
 
-        // 버튼셀
+    /**
+     * Configures the button cell of the ComboBox (the part that is always visible).
+     * It ensures that headers or actions are not displayed as the selected item.
+     */
+    private void configureButtonCell() {
         comboBox.setButtonCell(new ListCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null || isHeaderOrAction(item)) setText(null);
-                else setText(item);
+                if (empty || item == null || isHeaderOrAction(item)) {
+                    setText(null);
+                } else {
+                    setText(item);
+                }
             }
         });
-
-        comboBox.setPromptText("Select a vaccine...");
-
-        // 선택 이벤트 → 콜백 호출
-        comboBox.setOnAction(e -> {
-            String sel = comboBox.getValue();
-            if (sel == null || isHeaderOrAction(sel)) return;
-            if (onSelected != null) onSelected.accept(sel);
-            // (선택 후 초기화하고 싶으면) comboBox.getSelectionModel().clearSelection();
-        });
-
-        getChildren().addAll(new Label("Vaccine Selection:"), comboBox);
-        setSpacing(10);
     }
 
-    // ===== 공개 API =====
+    // ================================
+    // Public API for Fluent Configuration
+    // ================================
 
-    /** 선택 시 호출될 콜백 등록 */
+    /**
+     * Registers a callback to be executed when a vaccine is selected.
+     * @param handler The consumer to handle the selected vaccine string.
+     * @return This VaccineSelector instance for method chaining.
+     */
     public VaccineSelector onSelected(Consumer<String> handler) {
-        this.onSelected = handler;
+        this.onSelectedCallback = handler;
         return this;
     }
 
-    /** 선택값을 주어진 TextField의 텍스트로 교체 */
+    /**
+     * Binds the selector to a TextField, replacing its content on selection.
+     * @param field The TextField to bind to.
+     * @return This VaccineSelector instance for method chaining.
+     */
     public VaccineSelector bindTo(TextField field) {
-        return onSelected(sel -> field.setText(sel));
+        return onSelected(field::setText);
     }
 
-    /** 선택값을 주어진 TextField 뒤에 ", "로 구분하여 추가(append) */
+    /**
+     * Binds the selector to a TextField, appending the selection to its content.
+     * @param field The TextField to append to.
+     * @return This VaccineSelector instance for method chaining.
+     */
     public VaccineSelector bindAppend(TextField field) {
-        return onSelected(sel -> {
-            String prev = field.getText();
-            if (prev == null || prev.isBlank()) field.setText(sel);
-            else field.setText(prev + ", " + sel);
+        return onSelected(selection -> {
+            String previousText = field.getText();
+            if (previousText == null || previousText.isBlank()) {
+                field.setText(selection);
+            } else {
+                field.setText(previousText + ", " + selection);
+            }
         });
     }
 
+    /**
+     * Gets the currently selected vaccine.
+     * @return The selected vaccine string, or null if none is selected.
+     */
     public String getSelectedVaccine() {
         return comboBox.getValue();
     }
 
-    // ===== 내부 유틸 =====
+    // ================================
+    // Internal Utility Methods
+    // ================================
+
+    /**
+     * Checks if a given string is a header or an action item.
+     */
     private static boolean isHeaderOrAction(String s) {
-        if (s.startsWith("###")) return true;
-        // These "magic strings" are also part of UI_ELEMENTS, so this is fine.
-        return "Side Effect".equals(s) || "Quit".equals(s);
+        return s != null && (s.startsWith("###") || "Side Effect".equals(s) || "Quit".equals(s));
     }
 
+    /**
+     * Removes the "###" prefix from header strings.
+     */
     private static String stripHeader(String s) {
-        return s.startsWith("###") ? s.replace("###", "").trim() : s;
+        return s.startsWith("###") ? s.substring(3).trim() : s;
     }
 }

@@ -1,255 +1,191 @@
 package com.emr.gds.main;
 
+import com.emr.gds.IttiaApp;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
+import javafx.stage.Stage;
+
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.emr.gds.IttiaApp;
-
 /**
- * Function Key Handler for IttiaApp
- * Manages F1-F12 key bindings and their corresponding actions
+ * Manages F1-F12 function key bindings and their corresponding actions for the main application.
+ * This class centralizes all function key handling logic.
  */
 public class IAMFunctionkey {
-    
+
     private final IttiaApp mainApp;
-    private final Map<KeyCode, FunctionKeyAction> functionKeyActions;
-    
+    private final Map<KeyCode, FunctionKeyAction> functionKeyActions = new HashMap<>();
+
     /**
-     * Interface for function key actions
+     * A functional interface for defining an action to be executed by a function key.
      */
     @FunctionalInterface
     public interface FunctionKeyAction {
         void execute();
     }
-    
+
     /**
-     * Constructor
-     * @param mainApp Reference to the main IttiaApp instance
+     * Constructor for the function key handler.
+     * @param mainApp A reference to the main IttiaApp instance.
      */
     public IAMFunctionkey(IttiaApp mainApp) {
         this.mainApp = mainApp;
-        this.functionKeyActions = new HashMap<>();
         initializeFunctionKeyActions();
     }
-    
+
     /**
-     * Initialize all F1-F12 key actions
+     * Initializes the default actions for all F1-F12 keys.
      */
     private void initializeFunctionKeyActions() {
-        // F1 - Help/About
         functionKeyActions.put(KeyCode.F1, this::showHelp);
-        
-        // F2 - Template Quick Insert
         functionKeyActions.put(KeyCode.F2, this::quickInsertTemplate);
-        
-        // F3 - Search/Find in current area
         functionKeyActions.put(KeyCode.F3, this::findInCurrentArea);
-        
-        // F4 - Open Vital Window
-        functionKeyActions.put(KeyCode.F4, () -> mainApp.openVitalWindow());
-        
-        // F5 - Refresh/Reload data
+        functionKeyActions.put(KeyCode.F4, mainApp::openVitalWindow);
         functionKeyActions.put(KeyCode.F5, this::refreshData);
-        
-        // F6 - Format current area
-        functionKeyActions.put(KeyCode.F6, () -> mainApp.formatCurrentArea());
-        
-        // F7 - Spell check current area
+        functionKeyActions.put(KeyCode.F6, mainApp::formatCurrentArea);
         functionKeyActions.put(KeyCode.F7, this::spellCheckCurrentArea);
-        
-        // F8 - Toggle word wrap
         functionKeyActions.put(KeyCode.F8, this::toggleWordWrap);
-        
-        // F9 - Save current state
         functionKeyActions.put(KeyCode.F9, this::saveCurrentState);
-        
-        // F10 - Show all shortcuts
         functionKeyActions.put(KeyCode.F10, this::showAllShortcuts);
-        
-        // F11 - Toggle fullscreen mode
         functionKeyActions.put(KeyCode.F11, this::toggleFullscreen);
-        
-        // F12 - Copy all to clipboard
-        functionKeyActions.put(KeyCode.F12, () -> mainApp.copyAllToClipboard());
+        functionKeyActions.put(KeyCode.F12, mainApp::copyAllToClipboard);
     }
-    
+
     /**
-     * Install function key shortcuts to the given scene
-     * @param scene The JavaFX scene to install shortcuts on
+     * Installs the function key shortcuts onto the given JavaFX scene.
+     * This method binds both the direct function key (e.g., F1) and its Alt-modified version (e.g., Alt+F1).
+     * @param scene The JavaFX scene to which the shortcuts will be added.
      */
     public void installFunctionKeyShortcuts(Scene scene) {
         for (Map.Entry<KeyCode, FunctionKeyAction> entry : functionKeyActions.entrySet()) {
             KeyCode keyCode = entry.getKey();
-            FunctionKeyAction action = entry.getValue();
-            
-            // Install direct function key
-            scene.getAccelerators().put(
-                new KeyCodeCombination(keyCode), 
-                action::execute
-            );
-            
-            // Also install with Alt modifier for additional flexibility
-            scene.getAccelerators().put(
-                new KeyCodeCombination(keyCode, KeyCombination.ALT_DOWN),
-                action::execute
-            );
+            Runnable action = entry.getValue()::execute;
+
+            scene.getAccelerators().put(new KeyCodeCombination(keyCode), action);
+            scene.getAccelerators().put(new KeyCodeCombination(keyCode, KeyCombination.ALT_DOWN), action);
         }
     }
-    
+
     // ================================
-    // FUNCTION KEY ACTION IMPLEMENTATIONS
+    // Function Key Action Implementations
     // ================================
-    
+
     private void showHelp() {
-        String helpText = buildHelpText();
-        showInfoDialog("Help - Function Keys", helpText);
+        showInfoDialog("Help - Function Keys", buildHelpText());
     }
-    
-    private String buildHelpText() {
-        return """
-            Function Key Shortcuts:
-            
-            F1  - Show this help dialog
-            F2  - Quick template insert
-            F3  - Find in current text area
-            F4  - Open Vital BP & HbA1c window
-            F5  - Refresh/Reload data
-            F6  - Format current text area
-            F7  - Spell check current area
-            F8  - Toggle word wrap
-            F9  - Save current state
-            F10 - Show all keyboard shortcuts
-            F11 - Toggle fullscreen mode
-            F12 - Copy all content to clipboard
-            
-            Other Shortcuts:
-            Ctrl+1-9, Ctrl+0 - Focus text areas 1-10
-            Ctrl+I - Insert HPI template
-            Ctrl+Shift+F - Format current area
-            Ctrl+Shift+C - Copy all to clipboard
-            """;
-    }
-    
+
     private void quickInsertTemplate() {
         try {
-            // Insert HPI template as default quick template
-            mainApp.insertTemplateIntoFocusedArea(
-                com.emr.gds.main.IAMButtonAction.TemplateLibrary.HPI
-            );
-            showToast("HPI template inserted");
+            mainApp.insertTemplateIntoFocusedArea(IAMButtonAction.TemplateLibrary.HPI);
+            showToast("HPI template inserted.");
         } catch (Exception e) {
             showErrorDialog("Template Insert Error", "Failed to insert template: " + e.getMessage());
         }
     }
-    
+
     private void findInCurrentArea() {
-        showInfoDialog("Find Function", "Find functionality will be implemented in future version.");
+        showInfoDialog("Find Function", "Find functionality will be implemented in a future version.");
     }
-    
+
     private void refreshData() {
-        try {
-            // Refresh abbreviations from database
-            mainApp.getAbbrevMap().clear();
-            // Re-load abbreviations (this would need to be implemented in IttiaApp)
-            showToast("Data refreshed successfully");
-        } catch (Exception e) {
-            showErrorDialog("Refresh Error", "Failed to refresh data: " + e.getMessage());
-        }
+        showInfoDialog("Refresh Data", "Data refresh functionality will be implemented in a future version.");
     }
-    
+
     private void spellCheckCurrentArea() {
-        showInfoDialog("Spell Check", "Spell check functionality will be implemented in future version.");
+        showInfoDialog("Spell Check", "Spell check functionality will be implemented in a future version.");
     }
-    
+
     private void toggleWordWrap() {
         try {
             var textAreas = mainApp.getTextAreaManager().getTextAreas();
-            if (textAreas != null && !textAreas.isEmpty()) {
-                // Toggle word wrap for all text areas
-                boolean currentWrap = textAreas.get(0).isWrapText();
-                textAreas.forEach(textArea -> textArea.setWrapText(!currentWrap));
-                showToast("Word wrap " + (!currentWrap ? "enabled" : "disabled"));
+            if (!textAreas.isEmpty()) {
+                boolean isWrapActive = !textAreas.get(0).isWrapText();
+                textAreas.forEach(textArea -> textArea.setWrapText(isWrapActive));
+                showToast("Word wrap " + (isWrapActive ? "enabled." : "disabled."));
             }
         } catch (Exception e) {
             showErrorDialog("Word Wrap Error", "Failed to toggle word wrap: " + e.getMessage());
         }
     }
-    
+
     private void saveCurrentState() {
-        showInfoDialog("Save State", "Auto-save functionality will be implemented in future version.");
+        showInfoDialog("Save State", "Auto-save functionality will be implemented in a future version.");
     }
-    
+
     private void showAllShortcuts() {
-        String shortcutsText = buildAllShortcutsText();
-        showInfoDialog("All Keyboard Shortcuts", shortcutsText);
+        showInfoDialog("All Keyboard Shortcuts", buildAllShortcutsText());
     }
-    
-    private String buildAllShortcutsText() {
-        return """
-            Complete Keyboard Shortcuts Reference:
-            
-            === FUNCTION KEYS ===
-            F1  - Help dialog
-            F2  - Quick template insert
-            F3  - Find in current area
-            F4  - Open Vital window
-            F5  - Refresh data
-            F6  - Format current area
-            F7  - Spell check
-            F8  - Toggle word wrap
-            F9  - Save state
-            F10 - This shortcuts dialog
-            F11 - Toggle fullscreen
-            F12 - Copy all to clipboard
-            
-            === CONTROL KEYS ===
-            Ctrl+1 to Ctrl+9 - Focus text areas 1-9
-            Ctrl+0 - Focus text area 10
-            Ctrl+I - Insert HPI template
-            Ctrl+Shift+F - Format current area
-            Ctrl+Shift+C - Copy all to clipboard
-            
-            === ALT KEYS ===
-            Alt+F1 to Alt+F12 - Alternative function key access
-            """;
-    }
-    
+
     private void toggleFullscreen() {
         try {
-            var stage = mainApp.getTextAreaManager().getTextAreas().get(0).getScene().getWindow();
-            if (stage instanceof javafx.stage.Stage) {
-                javafx.stage.Stage primaryStage = (javafx.stage.Stage) stage;
-                primaryStage.setFullScreen(!primaryStage.isFullScreen());
-                showToast("Fullscreen " + (primaryStage.isFullScreen() ? "enabled" : "disabled"));
-            }
+            Stage stage = (Stage) mainApp.getTextAreaManager().getTextAreas().get(0).getScene().getWindow();
+            boolean isFullScreen = !stage.isFullScreen();
+            stage.setFullScreen(isFullScreen);
+            showToast("Fullscreen " + (isFullScreen ? "enabled." : "disabled."));
         } catch (Exception e) {
             showErrorDialog("Fullscreen Error", "Failed to toggle fullscreen: " + e.getMessage());
         }
     }
-    
+
     // ================================
-    // UTILITY METHODS
+    // Helper and Utility Methods
     // ================================
-    
-    private void showToast(String message) {
-        showInfoDialog("Info", message);
+
+    private String buildHelpText() {
+        return """
+            Function Key Shortcuts:
+
+            F1  - Show this help dialog
+            F2  - Quick insert HPI template
+            F3  - Find in current text area (Not implemented)
+            F4  - Open Vital BP & HbA1c window
+            F5  - Refresh/Reload data (Not implemented)
+            F6  - Format current text area
+            F7  - Spell check current area (Not implemented)
+            F8  - Toggle word wrap for all areas
+            F9  - Save current state (Not implemented)
+            F10 - Show all keyboard shortcuts
+            F11 - Toggle fullscreen mode
+            F12 - Copy all content to clipboard
+            """;
     }
-    
+
+    private String buildAllShortcutsText() {
+        return buildHelpText() + """
+
+            Other Shortcuts:
+            Ctrl+1 to Ctrl+9 - Focus text areas 1-9
+            Ctrl+0 - Focus text area 10
+            Ctrl+I - Insert current date
+            Ctrl+Shift+F - Format current area
+            Ctrl+Shift+C - Copy all to clipboard
+            """;
+    }
+
+    private void showToast(String message) {
+        // A toast is a temporary, non-blocking notification. An alert is a simple way to simulate this.
+        Alert alert = new Alert(Alert.AlertType.INFORMATION, message);
+        alert.setTitle("Info");
+        alert.setHeaderText(null);
+        // Additional setup to make it more toast-like could be added here.
+        alert.showAndWait();
+    }
+
     private void showInfoDialog(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION, message, ButtonType.OK);
         alert.setHeaderText(null);
         alert.setTitle(title);
-        alert.setResizable(true);
         alert.getDialogPane().setPrefWidth(500);
+        alert.setResizable(true);
         alert.showAndWait();
     }
-    
+
     private void showErrorDialog(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR, message, ButtonType.OK);
         alert.setHeaderText(null);
@@ -257,47 +193,40 @@ public class IAMFunctionkey {
         alert.setResizable(true);
         alert.showAndWait();
     }
-    
+
     // ================================
-    // CONFIGURATION METHODS
+    // Configuration Methods
     // ================================
-    
+
+    private static final EnumSet<KeyCode> FUNCTION_KEYS = EnumSet.of(
+            KeyCode.F1, KeyCode.F2, KeyCode.F3, KeyCode.F4, KeyCode.F5, KeyCode.F6,
+            KeyCode.F7, KeyCode.F8, KeyCode.F9, KeyCode.F10, KeyCode.F11, KeyCode.F12
+    );
+
     /**
-     * Add or update a function key action
-     * @param keyCode The function key code
-     * @param action The action to execute
+     * Assigns or updates the action for a specific function key.
+     * @param keyCode The function key to modify (must be one of F1-F12).
+     * @param action The new action to execute.
+     * @throws IllegalArgumentException if the keyCode is not a valid function key.
      */
     public void setFunctionKeyAction(KeyCode keyCode, FunctionKeyAction action) {
-        if (isFunctionKey(keyCode)) {
-            functionKeyActions.put(keyCode, action);
-        } else {
-            throw new IllegalArgumentException("Key code must be a function key (F1-F12)");
+        if (!FUNCTION_KEYS.contains(keyCode)) {
+            throw new IllegalArgumentException("Key code must be a function key (F1-F12).");
         }
+        functionKeyActions.put(keyCode, action);
     }
-    
+
     /**
-     * Remove a function key action
-     * @param keyCode The function key code to remove
+     * Removes the action associated with a function key.
+     * @param keyCode The function key to clear.
      */
     public void removeFunctionKeyAction(KeyCode keyCode) {
         functionKeyActions.remove(keyCode);
     }
-    
+
     /**
-     * Check if a key code is a function key
-     * @param keyCode The key code to check
-     * @return true if it's F1-F12
-     */
-    private boolean isFunctionKey(KeyCode keyCode) {
-        return keyCode == KeyCode.F1 || keyCode == KeyCode.F2 || keyCode == KeyCode.F3 ||
-               keyCode == KeyCode.F4 || keyCode == KeyCode.F5 || keyCode == KeyCode.F6 ||
-               keyCode == KeyCode.F7 || keyCode == KeyCode.F8 || keyCode == KeyCode.F9 ||
-               keyCode == KeyCode.F10 || keyCode == KeyCode.F11 || keyCode == KeyCode.F12;
-    }
-    
-    /**
-     * Get all currently registered function key actions
-     * @return Map of key codes to their actions
+     * Returns a copy of the current map of function key actions.
+     * @return A map of KeyCodes to their assigned FunctionKeyAction.
      */
     public Map<KeyCode, FunctionKeyAction> getFunctionKeyActions() {
         return new HashMap<>(functionKeyActions);

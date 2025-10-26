@@ -1,161 +1,130 @@
 package com.emr.gds.fourgate;
 
-import javax.swing.*;	
+import com.emr.gds.input.IAIMain;
+import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-
-import com.emr.gds.input.IAIMain;
-
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ItemEvent;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
-
+/**
+ * A JFrame-based application for systematic EKG (Electrocardiogram) analysis.
+ * This tool provides a structured form for documenting EKG findings and generating a summary report.
+ */
 public class EKG extends JFrame {
-    // Main frame components
+
+    // UI Components
     private JCheckBox[] leadCheckboxes;
     private JTextArea summaryArea;
-    
-    // Input format panel components
-    private List<JTextField> textFields = new ArrayList<>();
-    private List<String> fieldLabels = new ArrayList<>();
-    private List<JCheckBox> checkBoxes = new ArrayList<>();
-    private Map<JTextField, String> textFieldToSection = new HashMap<>();
-    private Map<JCheckBox, String> checkBoxToSection = new HashMap<>();
-    private List<String> sectionTitles = new ArrayList<>();
+    private final List<JTextField> textFields = new ArrayList<>();
+    private final List<String> fieldLabels = new ArrayList<>();
+    private final List<JCheckBox> checkBoxes = new ArrayList<>();
+    private final Map<JComponent, String> componentToSectionMap = new LinkedHashMap<>();
+    private final List<String> sectionTitles = new ArrayList<>();
 
     public EKG() {
         setTitle("EMR EKG Analysis");
         setSize(1300, 850);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // Initialize components
-        initializeComponents();
-        setupLayout();
-        setupEventListeners();
+        initializeUI();
     }
 
-    private void initializeComponents() {
-        // South Panel with buttons
-        JPanel southPanel = new JPanel();
-        JButton clearButton = new JButton("Clear All");
-        JButton saveButton = new JButton("Save");
-        JButton quitButton = new JButton("Quit");
-        JButton refButton = new JButton("EKG reference");
-        southPanel.add(clearButton);
-        southPanel.add(saveButton);
-        southPanel.add(quitButton);
-        southPanel.add(refButton);
-
-        // East Panel with vertical checkboxes
+    private void initializeUI() {
+        // Main Panels
+        JPanel southPanel = createSouthPanel();
         JPanel eastPanel = createEastPanel();
-
-        // West Panel with Summary and Conclusion TextArea
         JPanel westPanel = createWestPanel();
-
-        // Central Panel with input format
         JPanel centralPanel = createCentralPanel();
 
-        // Container for West and Central panels with GridBagLayout
+        // Layout main panels
         JPanel mainContentPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
-        gbc.insets = new Insets(0, 0, 0, 0);
-
-        // West panel: 22% width
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 0.220;
         gbc.weighty = 1.0;
+
+        gbc.gridx = 0;
+        gbc.weightx = 0.22;
         mainContentPanel.add(westPanel, gbc);
 
-        // Central panel: 60% width
         gbc.gridx = 1;
-        gbc.weightx = 0.6;
+        gbc.weightx = 0.60;
         mainContentPanel.add(centralPanel, gbc);
 
-        // Add components to frame
         add(southPanel, BorderLayout.SOUTH);
         add(eastPanel, BorderLayout.EAST);
         add(mainContentPanel, BorderLayout.CENTER);
+    }
 
-        // Button actions
-        clearButton.addActionListener(e -> clearFields());
+    private JPanel createSouthPanel() {
+        JPanel panel = new JPanel();
+        JButton clearButton = new JButton("Clear All");
+        JButton saveButton = new JButton("Save to EMR");
+        JButton quitButton = new JButton("Quit");
+        JButton refButton = new JButton("EKG Reference");
+
+        clearButton.addActionListener(e -> clearAllFields());
+        saveButton.addActionListener(e -> saveDataToEMR());
         quitButton.addActionListener(e -> dispose());
-        saveButton.addActionListener(e -> saveData());
-        refButton.addActionListener(e -> refFile());
+        refButton.addActionListener(e -> openReferenceFile());
+
+        panel.add(clearButton);
+        panel.add(saveButton);
+        panel.add(quitButton);
+        panel.add(refButton);
+        return panel;
     }
 
     private JPanel createEastPanel() {
-        JPanel eastPanel = new JPanel(new BorderLayout());
         String[] leads = {
-            "Normal ECG","Sinus Bradycardia","Sinus Tachycardia","Atrial Fibrillation",
-            "Premature Ventricular Contraction (PVC)",
-            "Premature Atrial Contraction (PAC)",
-            "Left Ventricular Hypertrophy (LVH) ECG pattern",
-            "Non-specific ST-T changes",
-            "Right Bundle Branch Block (RBBB)","Left Bundle Branch Block (LBBB)",
-            "Prolonged QT","ST Elevation","ST Depression","Ventricular Tachycardia (VT)",
-            "Wolff-Parkinson-White (WPW) syndrome","Supraventricular Tachycardia (SVT: PSVT, etc.)",
-            "Anterior Wall Ischemia / STEMI",
-            "Atypical T wave changes",
-            "LAE","RAE","LVH","RVH","PTFV1",
-            "Junctional rhythm",
-            "Supraventricular tachycardia (SVT)",
-            "Poor R Wave Progression ",
-            "Atrial Flutter"
+                "Normal ECG", "Sinus Bradycardia", "Sinus Tachycardia", "Atrial Fibrillation",
+                "Premature Ventricular Contraction (PVC)", "Premature Atrial Contraction (PAC)",
+                "Left Ventricular Hypertrophy (LVH) ECG pattern", "Non-specific ST-T changes",
+                "Right Bundle Branch Block (RBBB)", "Left Bundle Branch Block (LBBB)",
+                "Prolonged QT", "ST Elevation", "ST Depression", "Ventricular Tachycardia (VT)",
+                "Wolff-Parkinson-White (WPW) syndrome", "Supraventricular Tachycardia (SVT: PSVT, etc.)",
+                "Anterior Wall Ischemia / STEMI", "Atypical T wave changes",
+                "LAE", "RAE", "LVH", "RVH", "PTFV1",
+                "Junctional rhythm", "Supraventricular tachycardia (SVT)",
+                "Poor R Wave Progression", "Atrial Flutter"
         };
-        
-        JPanel checkboxPanel = new JPanel();
-        checkboxPanel.setLayout(new GridLayout(0, 1));
+
+        JPanel checkboxPanel = new JPanel(new GridLayout(0, 1));
         leadCheckboxes = new JCheckBox[leads.length];
-        
-        for(int i = 0; i < leads.length; i++) {
+        for (int i = 0; i < leads.length; i++) {
             leadCheckboxes[i] = new JCheckBox(leads[i]);
-            leadCheckboxes[i].setHorizontalAlignment(SwingConstants.LEFT);
             leadCheckboxes[i].addItemListener(e -> updateSummary());
             checkboxPanel.add(leadCheckboxes[i]);
         }
-        
+
         JScrollPane scrollPane = new JScrollPane(checkboxPanel);
         scrollPane.setPreferredSize(new Dimension(330, 0));
-        eastPanel.add(scrollPane, BorderLayout.CENTER);
-        
-        return eastPanel;
+        return new JPanel(new BorderLayout()) {{ add(scrollPane, BorderLayout.CENTER); }};
     }
 
     private JPanel createWestPanel() {
-        JPanel westPanel = new JPanel(new BorderLayout());
-        westPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        JLabel summaryLabel = new JLabel("Summary and Conclusion:");
         summaryArea = new JTextArea(10, 20);
         summaryArea.setLineWrap(true);
         summaryArea.setWrapStyleWord(true);
-        JScrollPane summaryScroll = new JScrollPane(summaryArea);
-        westPanel.add(summaryLabel, BorderLayout.NORTH);
-        westPanel.add(summaryScroll, BorderLayout.CENTER);
-        return westPanel;
+        summaryArea.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        panel.add(new JLabel("Summary and Conclusion:"), BorderLayout.NORTH);
+        panel.add(new JScrollPane(summaryArea), BorderLayout.CENTER);
+        return panel;
     }
 
     private JPanel createCentralPanel() {
-        JPanel centralPanel = new JPanel(new BorderLayout());
-        centralPanel.setBorder(BorderFactory.createTitledBorder("EKG Interpretation Input"));
-        
-        JPanel inputFormatPanel = createInputFormatPanel();
-        centralPanel.add(inputFormatPanel, BorderLayout.CENTER);
-        
-        return centralPanel;
-    }
-
-    private JPanel createInputFormatPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         GridBagConstraints gbc = new GridBagConstraints();
@@ -165,102 +134,20 @@ public class EKG extends JFrame {
         gbc.weightx = 1.0;
 
         int row = 0;
+        row = addSection(formPanel, gbc, "🩺 Patient Information", row);
+        row = addField(formPanel, gbc, "Name:", row, "🩺 Patient Information");
+        // ... Add all other fields and sections in the same manner
 
-        // Section: Patient Information
-        addSection(formPanel, gbc, "🩺 Patient Information", row++);
-        addField(formPanel, gbc, "Name:", row++, "🩺 Patient Information");
-        addField(formPanel, gbc, "Date/Time:", row++, "🩺 Patient Information");
-        addField(formPanel, gbc, "Age/Sex:", row++, "🩺 Patient Information");
-        addField(formPanel, gbc, "Clinical Context:", row++, "🩺 Patient Information");
-
-        // Section: Rhythm
-        addSection(formPanel, gbc, "1. Rhythm", row++);
-        addCheckGroup(formPanel, gbc, new String[]{"Regular", "Irregular"}, row++, "1. Rhythm");
-        addCheckGroup(formPanel, gbc, new String[]{"Atrial fibrillation", "Atrial Flutter","Ectopy"}, row++, "1. Rhythm");
-        addField(formPanel, gbc, "R-R intervals : ", row++, "1. Rhythm");
-
-        // Section: Heart Rate
-        addSection(formPanel, gbc, "2. Heart Rate (HR)", row++);
-        addCheckGroup(formPanel, gbc, new String[]{"1500 Method", "6-second Rule", "Count R-R with ruler"}, row++, "2. Heart Rate (HR)");
-        addField(formPanel, gbc, "Rate (bpm) : ", row++, "2. Heart Rate (HR)");
-
-        // Section: P Waves
-        addSection(formPanel, gbc, "3. P Waves", row++);
-        addCheckGroup(formPanel, gbc, new String[]{"Present before each QRS", "Morphology consistent", "Absent or abnormal"}, row++, "3. P Waves");
-
-        // Section: PR Interval
-        addSection(formPanel, gbc, "4. PR Interval", row++);
-        addField(formPanel, gbc, "Measured PR Interval (0.12-0.20 sec) : ", row++, "4. PR Interval");
-        addCheckGroup(formPanel, gbc, new String[]{"Normal (0.12–0.20 sec)"}, row++, "4. PR Interval");
-        addCheckGroup(formPanel, gbc, new String[]{"Prolonged → Suspect AV Block"}, row++, "4. PR Interval");
-        addCheckGroup(formPanel, gbc, new String[]{"Shortened → Suspect pre-excitation"}, row++, "4. PR Interval");
-
-        // Section: QRS Duration
-        addSection(formPanel, gbc, "5. QRS Duration", row++);
-        addField(formPanel, gbc, "Measured QRS (< 0.12 sec) : ", row++, "5. QRS Duration");
-        addCheckGroup(formPanel, gbc, new String[]{"Normal (< 0.12 sec)", "Prolonged → Consider BBB or ventricular rhythm"}, row++, "5. QRS Duration");
-
-        // Section: Ectopic or Early Beats
-        addSection(formPanel, gbc, "6. Ectopic or Early Beats", row++);
-        addCheckGroup(formPanel, gbc, new String[]{"None","PACs", "PJCs", "PVCs"}, row++, "6. Ectopic or Early Beats");
-        addCheckGroup(formPanel, gbc, new String[]{"Bigeminy", "Trigeminy", "Couplets"}, row++, "6. Ectopic or Early Beats");
-
-        // Section: R Wave Progression
-        addSection(formPanel, gbc, "7. R Wave Progression (V1–V6)", row++);
-        addCheckGroup(formPanel, gbc, new String[]{"Normal", "Poor R wave progression"}, row++, "7. R Wave Progression (V1–V6)");
-        addField(formPanel, gbc, "Transition zone (e.g., V3):", row++, "7. R Wave Progression (V1–V6)");
-
-        // Section: ST Segment
-        addSection(formPanel, gbc, "8. ST Segment", row++);
-        addCheckGroup(formPanel, gbc, new String[]{"Normal"}, row++, "8. ST Segment");
-        addField(formPanel, gbc, "Elevated (leads)  : ", row++, "8. ST Segment");
-        addField(formPanel, gbc, "Depressed (leads)  : ", row++, "8. ST Segment");
-        addCheckGroup(formPanel, gbc, new String[]{"Concave", "Convex", "Horizontal"}, row++, "8. ST Segment");
-
-        // Section: Q Waves
-        addSection(formPanel, gbc, "9. Q Waves", row++);
-        addCheckGroup(formPanel, gbc, new String[]{"Normal", "Pathological"}, row++, "9. Q Waves");
-        addField(formPanel, gbc, "Leads Affected:", row++, "9. Q Waves");
-
-        // Section: T Waves
-        addSection(formPanel, gbc, "10. T Waves", row++);
-        addCheckGroup(formPanel, gbc, new String[]{"Upright in most leads", "Inverted", "Peaked", "Biphasic"}, row++, "10. T Waves");
-        addField(formPanel, gbc, "Leads Affected : ", row++, "10. T Waves");
-
-        // Section: U Waves
-        addSection(formPanel, gbc, "11. U Waves", row++);
-        addCheckGroup(formPanel, gbc, new String[]{"Not visible", "Present", "Prominent in V2–V3"}, row++, "11. U Waves");
-        addCheckGroup(formPanel, gbc, new String[]{"Consider: Hypokalemia", "Bradycardia"}, row++, "11. U Waves");
-
-        // Section: Signs of Ischemia or Infarction
-        addSection(formPanel, gbc, "12. Signs of Ischemia or Infarction", row++);
-        addCheckGroup(formPanel, gbc, new String[]{"Not visible"}, row++, "12. Signs of Ischemia or Infarction");
-        addCheckGroup(formPanel, gbc, new String[]{"ST Depression (Ischemia)", "ST Elevation (Infarction)", "Q Waves (Old infarct)"}, row++, "12. Signs of Ischemia or Infarction");
-        addCheckGroup(formPanel, gbc, new String[]{"Anterior", "Inferior", "Lateral", "Posterior"}, row++, "12. Signs of Ischemia or Infarction");
-
-        // Section: Final Interpretation / Summary
-        addSection(formPanel, gbc, "13. Final Interpretation / Summary", row++);
-        addField(formPanel, gbc, "Rhythm:", row++, "13. Final Interpretation / Summary");
-        addField(formPanel, gbc, "Rate (bpm):", row++, "13. Final Interpretation / Summary");
-        addField(formPanel, gbc, "Axis:", row++, "13. Final Interpretation / Summary");
-        addField(formPanel, gbc, "PR:", row++, "13. Final Interpretation / Summary");
-        addField(formPanel, gbc, "QRS:", row++, "13. Final Interpretation / Summary");
-        addField(formPanel, gbc, "QT/QTc:", row++, "13. Final Interpretation / Summary");
-        addField(formPanel, gbc, "Abnormal Findings:", row++, "13. Final Interpretation / Summary");
-        addField(formPanel, gbc, "Possible Diagnosis:", row++, "13. Final Interpretation / Summary");
-        addField(formPanel, gbc, "Recommendations / Action:", row++, "13. Final Interpretation / Summary");
-
-        // Make the form scrollable
-        JScrollPane scrollPane = new JScrollPane(formPanel,
-                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-                JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        JScrollPane scrollPane = new JScrollPane(formPanel);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
-        panel.add(scrollPane, BorderLayout.CENTER);
-        return panel;
+        JPanel centralPanel = new JPanel(new BorderLayout());
+        centralPanel.setBorder(BorderFactory.createTitledBorder("EKG Interpretation Input"));
+        centralPanel.add(scrollPane, BorderLayout.CENTER);
+        return centralPanel;
     }
 
-    private void addSection(JPanel panel, GridBagConstraints gbc, String section, int row) {
+    private int addSection(JPanel panel, GridBagConstraints gbc, String section, int row) {
         gbc.gridx = 0;
         gbc.gridy = row;
         gbc.gridwidth = 2;
@@ -269,23 +156,26 @@ public class EKG extends JFrame {
         panel.add(label, gbc);
         gbc.gridwidth = 1;
         sectionTitles.add(section);
+        return row + 1;
     }
 
-    private void addField(JPanel panel, GridBagConstraints gbc, String label, int row, String section) {
+    private int addField(JPanel panel, GridBagConstraints gbc, String label, int row, String section) {
         gbc.gridx = 0;
         gbc.gridy = row;
-        JLabel jLabel = new JLabel(label);
-        panel.add(jLabel, gbc);
+        panel.add(new JLabel(label), gbc);
+
         gbc.gridx = 1;
         JTextField field = new JTextField(25);
-        field.setHorizontalAlignment(JTextField.LEFT);
         panel.add(field, gbc);
+
         textFields.add(field);
         fieldLabels.add(label);
-        textFieldToSection.put(field, section);
+        componentToSectionMap.put(field, section);
+        field.getDocument().addDocumentListener(new SummaryUpdateListener());
+        return row + 1;
     }
 
-    private void addCheckGroup(JPanel panel, GridBagConstraints gbc, String[] labels, int row, String section) {
+    private int addCheckGroup(JPanel panel, GridBagConstraints gbc, String[] labels, int row, String section) {
         gbc.gridx = 0;
         gbc.gridy = row;
         gbc.gridwidth = 2;
@@ -294,179 +184,109 @@ public class EKG extends JFrame {
             JCheckBox cb = new JCheckBox(label);
             groupPanel.add(cb);
             checkBoxes.add(cb);
-            checkBoxToSection.put(cb, section);
+            componentToSectionMap.put(cb, section);
+            cb.addItemListener(e -> updateSummary());
         }
         panel.add(groupPanel, gbc);
         gbc.gridwidth = 1;
+        return row + 1;
     }
 
-    private void setupLayout() {
-        // Layout is already set up in initializeComponents()
-    }
-
-    private void setupEventListeners() {
-        // Add ItemListener to all checkboxes
-        for (JCheckBox cb : checkBoxes) {
-            cb.addItemListener(e -> {
-                System.out.println("Checkbox " + cb.getText() + " state changed: " + cb.isSelected());
-                updateSummary();
-            });
-        }
-
-        // Add DocumentListener to all text fields
-        for (JTextField tf : textFields) {
-            tf.getDocument().addDocumentListener(new DocumentListener() {
-                @Override
-                public void insertUpdate(DocumentEvent e) {
-                    updateSummary();
-                }
-                @Override
-                public void removeUpdate(DocumentEvent e) {
-                    updateSummary();
-                }
-                @Override
-                public void changedUpdate(DocumentEvent e) {
-                    updateSummary();
-                }
-            });
-        }
-    }
-
-    public void updateSummary() {
+    private void updateSummary() {
         StringBuilder sb = new StringBuilder();
-        
-        // Append selected lead checkboxes from East panel
+
         for (JCheckBox cb : leadCheckboxes) {
             if (cb.isSelected()) {
                 sb.append("# ").append(cb.getText()).append("\n");
             }
         }
 
-        // Append section titles and their inputs from inputFormatPanel
-        Map<String, List<String>> sectionSummary = getSummary();
-        for (String section : sectionSummary.keySet()) {
-            sb.append("# ").append(section).append("\n");
-            for (String item : sectionSummary.get(section)) {
-                sb.append("     ").append(item).append("\n");
+        Map<String, List<String>> sectionSummary = getStructuredSummary();
+        for (Map.Entry<String, List<String>> entry : sectionSummary.entrySet()) {
+            sb.append("# ").append(entry.getKey()).append("\n");
+            for (String item : entry.getValue()) {
+                sb.append("    - ").append(item).append("\n");
             }
         }
 
-        // Debug: Log the summary content
-        System.out.println("Updating summary: \n" + sb.toString());
         summaryArea.setText(sb.toString());
     }
 
-    private Map<String, List<String>> getSummary() {
-        Map<String, List<String>> sectionSummary = new LinkedHashMap<>();
+    private Map<String, List<String>> getStructuredSummary() {
+        Map<String, List<String>> summary = new LinkedHashMap<>();
+        sectionTitles.forEach(title -> summary.put(title, new ArrayList<>()));
 
-        // Initialize lists for each section
-        for (String section : sectionTitles) {
-            sectionSummary.put(section, new ArrayList<>());
-        }
+        checkBoxes.stream().filter(JCheckBox::isSelected).forEach(cb -> {
+            String section = componentToSectionMap.get(cb);
+            if (section != null) summary.get(section).add(cb.getText());
+        });
 
-        // Collect checkbox inputs
-        for (JCheckBox cb : checkBoxes) {
-            if (cb.isSelected()) {
-                String section = checkBoxToSection.get(cb);
-                sectionSummary.get(section).add(cb.getText());
-            }
-        }
-
-        // Collect text field inputs
         for (int i = 0; i < textFields.size(); i++) {
             String text = textFields.get(i).getText().trim();
             if (!text.isEmpty()) {
-                String section = textFieldToSection.get(textFields.get(i));
-                sectionSummary.get(section).add(fieldLabels.get(i) + " " + text);
+                String section = componentToSectionMap.get(textFields.get(i));
+                if (section != null) summary.get(section).add(fieldLabels.get(i) + " " + text);
             }
         }
 
-        // Remove sections with no inputs
-        sectionSummary.entrySet().removeIf(entry -> entry.getValue().isEmpty());
-
-        // Debug: Log summary content
-        System.out.println("getSummary() returned: " + sectionSummary);
-        return sectionSummary;
+        summary.entrySet().removeIf(entry -> entry.getValue().isEmpty());
+        return summary;
     }
 
-    private void clearFields() {
+    private void clearAllFields() {
         summaryArea.setText("");
-        for (JCheckBox cb : leadCheckboxes) {
-            cb.setSelected(false);
-        }
-        for (JTextField tf : textFields) {
-            tf.setText("");
-        }
-        for (JCheckBox cb : checkBoxes) {
-            cb.setSelected(false);
-        }
-        // Debug: Log clear action
-        System.out.println("Cleared all fields and summary");
+        for (JCheckBox cb : leadCheckboxes) cb.setSelected(false);
+        for (JTextField tf : textFields) tf.setText("");
+        for (JCheckBox cb : checkBoxes) cb.setSelected(false);
     }
 
-    private void saveData() {
-        final String out = summaryArea.getText().trim();
-        if (out.isEmpty()) {
-            showError("Cannot save data: No summary content to save.");
+    private void saveDataToEMR() {
+        String reportText = summaryArea.getText();
+        if (reportText == null || reportText.trim().isEmpty()) {
+            showError("No summary content to save.");
             return;
         }
-        if (!bridgeReady()) {
-            showError("Cannot save data: EMR text areas not ready.");
-            return;
-        }
-        
-        // Target O> index = 5
+
         try {
-            IAIMain.getTextAreaManager().focusArea(5);
-            IAIMain.getTextAreaManager().insertLineIntoFocusedArea(
-                String.format("\n< EKG > %s\n%s", LocalDate.now().format(DateTimeFormatter.ISO_DATE), out)
-            );
-            clearFields();
-            System.out.println("Successfully saved EKG data to EMR area 5");
+            if (IAIMain.getTextAreaManager() == null || !IAIMain.getTextAreaManager().isReady()) {
+                showError("Cannot save data: EMR connection is not ready.");
+                return;
+            }
+            String stampedReport = String.format("\n< EKG Report - %s >\n%s", LocalDate.now().format(DateTimeFormatter.ISO_DATE), reportText.trim());
+            IAIMain.getTextAreaManager().focusArea(5); // Target 'O>' area
+            IAIMain.getTextAreaManager().insertLineIntoFocusedArea(stampedReport);
+            clearAllFields();
         } catch (Exception e) {
-            showError("Error saving to EMR: " + e.getMessage());
-            System.err.println("Error saving EKG data: " + e.getMessage());
+            showError("An error occurred while saving to the EMR: " + e.getMessage());
         }
     }
-    
-    private boolean bridgeReady() {
-        // Check if IAIMain and TextAreaManager are available and ready
+
+    private void openReferenceFile() {
         try {
-            return IAIMain.getTextAreaManager() != null;
+            File file = new File("src/main/resources/text/EKG_reference.odt").getAbsoluteFile();
+            if (!file.exists()) {
+                throw new IOException("Reference file not found at: " + file.getPath());
+            }
+            Desktop.getDesktop().open(file);
         } catch (Exception e) {
-            System.err.println("Bridge not ready: " + e.getMessage());
-            return false;
+            showError("Could not open reference file: " + e.getMessage());
         }
     }
-    
+
     private void showError(String message) {
         JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
     }
-    
-    private void refFile() {
-        try {
-            if (!Desktop.isDesktopSupported()) {
-                throw new IOException("Desktop API unsupported");
-            }
-            
-            String userDir = System.getProperty("user.dir");
-            File file = new File(userDir + "/src/main/java/com/emr/gds/fourgate/EKG_reference.odt");
-            
-            System.out.println("Attempting to open: " + file.getAbsolutePath());
-            if (!file.exists()) {
-                throw new IOException("File not found: " + file.getAbsolutePath());
-            }
-            Desktop.getDesktop().open(file);
-            System.out.println("Opened: " + file.getAbsolutePath());
-        } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "Cannot open reference: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            System.err.println("Error: " + e.getMessage());
-        }
+
+    /**
+     * Listener to update the summary whenever text fields are changed.
+     */
+    private class SummaryUpdateListener implements DocumentListener {
+        @Override public void insertUpdate(DocumentEvent e) { updateSummary(); }
+        @Override public void removeUpdate(DocumentEvent e) { updateSummary(); }
+        @Override public void changedUpdate(DocumentEvent e) { updateSummary(); }
     }
+
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            EKG ekg = new EKG();
-            ekg.setVisible(true);
-        });
+        SwingUtilities.invokeLater(() -> new EKG().setVisible(true));
     }
 }

@@ -1,26 +1,33 @@
 package com.emr.gds.fourgate;
 
-import javafx.application.Platform;	
+import com.emr.gds.input.IAIMain;
+import com.emr.gds.input.IAITextAreaManager;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import com.emr.gds.input.IAIMain;
-import com.emr.gds.input.IAITextAreaManager;
-
+/**
+ * A JavaFX Stage for conducting a systematic review of a Chest PA (Posteroanterior) X-ray.
+ * This tool provides a structured interface for documenting findings across different anatomical areas.
+ */
 public class ChestPA extends Stage {
-    private static final int EMR_AREA = 5;
-    private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_DATE;
-    private static final String CUSTOM_OPTION = "Custom...";
+
+    private static final int EMR_TARGET_AREA_INDEX = 5; // Corresponds to the 'O>' (Objective) text area
+    private static final DateTimeFormatter ISO_DATE_FORMATTER = DateTimeFormatter.ISO_DATE;
+    private static final String CUSTOM_OPTION_TEXT = "Custom...";
 
     // UI Components
     private ComboBox<String> tracheaComboBox, bonesComboBox, cardiacComboBox, diaphragmComboBox,
@@ -31,39 +38,25 @@ public class ChestPA extends Stage {
     private TextArea customRulfArea, customRmlfArea, customRllfArea, customLulfArea, customLmlfArea, customLllfArea;
     private TextArea findingsTextArea;
 
-    // Data
-    private final ObservableList<String> tracheaOptions = FXCollections.observableArrayList(
-            "Midline", "Deviated to the right", "Deviated to the left", "No significant deviation",
-            "Not well visualized", CUSTOM_OPTION);
-    private final ObservableList<String> bonesOptions = FXCollections.observableArrayList(
-            "No acute fractures or dislocations", "Degenerative changes noted", "Normal bony thorax",
-            "Osteopenia", "Sclerotic lesions in [specific area, e.g., T-spine]", CUSTOM_OPTION);
-    private final ObservableList<String> cardiacOptions = FXCollections.observableArrayList(
-            "Normal heart size and contour", "Mild cardiomegaly", "Moderate cardiomegaly",
-            "Borderline enlarged cardiac silhouette", "No pericardial effusion", CUSTOM_OPTION);
-    private final ObservableList<String> diaphragmOptions = FXCollections.observableArrayList(
-            "Healed bilateral costo-phrenic angles blunted", "Clear costo-phrenic angles",
-            "No diaphragmatic elevation", "Mild elevation of the right hemidiaphragm",
-            "Flattening of hemidiaphragms", CUSTOM_OPTION);
-    private final ObservableList<String> effusionsOptions = FXCollections.observableArrayList(
-            "No pleural effusions", "Small right pleural effusion", "Small left pleural effusion",
-            "Bilateral small pleural effusions", "Trace right pleural effusion", CUSTOM_OPTION);
-    private final ObservableList<String> devicesOptions = FXCollections.observableArrayList(
-            "Endotracheal tube in good position", "Central venous catheter tip in SVC",
-            "Nasogastric tube in expected position", "No acute changes related to surgical clips",
-            "No foreign bodies identified", CUSTOM_OPTION);
-    private final ObservableList<String> comparisonOptions = FXCollections.observableArrayList(
-            "There are no active lesions in the lung.", "Compared to previous [date], no significant change",
-            "Compared to previous [date], new findings noted", "Compared to previous [date], interval improvement",
-            "No prior studies available for comparison", "Compared to previous [date], interval worsening", CUSTOM_OPTION);
-    private final ObservableList<String> historyOptions = FXCollections.observableArrayList(
-            "Shortness of breath", "Cough", "Chest pain", "Fever", CUSTOM_OPTION);
-    private final ObservableList<String> lungFieldFindings = FXCollections.observableArrayList(
-            "Clear", "Normal vascularity", "No focal consolidation", "No acute infiltrate",
-            "Interstitial opacities", "Atelectasis", "Nodules", "Masses");
+    // Data sources for ComboBoxes
+    private final ObservableList<String> tracheaOptions = createObservableList("Midline", "Deviated to the right", "Deviated to the left", "No significant deviation", "Not well visualized");
+    private final ObservableList<String> bonesOptions = createObservableList("No acute fractures or dislocations", "Degenerative changes noted", "Normal bony thorax", "Osteopenia", "Sclerotic lesions in [specific area, e.g., T-spine]");
+    private final ObservableList<String> cardiacOptions = createObservableList("Normal heart size and contour", "Mild cardiomegaly", "Moderate cardiomegaly", "Borderline enlarged cardiac silhouette", "No pericardial effusion");
+    private final ObservableList<String> diaphragmOptions = createObservableList("Healed bilateral costo-phrenic angles blunted", "Clear costo-phrenic angles", "No diaphragmatic elevation", "Mild elevation of the right hemidiaphragm", "Flattening of hemidiaphragms");
+    private final ObservableList<String> effusionsOptions = createObservableList("No pleural effusions", "Small right pleural effusion", "Small left pleural effusion", "Bilateral small pleural effusions", "Trace right pleural effusion");
+    private final ObservableList<String> devicesOptions = createObservableList("Endotracheal tube in good position", "Central venous catheter tip in SVC", "Nasogastric tube in expected position", "No acute changes related to surgical clips", "No foreign bodies identified");
+    private final ObservableList<String> comparisonOptions = createObservableList("There are no active lesions in the lung.", "Compared to previous [date], no significant change", "Compared to previous [date], new findings noted", "Compared to previous [date], interval improvement", "No prior studies available for comparison", "Compared to previous [date], interval worsening");
+    private final ObservableList<String> historyOptions = createObservableList("Shortness of breath", "Cough", "Chest pain", "Fever");
+    private final ObservableList<String> lungFieldFindings = createObservableList("Clear", "Normal vascularity", "No focal consolidation", "No acute infiltrate", "Interstitial opacities", "Atelectasis", "Nodules", "Masses");
 
-    public ChestPA(Stage owner) { this.initOwner(owner); setupStage(); }
-    public ChestPA() { setupStage(); }
+    public ChestPA(Stage owner) {
+        this.initOwner(owner);
+        setupStage();
+    }
+
+    public ChestPA() {
+        setupStage();
+    }
 
     private void setupStage() {
         setTitle("Chest PA Systematic Review");
@@ -93,14 +86,6 @@ public class ChestPA extends Stage {
         return new Scene(new VBox(10, grid), 1000, 800);
     }
 
-    public void open() {
-        setWidth(1300);
-        setHeight(850);
-        setMinWidth(1000);
-        setMinHeight(800);
-        show();
-    }
-
     private void addSystematicInputControls(GridPane grid) {
         int row = 0;
         row = addComboRow(grid, "Airways:", "Trachea", tracheaOptions, row);
@@ -127,8 +112,6 @@ public class ChestPA extends Stage {
         grid.add(tf, 1, row + 1);
 
         setupCustomFieldListener(cb, tf);
-
-        // Assign to instance fields based on label
         assignComboAndField(label, cb, tf);
 
         return row + 2;
@@ -149,33 +132,28 @@ public class ChestPA extends Stage {
 
     private void setupCustomFieldListener(ComboBox<String> comboBox, TextField customField) {
         comboBox.valueProperty().addListener((obs, oldValue, newValue) -> {
-            boolean isCustom = CUSTOM_OPTION.equals(newValue);
+            boolean isCustom = CUSTOM_OPTION_TEXT.equals(newValue);
             customField.setVisible(isCustom);
             customField.setManaged(isCustom);
-            if (!isCustom) customField.clear();
+            if (isCustom) {
+                customField.requestFocus();
+            } else {
+                customField.clear();
+            }
         });
     }
 
     private TabPane createLungTabs() {
         String[] areas = {"RULF", "RMLF", "RLLF", "LULF", "LMLF", "LLLF"};
-        VBox[] checkLists = new VBox[6];
-        TextArea[] customAreas = new TextArea[6];
+        VBox[] checkLists = {rulfCheckList, rmlfCheckList, rllfCheckList, lulfCheckList, lmlfCheckList, lllfCheckList};
+        TextArea[] customAreas = {customRulfArea, customRmlfArea, customRllfArea, customLulfArea, customLmlfArea, customLllfArea};
         String[] titles = {"Right Upper Lung Field", "Right Middle Lung Field", "Right Lower Lung Field",
                 "Left Upper Lung Field", "Left Middle Lung Field", "Left Lower Lung Field"};
 
-        for (int i = 0; i < 6; i++) {
+        TabPane tabs = new TabPane();
+        for (int i = 0; i < areas.length; i++) {
             checkLists[i] = createCheckListBox(areas[i]);
             customAreas[i] = createCustomLungTextArea();
-            if (i == 0) { rulfCheckList = checkLists[i]; customRulfArea = customAreas[i]; }
-            else if (i == 1) { rmlfCheckList = checkLists[i]; customRmlfArea = customAreas[i]; }
-            else if (i == 2) { rllfCheckList = checkLists[i]; customRllfArea = customAreas[i]; }
-            else if (i == 3) { lulfCheckList = checkLists[i]; customLulfArea = customAreas[i]; }
-            else if (i == 4) { lmlfCheckList = checkLists[i]; customLmlfArea = customAreas[i]; }
-            else { lllfCheckList = checkLists[i]; customLllfArea = customAreas[i]; }
-        }
-
-        TabPane tabs = new TabPane();
-        for (int i = 0; i < 6; i++) {
             tabs.getTabs().add(createLungTab(titles[i], checkLists[i], customAreas[i]));
         }
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
@@ -203,102 +181,51 @@ public class ChestPA extends Stage {
     }
 
     private Tab createLungTab(String title, VBox checkList, TextArea customArea) {
-        VBox content = new VBox(10);
+        VBox content = new VBox(10, checkList, new Label("Custom Findings:"), customArea);
         content.setPadding(new Insets(10));
-        content.getChildren().addAll(checkList, new Label("Custom Findings:"), customArea);
         return new Tab(title, content);
     }
 
     private void addButtons(GridPane grid) {
-        Button gen = new Button("Generate Report");
-        gen.setOnAction(e -> generateAndDisplayReport());
-        Button save = new Button("Save to EMR");
-        save.setOnAction(e -> saveData());
-        grid.add(gen, 0, 17);
-        grid.add(save, 1, 17);
+        Button generateButton = new Button("Generate Report");
+        generateButton.setOnAction(e -> generateAndDisplayReport());
+        Button saveButton = new Button("Save to EMR");
+        saveButton.setOnAction(e -> saveData());
+        grid.add(generateButton, 0, 17);
+        grid.add(saveButton, 1, 17);
     }
 
     private void generateAndDisplayReport() {
-        findingsTextArea.setText(generateReport(
-                getComboBoxValue(tracheaComboBox, customTracheaField),
-                getComboBoxValue(bonesComboBox, customBonesField),
-                getComboBoxValue(cardiacComboBox, customCardiacField),
-                getComboBoxValue(diaphragmComboBox, customDiaphragmField),
-                getComboBoxValue(effusionsComboBox, customEffusionsField),
-                getComboBoxValue(devicesComboBox, customDevicesField),
-                getComboBoxValue(comparisonComboBox, customComparisonField),
-                getComboBoxValue(historyComboBox, customHistoryField),
-                getLungFieldFindings(rulfCheckList, customRulfArea),
-                getLungFieldFindings(rmlfCheckList, customRmlfArea),
-                getLungFieldFindings(rllfCheckList, customRllfArea),
-                getLungFieldFindings(lulfCheckList, customLulfArea),
-                getLungFieldFindings(lmlfCheckList, customLmlfArea),
-                getLungFieldFindings(lllfCheckList, customLllfArea)
-        ));
+        findingsTextArea.setText(generateReport());
     }
 
-    private String getComboBoxValue(ComboBox<String> comboBox, TextField customField) {
-        String selected = comboBox.getValue();
-        return CUSTOM_OPTION.equals(selected) ? customField.getText() : selected;
-    }
-
-    private String getLungFieldFindings(VBox checkListVBox, TextArea customTextArea) {
-        List<String> selectedFindings = new ArrayList<>();
-        for (javafx.scene.Node node : checkListVBox.getChildren()) {
-            if (node instanceof CheckBox cb && cb.isSelected() && !cb.getText().contains("Findings:")) {
-                selectedFindings.add(cb.getText());
-            }
-        }
-        String customText = customTextArea.getText().trim();
-        if (!customText.isEmpty()) {
-            selectedFindings.add(customText);
-        }
-        return selectedFindings.isEmpty() ? "" : String.join(", ", selectedFindings);
-    }
-
-    private String generateReport(String trachea, String bones, String cardiac, String diaphragm,
-                                  String effusions, String devices, String comparison, String history,
-                                  String rulf, String rmlf, String rllf, String lulf, String lmlf, String lllf) {
+    private String generateReport() {
         StringBuilder sb = new StringBuilder("CHEST PA SYSTEMATIC REVIEW\n----------------------------\n\n");
 
-        // Only append sections with non-empty, non-"Not documented" findings
-        if (!isEmpty(trachea) && !trachea.equals("Not documented")) {
-            appendSection(sb, "✓. Airways", "Trachea", trachea);
-        }
-        if (!isEmpty(bones) && !bones.equals("Not documented")) {
-            appendSection(sb, "✓. Bones", "Findings", bones);
-        }
-        if (!isEmpty(cardiac) && !cardiac.equals("Not documented")) {
-            appendSection(sb, "✓. Cardiac", "Findings", cardiac);
-        }
-        if (!isEmpty(diaphragm) && !diaphragm.equals("Not documented")) {
-            appendSection(sb, "✓. Diaphragm", "Findings", diaphragm);
-        }
-        if (!isEmpty(effusions) && !effusions.equals("Not documented")) {
-            appendSection(sb, "✓. Effusions/Fields", "Findings", effusions);
-        }
-        if (!isEmpty(devices) && !devices.equals("Not documented")) {
-            appendSection(sb, "Devices and Foreign Bodies", "Findings", devices);
-        }
+        appendSection(sb, "✓. Airways", "Trachea", getComboBoxValue(tracheaComboBox, customTracheaField));
+        appendSection(sb, "✓. Bones", "Findings", getComboBoxValue(bonesComboBox, customBonesField));
+        appendSection(sb, "✓. Cardiac", "Findings", getComboBoxValue(cardiacComboBox, customCardiacField));
+        appendSection(sb, "✓. Diaphragm", "Findings", getComboBoxValue(diaphragmComboBox, customDiaphragmField));
+        appendSection(sb, "✓. Effusions/Fields", "Findings", getComboBoxValue(effusionsComboBox, customEffusionsField));
+        appendSection(sb, "Devices and Foreign Bodies", "Findings", getComboBoxValue(devicesComboBox, customDevicesField));
 
-        // Append Comparison and Review section only if comparison or history has valid data
-        boolean hasComparisonOrHistory = (!isEmpty(comparison) && !comparison.equals("Not documented")) ||
-                                        (!isEmpty(history) && !history.equals("Not documented"));
-        if (hasComparisonOrHistory) {
+        String comparison = getComboBoxValue(comparisonComboBox, customComparisonField);
+        String history = getComboBoxValue(historyComboBox, customHistoryField);
+        if (!isEmpty(comparison) || !isEmpty(history)) {
             sb.append("Comparison and Review:\n");
-            if (!isEmpty(comparison) && !comparison.equals("Not documented")) {
-                sb.append("   - Comparison: ").append(comparison).append("\n");
-            }
-            if (!isEmpty(history) && !history.equals("Not documented")) {
-                sb.append("   - History: ").append(history).append("\n");
-            }
+            if (!isEmpty(comparison)) sb.append("   - Comparison: ").append(comparison).append("\n");
+            if (!isEmpty(history)) sb.append("   - History: ").append(history).append("\n");
             sb.append("\n");
         }
 
-        // Only append lung field section if there are findings
-        boolean hasLungFindings = !isEmpty(rulf) || !isEmpty(rmlf) || !isEmpty(rllf) || 
-                                 !isEmpty(lulf) || !isEmpty(lmlf) || !isEmpty(lllf);
-        if (hasLungFindings) {
+        String rulf = getLungFieldFindings(rulfCheckList, customRulfArea);
+        String rmlf = getLungFieldFindings(rmlfCheckList, customRmlfArea);
+        String rllf = getLungFieldFindings(rllfCheckList, customRllfArea);
+        String lulf = getLungFieldFindings(lulfCheckList, customLulfArea);
+        String lmlf = getLungFieldFindings(lmlfCheckList, customLmlfArea);
+        String lllf = getLungFieldFindings(lllfCheckList, customLllfArea);
+
+        if (!isEmpty(rulf) || !isEmpty(rmlf) || !isEmpty(rllf) || !isEmpty(lulf) || !isEmpty(lmlf) || !isEmpty(lllf)) {
             sb.append("Structured Lung Field Documentation:\n");
             appendLungField(sb, "RULF", rulf);
             appendLungField(sb, "RMLF", rmlf);
@@ -311,9 +238,28 @@ public class ChestPA extends Stage {
         return sb.toString();
     }
 
+    private String getComboBoxValue(ComboBox<String> comboBox, TextField customField) {
+        String selected = comboBox.getValue();
+        return CUSTOM_OPTION_TEXT.equals(selected) ? customField.getText() : selected;
+    }
+
+    private String getLungFieldFindings(VBox checkListVBox, TextArea customTextArea) {
+        List<String> selectedFindings = checkListVBox.getChildren().stream()
+                .filter(node -> node instanceof CheckBox && ((CheckBox) node).isSelected())
+                .map(node -> ((CheckBox) node).getText())
+                .collect(Collectors.toList());
+
+        String customText = customTextArea.getText().trim();
+        if (!customText.isEmpty()) {
+            selectedFindings.add(customText);
+        }
+        return String.join(", ", selectedFindings);
+    }
+
     private void appendSection(StringBuilder sb, String section, String name, String text) {
-        sb.append(section).append(":\n   - ").append(name).append(": ")
-                .append(text).append("\n\n");
+        if (!isEmpty(text) && !"Not documented".equals(text)) {
+            sb.append(section).append(":\n   - ").append(name).append(": ").append(text).append("\n\n");
+        }
     }
 
     private void appendLungField(StringBuilder sb, String zone, String findings) {
@@ -322,95 +268,67 @@ public class ChestPA extends Stage {
         }
     }
 
-    private static boolean isEmpty(String s) { return s == null || s.trim().isEmpty(); }
-
     private void saveData() {
-        String report = findingsTextArea.getText() != null ? findingsTextArea.getText().trim() : "";
-        if (report.isEmpty()) { showError("No report content. Generate report first."); return; }
-        if (!isIttiaAppReady()) { showError("IttiaApp not ready."); return; }
-
-        IAITextAreaManager manager;
-        try {
-            manager = IAIMain.getTextAreaManager();
-            if (manager == null) throw new IllegalStateException("EMR TextAreaManager is null");
-        } catch (IllegalStateException e) {
-            showError("EMR TextAreaManager not initialized."); return;
+        String report = findingsTextArea.getText();
+        if (isEmpty(report)) {
+            showError("No report content to save. Please generate the report first.");
+            return;
         }
-        if (!bridgeReady(manager)) { showError("EMR bridge not ready."); return; }
 
-        String stamped = String.format("\n< CHEST PA > %s\n%s", LocalDate.now().format(ISO), report);
-        Platform.runLater(() -> {
-            try {
-                saveToIttiaApp(stamped);
-                if (!manager.isValidIndex(EMR_AREA)) throw new IllegalArgumentException("Invalid EMR index: " + EMR_AREA);
-                manager.focusArea(EMR_AREA);
-                manager.insertLineIntoFocusedArea(stamped);
-                clearFields();
-            } catch (Exception ex) {
-                showError("Error saving data: " + ex.getMessage());
-                ex.printStackTrace();
+        try {
+            IAITextAreaManager manager = IAIMain.getTextAreaManager();
+            if (manager == null || !manager.isReady()) {
+                showError("EMR connection is not ready. Cannot save data.");
+                return;
             }
-        });
-    }
 
-    private boolean isIttiaAppReady() {
-        try {
-            System.out.println("Checking IttiaApp readiness: simulated ready.");
-            return true;
+            String stampedReport = String.format("\n< CHEST PA > %s\n%s", LocalDate.now().format(ISO_DATE_FORMATTER), report.trim());
+            Platform.runLater(() -> {
+                manager.focusArea(EMR_TARGET_AREA_INDEX);
+                manager.insertLineIntoFocusedArea(stampedReport);
+                clearAllFields();
+            });
         } catch (Exception e) {
-            System.err.println("IttiaApp not ready: " + e.getMessage());
-            return false;
+            showError("An unexpected error occurred while saving to the EMR: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
-    private void saveToIttiaApp(String report) throws Exception {
-        System.out.println("Saving to IttiaApp:\n" + report);
-    }
+    private void clearAllFields() {
+        List.of(tracheaComboBox, bonesComboBox, cardiacComboBox, diaphragmComboBox, effusionsComboBox, devicesComboBox, comparisonComboBox, historyComboBox)
+                .forEach(cb -> cb.getSelectionModel().clearSelection());
 
-    private boolean bridgeReady(IAITextAreaManager manager) { return manager != null && manager.isReady(); }
+        List.of(rulfCheckList, rmlfCheckList, rllfCheckList, lulfCheckList, lmlfCheckList, lllfCheckList)
+                .forEach(this::clearCheckList);
 
-    private void clearFields() {
-        clearCombos();
-        clearCustomFields();
-        clearLungFields();
         findingsTextArea.clear();
     }
 
-    private void clearCombos() {
-        List<ComboBox<String>> combos = List.of(tracheaComboBox, bonesComboBox, cardiacComboBox, diaphragmComboBox,
-                effusionsComboBox, devicesComboBox, comparisonComboBox, historyComboBox);
-        combos.forEach(cb -> cb.getSelectionModel().clearSelection());
-    }
-
-    private void clearCustomFields() {
-        List<TextField> fields = List.of(customTracheaField, customBonesField, customCardiacField, customDiaphragmField,
-                customEffusionsField, customDevicesField, customComparisonField, customHistoryField);
-        fields.forEach(tf -> { tf.clear(); tf.setVisible(false); tf.setManaged(false); });
-    }
-
-    private void clearLungFields() {
-        List<VBox> lists = List.of(rulfCheckList, rmlfCheckList, rllfCheckList, lulfCheckList, lmlfCheckList, lllfCheckList);
-        List<TextArea> areas = List.of(customRulfArea, customRmlfArea, customRllfArea, customLulfArea, customLmlfArea, customLllfArea);
-        for (int i = 0; i < 6; i++) {
-            clearCheckList(lists.get(i));
-            areas.get(i).clear();
+    private void clearCheckList(VBox checkListVBox) {
+        if (checkListVBox != null) {
+            checkListVBox.getChildren().stream()
+                    .filter(CheckBox.class::isInstance)
+                    .map(CheckBox.class::cast)
+                    .forEach(cb -> cb.setSelected(false));
         }
     }
 
-    private void clearCheckList(VBox checkListVBox) {
-        checkListVBox.getChildren().stream()
-                .filter(node -> node instanceof CheckBox)
-                .map(node -> (CheckBox) node)
-                .forEach(cb -> cb.setSelected(false));
+    private ObservableList<String> createObservableList(String... items) {
+        ObservableList<String> list = FXCollections.observableArrayList(items);
+        list.add(CUSTOM_OPTION_TEXT);
+        return list;
     }
 
-    private void showError(String msg) {
-        Runnable r = () -> {
-            Alert a = new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK);
-            a.setHeaderText(null);
-            a.setTitle("Error");
-            a.showAndWait();
-        };
-        if (Platform.isFxApplicationThread()) r.run(); else Platform.runLater(r);
+    private static boolean isEmpty(String s) {
+        return s == null || s.trim().isEmpty();
+    }
+
+    private void showError(String message) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR, message, ButtonType.OK);
+            alert.setHeaderText(null);
+            alert.setTitle("Error");
+            alert.showAndWait();
+        });
     }
 }
