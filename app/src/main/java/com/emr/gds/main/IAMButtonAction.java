@@ -175,7 +175,15 @@ public class IAMButtonAction {
     private Button createKCD9Button(String title) {
         Button b = new Button(title);
         b.setOnAction(e -> {
-            com.emr.gds.fourgate.KCDdatabase.KCDDatabaseManagerSwing.main(null);
+            try {
+                javax.swing.SwingUtilities.invokeLater(() -> {
+                    com.emr.gds.fourgate.KCDdatabase.KCDDatabaseManagerSwing frame = new com.emr.gds.fourgate.KCDdatabase.KCDDatabaseManagerSwing();
+                    frame.setVisible(true);
+                });
+            } catch (Exception ex) {
+                System.err.println("Failed to launch KCD-9 application:");
+                ex.printStackTrace();
+            }
         });
         return b;
     }
