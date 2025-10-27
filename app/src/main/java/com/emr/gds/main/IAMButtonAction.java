@@ -7,6 +7,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.stage.Modality; // Import Modality
 import javafx.stage.Stage;
 
 import java.sql.Connection;
@@ -15,6 +16,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+// Import for KCDDatabaseManagerJavaFX
+import com.emr.gds.fourgate.KCDdatabase.KCDDatabaseManagerJavaFX;
 
 /**
  * Manages the creation and actions for the top and bottom toolbars of the application.
@@ -45,6 +49,11 @@ public class IAMButtonAction {
     private final IttiaApp app;
     private final Connection dbConn;
     private final Map<String, String> abbrevMap;
+
+    // --- KCD Database Manager Fields ---
+    private KCDDatabaseManagerJavaFX kcdDatabaseManager;
+    private Stage kcdStage; // Field to hold the KCD manager's stage reference
+    // -----------------------------------
 
     //================================================================================
     // Constructor
@@ -80,7 +89,7 @@ public class IAMButtonAction {
             String currentDateString = " [ " + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + " ]";
             app.insertLineIntoFocusedArea(currentDateString);
         });
-        
+
         Button btnFormat = new Button(AUTO_FORMAT_BUTTON_TEXT);
         btnFormat.setOnAction(e -> app.formatCurrentArea());
 
@@ -126,11 +135,10 @@ public class IAMButtonAction {
                   .map(t -> createSnippetButton(t.displayName(), t.body()))
                   .collect(Collectors.toList())
         );
-        
+
         // Add any special-purpose buttons that don't come from the template library
         tb.getItems().add(createVaccineButton("Vaccine"));
-        tb.getItems().add(createKCD9Button("KCD-9"));
-        
+        tb.getItems().add(createKCD9Button("KCD-9")); // KCD-9 button creation
         tb.setPadding(new Insets(8, 0, 0, 0));
         return tb;
     }
@@ -172,18 +180,38 @@ public class IAMButtonAction {
         return b;
     }
 
-    private com.emr.gds.fourgate.KCDdatabase.KCDDatabaseManagerJavaFX kcdDatabaseManager;
+    /**
+     * Creates a special-purpose button to launch the KCD-9 Database Manager.
+     * This method ensures the KCD window can be re-opened after being closed.
+     */
     private Button createKCD9Button(String title) {
         Button b = new Button(title);
         b.setOnAction(e -> {
             try {
-                if (kcdDatabaseManager == null) {
-                    kcdDatabaseManager = new com.emr.gds.fourgate.KCDdatabase.KCDDatabaseManagerJavaFX();
-                    Stage stage = new Stage();
-                    kcdDatabaseManager.start(stage);
-                    stage.show();
+                // Check if the manager or its stage is null, or if the stage has been closed
+                if (kcdDatabaseManager == null || kcdStage == null || !kcdStage.isShowing()) {
+                    // If it's the first time, or the previous stage was truly closed
+                    kcdDatabaseManager = new KCDDatabaseManagerJavaFX();
+                    kcdStage = new Stage(); // Create a NEW Stage
+                    kcdStage.setTitle("KCD Database Manager"); // Set title explicitly
+                    kcdStage.initModality(Modality.NONE); // Adjust modality as needed (e.g., Modality.APPLICATION_MODAL)
+                    // kcdStage.initOwner(app.getPrimaryStage()); // Uncomment if you want it owned by your main application stage
+
+                    kcdDatabaseManager.start(kcdStage); // Start the manager with the new stage
+                    kcdStage.show();
+
+                    // Optional: Handle OS close button (the 'X') to clear references
+                    kcdStage.setOnCloseRequest(event -> {
+                        // Perform any cleanup for the manager if necessary before clearing references
+                        kcdDatabaseManager = null; // Clear the reference to allow garbage collection
+                        kcdStage = null; // Clear the stage reference
+                    });
+
                 } else {
-                    kcdDatabaseManager.getStage().toFront();
+                    // If the manager exists and its stage is still alive (open or hidden),
+                    // ensure it's visible and bring it to the front.
+                    kcdStage.show(); // Ensure it's visible (e.g., if it was hidden via OS button minimize)
+                    kcdStage.toFront(); // Bring to front if already open
                 }
             } catch (Exception ex) {
                 System.err.println("Failed to launch KCD-9 application:");
@@ -192,6 +220,7 @@ public class IAMButtonAction {
         });
         return b;
     }
+
     /**
      * Opens the abbreviation manager dialog.
      */

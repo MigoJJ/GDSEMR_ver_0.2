@@ -1,3 +1,15 @@
+// --- Checking Versions ---
+// Ubuntu: Ubuntu 25.04
+// Java: 25
+// JavaFX (Manual SDK): Found at /opt/javafx-25.0.1 (version 25.0.1)
+// Gradle: 9.0.0
+// Git: 2.51.1
+//
+// Eclipse IDE for Enterprise Java and Web Developers (includes Incubating components)
+// Version: 2025-09 (4.37.0)
+// Build id: 20250905-1456
+// -------------------------
+
 plugins {
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.1.0'
@@ -31,14 +43,41 @@ dependencies {
 
 application {
     mainClass = 'com.emr.gds.IttiaApp'
-    applicationDefaultJvmArgs = ["--add-opens", "javafx.base/com.emr.gds.fourgate.KCDdatabase=ALL-UNNAMED"]
+
+    // --------------------------------------------------------------
+    // 1. Native-access permissions (required for JavaFX + SQLite)
+    // --------------------------------------------------------------
+    //   * javafx.graphics loads libglass.so
+    //   * sqlite-jdbc loads libsqlitejdbc.so
+    //   * ALL-UNNAMED covers any other unnamed-module native code
+    // --------------------------------------------------------------
+    // NOTE: `applicationDefaultJvmArgs` applies to *every* launch
+    //       (including `gradle run`).  Using `run.jvmArgs` is more
+    //       precise and avoids leaking the flags to other tasks.
+    // --------------------------------------------------------------
+    applicationDefaultJvmArgs = [
+        // Existing reflection opening for your KCD code
+        '--add-opens=javafx.base/com.emr.gds.fourgate.KCDdatabase=ALL-UNNAMED',
+
+        // Native-access permissions
+        '--enable-native-access=javafx.graphics',
+        '--enable-native-access=ALL-UNNAMED'
+    ]
 }
 
-javafx {
-    // Latest LTS release (as of Oct 2025)
-    version = '25.0.1'
+// -----------------------------------------------------------------
+// OPTIONAL: If you prefer to keep the flags *only* for the `run` task
+// -----------------------------------------------------------------
+// run {
+//     jvmArgs = [
+//         '--add-opens=javafx.base/com.emr.gds.fourgate.KCDdatabase=ALL-UNNAMED',
+//         '--enable-native-access=javafx.graphics',
+//         '--enable-native-access=ALL-UNNAMED'
+//     ]
+// }
 
-    // JavaFX modules — include swing for JFXPanel usage
+javafx {
+    version = '25.0.1'
     modules = [
         'javafx.controls',
         'javafx.fxml',
