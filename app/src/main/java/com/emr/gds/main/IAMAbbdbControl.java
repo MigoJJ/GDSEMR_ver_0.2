@@ -1,12 +1,5 @@
 package com.emr.gds.main;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 import com.emr.gds.IttiaApp;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -20,14 +13,23 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 /**
- * Enhanced Abbreviations Database Control with improved UX and functionality
+ * Controller for the Abbreviations Database Manager dialog.
+ * This class provides a UI for adding, editing, deleting, and searching abbreviations
+ * stored in the application's database.
  */
 public class IAMAbbdbControl {
+
     private final Connection dbConn;
     private final Map<String, String> abbrevMap;
     private final Stage ownerStage;
-    private final IttiaApp parentApp;
 
     // UI Elements
     private final TextField shortField = new TextField();
@@ -35,7 +37,7 @@ public class IAMAbbdbControl {
     private final TextField searchField = new TextField();
     private final ListView<String> abbrevListView = new ListView<>();
     private final Button addButton = new Button("Add");
-    private final Button editButton = new Button("Update");
+    private final Button updateButton = new Button("Update");
     private final Button deleteButton = new Button("Delete");
     private final Button clearButton = new Button("Clear");
 
@@ -43,22 +45,20 @@ public class IAMAbbdbControl {
         this.dbConn = dbConn;
         this.abbrevMap = abbrevMap;
         this.ownerStage = ownerStage;
-        this.parentApp = parentApp;
     }
 
+    /**
+     * Creates and displays the modal dialog for managing abbreviations.
+     */
     public void showDbManagerDialog() {
-        Stage stage = createStage();
-        VBox root = createLayout();
-        setupEventHandlers(stage);
-        
+        Stage dialogStage = createStage();
+        VBox root = createLayout(dialogStage);
+        setupEventHandlers(dialogStage);
+
         Scene scene = new Scene(root);
-        stage.setScene(scene);
-        stage.showAndWait();
+        dialogStage.setScene(scene);
+        dialogStage.showAndWait();
     }
-    
-    // Explanation: The main entry point `showDbManagerDialog()` is now more
-    // concise by delegating the responsibilities of stage creation, layout,
-    // and event handling to dedicated private methods.
 
     private Stage createStage() {
         Stage stage = new Stage();
@@ -70,173 +70,177 @@ public class IAMAbbdbControl {
         return stage;
     }
 
-    private VBox createLayout() {
+    private VBox createLayout(Stage stage) {
         shortField.setPromptText("Short Form (e.g., 'cp')");
-        shortField.setPrefWidth(120);
         fullField.setPromptText("Full Expansion (e.g., 'chest pain')");
         searchField.setPromptText("Search abbreviations...");
-        abbrevListView.setPrefHeight(250);
-        updateListView("");
 
         HBox inputFields = new HBox(10, shortField, fullField);
         HBox.setHgrow(fullField, Priority.ALWAYS);
 
-        HBox actionButtons = new HBox(10, addButton, editButton, deleteButton, new Label("|"), clearButton);
+        HBox actionButtons = new HBox(10, addButton, updateButton, deleteButton, new Separator(), clearButton);
 
         VBox root = new VBox(10);
         root.setPadding(new Insets(15));
         root.getChildren().addAll(
-            new Label("Search:"), searchField,
-            new Label("Abbreviations List (" + abbrevMap.size() + " entries):"),
-            abbrevListView,
-            new Label("Add/Edit Abbreviation:"), inputFields,
-            actionButtons
+                new Label("Search:"),
+                searchField,
+                new Label("Abbreviations List:"),
+                abbrevListView,
+                new Label("Add/Edit Abbreviation:"),
+                inputFields,
+                actionButtons
         );
+
+        updateListView("");
+        updateDialogTitle(stage);
         return root;
     }
-    
-    // Explanation: UI component creation and layout are now consolidated into
-    // `createLayout()`. Unnecessary buttons like "Find" and "Refresh" are
-    // removed because their functionality is now handled by the real-time search
-    // and list view updates.
 
     private void setupEventHandlers(Stage stage) {
-        editButton.disableProperty().bind(abbrevListView.getSelectionModel().selectedItemProperty().isNull());
+        // Disable update/delete buttons when no item is selected
+        updateButton.disableProperty().bind(abbrevListView.getSelectionModel().selectedItemProperty().isNull());
         deleteButton.disableProperty().bind(abbrevListView.getSelectionModel().selectedItemProperty().isNull());
 
+        // Real-time search functionality
         searchField.textProperty().addListener((obs, oldVal, newVal) -> updateListView(newVal.trim().toLowerCase()));
 
+        // Populate text fields when an item is selected from the list
         abbrevListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal == null) {
-                clearFields();
-            } else {
+            if (newVal != null) {
                 String[] parts = newVal.split(" -> ", 2);
                 if (parts.length == 2) {
                     shortField.setText(parts[0]);
                     fullField.setText(parts[1]);
                 }
+            } else {
+                clearInputFields();
             }
         });
 
+        // Keyboard shortcuts for input fields
         shortField.setOnKeyPressed(e -> { if (e.getCode() == KeyCode.ENTER) fullField.requestFocus(); });
         fullField.setOnKeyPressed(e -> { if (e.getCode() == KeyCode.ENTER) getEffectiveButton().fire(); });
-        
-        // Explanation: The logic for keyboard shortcuts is now more compact.
-        // A new method `getEffectiveButton()` is introduced to decide whether
-        // to fire the Add or Update action based on the current selection.
 
-        addButton.setOnAction(e -> {
-            if (add(shortField.getText().trim(), fullField.getText().trim())) {
-                updateListView(searchField.getText().trim().toLowerCase());
-                clearFields();
-                updateListLabel(stage);
-            }
-        });
-
-        editButton.setOnAction(e -> {
-            String selectedItem = abbrevListView.getSelectionModel().getSelectedItem();
-            if (selectedItem == null) return;
-            String originalShortText = selectedItem.split(" -> ", 2)[0];
-            if (edit(originalShortText, shortField.getText().trim(), fullField.getText().trim())) {
-                updateListView(searchField.getText().trim().toLowerCase());
-                updateListLabel(stage);
-            }
-        });
-
-        deleteButton.setOnAction(e -> {
-            String shortText = shortField.getText().trim();
-            if (!shortText.isEmpty() && delete(shortText)) {
-                updateListView(searchField.getText().trim().toLowerCase());
-                clearFields();
-                updateListLabel(stage);
-            }
-        });
-
-        clearButton.setOnAction(e -> {
-            clearFields();
-            searchField.clear();
-            abbrevListView.getSelectionModel().clearSelection();
-        });
-
-        stage.setOnHidden(e -> {
-            if (parentApp != null) {
-                System.out.println("Dialog closed. Notifying main application to refresh.");
-                // parentApp.refreshAbbreviations();
-            }
-        });
+        // Button actions
+        addButton.setOnAction(e -> handleAddAction(stage));
+        updateButton.setOnAction(e -> handleUpdateAction(stage));
+        deleteButton.setOnAction(e -> handleDeleteAction(stage));
+        clearButton.setOnAction(e -> handleClearAction());
     }
 
-    private Button getEffectiveButton() {
-        return abbrevListView.getSelectionModel().isEmpty() ? addButton : editButton;
+    // ================================
+    // Action Handlers
+    // ================================
+
+    private void handleAddAction(Stage stage) {
+        if (addEntry(shortField.getText().trim(), fullField.getText().trim())) {
+            updateListView(searchField.getText().trim().toLowerCase());
+            clearInputFields();
+            updateDialogTitle(stage);
+        }
     }
-    
-    private boolean add(String shortText, String fullText) {
+
+    private void handleUpdateAction(Stage stage) {
+        String selectedItem = abbrevListView.getSelectionModel().getSelectedItem();
+        if (selectedItem == null) return;
+
+        String originalShortText = selectedItem.split(" -> ", 2)[0];
+        if (updateEntry(originalShortText, shortField.getText().trim(), fullField.getText().trim())) {
+            updateListView(searchField.getText().trim().toLowerCase());
+            updateDialogTitle(stage);
+        }
+    }
+
+    private void handleDeleteAction(Stage stage) {
+        String shortText = shortField.getText().trim();
+        if (!shortText.isEmpty() && deleteEntry(shortText)) {
+            updateListView(searchField.getText().trim().toLowerCase());
+            clearInputFields();
+            updateDialogTitle(stage);
+        }
+    }
+
+    private void handleClearAction() {
+        clearInputFields();
+        searchField.clear();
+        abbrevListView.getSelectionModel().clearSelection();
+    }
+
+    // ================================
+    // Database Operations
+    // ================================
+
+    private boolean addEntry(String shortText, String fullText) {
         if (shortText.isEmpty() || fullText.isEmpty()) {
-            showAlert("Error", "Both fields must be filled.", Alert.AlertType.ERROR);
+            showAlert("Input Error", "Both short and full forms must be provided.", Alert.AlertType.ERROR);
             return false;
         }
         if (abbrevMap.containsKey(shortText)) {
-            showAlert("Warning", "Abbreviation already exists.", Alert.AlertType.WARNING);
+            showAlert("Duplicate Entry", "The abbreviation '" + shortText + "' already exists.", Alert.AlertType.WARNING);
             return false;
         }
+
         String sql = "INSERT INTO abbreviations (short, full) VALUES (?, ?)";
         try (PreparedStatement pstmt = dbConn.prepareStatement(sql)) {
             pstmt.setString(1, shortText);
             pstmt.setString(2, fullText);
-            abbrevMap.put(shortText, fullText);
-            showAlert("Success", "Abbreviation added.", Alert.AlertType.INFORMATION);
-            return pstmt.executeUpdate() > 0;
+            pstmt.executeUpdate();
+            abbrevMap.put(shortText, fullText); // Update in-memory map
+            return true;
         } catch (SQLException e) {
-            showAlert("Database Error", "Failed to add: " + e.getMessage(), Alert.AlertType.ERROR);
+            showAlert("Database Error", "Failed to add abbreviation: " + e.getMessage(), Alert.AlertType.ERROR);
             return false;
         }
     }
 
-    private boolean edit(String originalShort, String newShort, String newFull) {
+    private boolean updateEntry(String originalShort, String newShort, String newFull) {
         if (newShort.isEmpty() || newFull.isEmpty()) {
-            showAlert("Error", "Both fields must be filled.", Alert.AlertType.ERROR);
+            showAlert("Input Error", "Both short and full forms must be provided.", Alert.AlertType.ERROR);
             return false;
         }
         if (!originalShort.equals(newShort) && abbrevMap.containsKey(newShort)) {
-            showAlert("Error", "Cannot change short form to one that already exists.", Alert.AlertType.ERROR);
+            showAlert("Duplicate Entry", "Cannot change short form to '" + newShort + "' as it already exists.", Alert.AlertType.ERROR);
             return false;
         }
+
         String sql = "UPDATE abbreviations SET short = ?, full = ? WHERE short = ?";
         try (PreparedStatement pstmt = dbConn.prepareStatement(sql)) {
             pstmt.setString(1, newShort);
             pstmt.setString(2, newFull);
             pstmt.setString(3, originalShort);
+            pstmt.executeUpdate();
             abbrevMap.remove(originalShort);
             abbrevMap.put(newShort, newFull);
-            showAlert("Success", "Abbreviation updated.", Alert.AlertType.INFORMATION);
-            return pstmt.executeUpdate() > 0;
+            return true;
         } catch (SQLException e) {
-            showAlert("Database Error", "Failed to update: " + e.getMessage(), Alert.AlertType.ERROR);
+            showAlert("Database Error", "Failed to update abbreviation: " + e.getMessage(), Alert.AlertType.ERROR);
             return false;
         }
     }
 
-    private boolean delete(String shortText) {
+    private boolean deleteEntry(String shortText) {
         Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to delete '" + shortText + "'?", ButtonType.YES, ButtonType.NO);
         Optional<ButtonType> result = confirmAlert.showAndWait();
+
         if (result.isPresent() && result.get() == ButtonType.YES) {
             String sql = "DELETE FROM abbreviations WHERE short = ?";
             try (PreparedStatement pstmt = dbConn.prepareStatement(sql)) {
                 pstmt.setString(1, shortText);
-                abbrevMap.remove(shortText);
-                showAlert("Success", "Abbreviation deleted.", Alert.AlertType.INFORMATION);
-                return pstmt.executeUpdate() > 0;
+                if (pstmt.executeUpdate() > 0) {
+                    abbrevMap.remove(shortText);
+                    return true;
+                }
             } catch (SQLException e) {
-                showAlert("Database Error", "Failed to delete: " + e.getMessage(), Alert.AlertType.ERROR);
-                return false;
+                showAlert("Database Error", "Failed to delete abbreviation: " + e.getMessage(), Alert.AlertType.ERROR);
             }
         }
         return false;
     }
-    
-    // Explanation: The add, edit, and delete methods are simplified by moving
-    // the UI-related alert calls and map updates into the database logic. The
-    // confirmation dialog is also made more concise.
+
+    // ================================
+    // UI Helper Methods
+    // ================================
 
     private void updateListView(String filter) {
         ObservableList<String> items = abbrevMap.entrySet().stream()
@@ -246,15 +250,19 @@ public class IAMAbbdbControl {
                 .collect(Collectors.toCollection(FXCollections::observableArrayList));
         abbrevListView.setItems(items);
     }
-    
-    private void updateListLabel(Stage stage) {
-        stage.setTitle(String.format("Abbreviations Database Manager (%d total, %d shown)", abbrevMap.size(), abbrevListView.getItems().size()));
+
+    private void updateDialogTitle(Stage stage) {
+        stage.setTitle(String.format("Abbreviations Manager (%d entries)", abbrevMap.size()));
     }
 
-    private void clearFields() {
+    private void clearInputFields() {
         shortField.clear();
         fullField.clear();
         shortField.requestFocus();
+    }
+
+    private Button getEffectiveButton() {
+        return abbrevListView.getSelectionModel().isEmpty() ? addButton : updateButton;
     }
 
     private void showAlert(String title, String message, Alert.AlertType type) {

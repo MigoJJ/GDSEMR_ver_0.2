@@ -1,12 +1,15 @@
 package com.emr.gds.input;
 
-import javafx.application.Platform;	
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.*;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -16,64 +19,26 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * JavaFX version of FreqInputFrame.
- * ------------------------------------------------------------
- * A compact utility window for quick EMR entries:
- *   1) BMI calculator
- *   2) HbA1c builder (IFCC / eAG auto-calc)
- *   3) Vital sign tracker (scripted input + numeric sequence)
- *
- * NOTES:
- * - This class extends Stage (JavaFX). No Swing.
- * - Your main app MUST wire the bridge once AFTER creating the 10 TextAreas, e.g.:
- *     IttiaAppMain.setTextAreaManager(new FxTextAreaManager(areas));
- *
- * Conventions:
- * - Vitals are saved to O> (index 5).
- * - HbA1c status line is appended to A> (index 7).
+ * A compact JavaFX utility window for frequent EMR data entries, including BMI, HbA1c, and vital signs.
+ * This window is designed as an undecorated stage that positions itself on the top-right of the screen.
  */
 public class IAIFreqFrame extends Stage {
 
-    // ------------------------------------------------------------
-    // BMI section
-    // ------------------------------------------------------------
-    private static final List<String> BMI_FIELDS = List.of(
-            "Height (cm):", "Weight (kg):", "Waist (cm or inch):"
-    );
-    private final TextField[] bmiInputs = new TextField[BMI_FIELDS.size()];
+    // BMI components
+    private final TextField[] bmiInputs = new TextField[3];
 
-    // ------------------------------------------------------------
-    // HbA1c section
-    // ------------------------------------------------------------
-    private static final String[] HBA1C_LABELS = { "FBS / PP2 time", "Glucose mg/dL", "HbA1c %" };
-    private static final String[][] GLUCOSE_STATUS = {
-            {"9.0", "Very poor"},
-            {"8.5", "Poor"},
-            {"7.5", "Fair"},
-            {"6.5", "Good"},
-            {"0.0", "Excellent"}
-    };
+    // HbA1c components
     private final TextArea hba1cOutputArea = new TextArea();
-    private final TextField[] hba1cInputs = new TextField[HBA1C_LABELS.length];
+    private final TextField[] hba1cInputs = new TextField[3];
 
-    // ------------------------------------------------------------
-    // Vital signs section
-    // ------------------------------------------------------------
+    // Vital signs components
     private TextField vsInputField;
     private TextArea vsOutputArea;
     private TextArea vsDescriptionArea;
     private Set<String> vsValidInputs;
+    private Integer sbp, dbp, pulseRate, respirationRate;
+    private Double bodyTemperature;
 
-    // staged numeric values
-    private Integer sbp = null;
-    private Integer dbp = null;
-    private Integer pulseRate = null;
-    private Double bodyTemperature = null;
-    private Integer respirationRate = null;
-
-    // ------------------------------------------------------------
-    // Constructor (build & show)
-    // ------------------------------------------------------------
     public IAIFreqFrame() {
         initStyle(StageStyle.UNDECORATED);
         setTitle("Frequent Data Input");
@@ -90,159 +55,83 @@ public class IAIFreqFrame extends Stage {
         );
         root.setCenter(content);
 
-        Scene scene = new Scene(root, 360, 710);
-        setScene(scene);
-
-        // position: top-right of primary screen once shown
-        setOnShown(ev -> {
-            Rectangle2D vb = Screen.getPrimary().getVisualBounds();
-            setX(vb.getMaxX() - getWidth() - 20);
-            setY(vb.getMinY() + 10);
-        });
+        setScene(new Scene(root, 360, 710));
+        setOnShown(e -> positionInTopRight());
 
         initializeVitalsValidInputs();
-
-        // Soft check: warn early if bridge is not wired
-        Platform.runLater(() -> {
-            if (!bridgeReady()) {
-                showError("EMR text areas are not ready yet.\n" +
-                          "Please make sure IttiaAppMain.setTextAreaManager(...) was called after building the 10 TextAreas.");
-            }
-        });
-
+        checkBridgeReady();
         show();
     }
 
-    // ============================================================
-    // BMI
-    // ============================================================
     private TitledPane createBmiPane() {
-        GridPane grid = new GridPane();
-        grid.setHgap(8);
-        grid.setVgap(6);
-        grid.setPadding(new Insets(6));
-
-        for (int i = 0; i < BMI_FIELDS.size(); i++) {
-            Label label = new Label(BMI_FIELDS.get(i));
-            TextField field = new TextField();
-            field.setPromptText(BMI_FIELDS.get(i).replace(":", "").trim());
-            field.setPrefHeight(30);
-            bmiInputs[i] = field;
-
-            final int row = i;
-            field.setOnAction(e -> {
-                if (row < bmiInputs.length - 1) {
-                    bmiInputs[row + 1].requestFocus();
-                } else {
-                    onSaveBMI();
-                }
+        GridPane grid = createFormGrid();
+        String[] bmiLabels = {"Height (cm):", "Weight (kg):", "Waist (cm or inch):"};
+        for (int i = 0; i < bmiLabels.length; i++) {
+            bmiInputs[i] = new TextField();
+            bmiInputs[i].setPromptText(bmiLabels[i].replace(":", ""));
+            final int nextIndex = i + 1;
+            bmiInputs[i].setOnAction(e -> {
+                if (nextIndex < bmiInputs.length) bmiInputs[nextIndex].requestFocus();
+                else onSaveBMI();
             });
-
-            grid.add(label, 0, i);
-            grid.add(field, 1, i);
+            grid.add(new Label(bmiLabels[i]), 0, i);
+            grid.add(bmiInputs[i], 1, i);
         }
-
-        Button save = new Button("Save BMI");
-        save.setOnAction(e -> onSaveBMI());
-        GridPane.setColumnSpan(save, 2);
-        grid.add(save, 0, BMI_FIELDS.size());
-
-        TitledPane tp = new TitledPane("BMI Calculator", grid);
-        tp.setExpanded(true);
-        return tp;
+        Button saveButton = new Button("Save BMI");
+        saveButton.setOnAction(e -> onSaveBMI());
+        grid.add(saveButton, 0, bmiLabels.length, 2, 1);
+        return new TitledPane("BMI Calculator", grid);
     }
 
     private void onSaveBMI() {
         try {
-            double height = Double.parseDouble(bmiInputs[0].getText().trim());
-            double weight = Double.parseDouble(bmiInputs[1].getText().trim());
+            double height = Double.parseDouble(bmiInputs[0].getText());
+            double weight = Double.parseDouble(bmiInputs[1].getText());
             double bmi = weight / Math.pow(height / 100.0, 2.0);
-            String category = bmiCategory(bmi);
-            String waist = processWaist(bmiInputs[2].getText().trim());
+            String category = (bmi < 18.5) ? "Underweight" : (bmi < 25.0) ? "Healthy" : (bmi < 30.0) ? "Overweight" : "Obesity";
+            String waist = processWaist(bmiInputs[2].getText());
 
-            String bmiText = String.format("%s : BMI: [ %.2f ] kg/m^2", category, bmi);
-            String details = String.format(
-                    "\n< BMI >\n%s\nHeight : %.1f cm   Weight : %.1f kg%s",
-                    bmiText, height, weight,
-                    waist.isEmpty() ? "" : "   Waist: " + waist + " cm"
-            );
+            String report = String.format("\n< BMI >\n%s : BMI: [ %.2f ] kg/m^2\nHeight : %.1f cm   Weight : %.1f kg%s",
+                    category, bmi, height, weight, waist.isEmpty() ? "" : "   Waist: " + waist + " cm");
 
-            if (!bridgeReady()) {
-                showError("Cannot insert BMI: EMR text areas not ready.");
-                return;
-            }
-            // Insert into the currently focused area (do not force a section change)
-            IAIMain.getTextAreaManager().insertBlockIntoFocusedArea(details);
-
-            for (TextField f : bmiInputs) f.clear();
+            IAIMain.getTextAreaManager().insertBlockIntoFocusedArea(report);
+            for (TextField field : bmiInputs) field.clear();
             bmiInputs[0].requestFocus();
-
         } catch (NumberFormatException ex) {
             showError("Please enter valid numbers for Height and Weight.");
         }
     }
 
-    private static String processWaist(String waistRaw) {
-        if (waistRaw.isEmpty()) return "";
+    private String processWaist(String waistRaw) {
+        if (waistRaw == null || waistRaw.isBlank()) return "";
         String w = waistRaw.trim().toLowerCase();
-        if (w.contains("i")) { // inches marker present (e.g., "32 in")
+        if (w.contains("i")) {
             double inches = Double.parseDouble(w.replaceAll("[^\\d.]", ""));
             return String.format("%.1f", inches * 2.54);
         }
-        // assume already in cm
         return w.replaceAll("[^\\d.]", "");
     }
 
-    private static String bmiCategory(double bmi) {
-        if (bmi < 18.5) return "Underweight";
-        if (bmi < 25.0) return "Healthy weight";
-        if (bmi < 30.0) return "Overweight";
-        return "Obesity";
-    }
-
-    // ============================================================
-    // HbA1c
-    // ============================================================
     private TitledPane createHba1cPane() {
-        VBox box = new VBox(6);
-        box.setPadding(new Insets(6));
-
+        VBox box = new VBox(6, new Label("Output:"), hba1cOutputArea);
         hba1cOutputArea.setEditable(false);
-        hba1cOutputArea.setWrapText(true);
         hba1cOutputArea.setPrefRowCount(4);
 
-        GridPane inputs = new GridPane();
-        inputs.setHgap(8);
-        inputs.setVgap(6);
-
-        for (int i = 0; i < HBA1C_LABELS.length; i++) {
-            Label label = new Label(HBA1C_LABELS[i]);
-            TextField tf = new TextField();
-            tf.setPrefHeight(30);
-            tf.setPromptText(HBA1C_LABELS[i]);
-            hba1cInputs[i] = tf;
-
-            final int idx = i;
-            tf.setOnAction(e -> onHba1cInput(idx));
-
-            inputs.add(label, 0, i);
-            inputs.add(tf, 1, i);
+        GridPane inputs = createFormGrid();
+        String[] hba1cLabels = {"FBS / PP2 time", "Glucose mg/dL", "HbA1c %"};
+        for (int i = 0; i < hba1cLabels.length; i++) {
+            hba1cInputs[i] = new TextField();
+            hba1cInputs[i].setPromptText(hba1cLabels[i]);
+            final int index = i;
+            hba1cInputs[i].setOnAction(e -> onHba1cInput(index));
+            inputs.add(new Label(hba1cLabels[i]), 0, i);
+            inputs.add(hba1cInputs[i], 1, i);
         }
 
-        HBox buttons = new HBox(8);
+        HBox buttons = new HBox(8, createButton("Clear", e -> clearHba1c()), createButton("Save", e -> saveHba1cToEMR()));
         buttons.setAlignment(Pos.CENTER_RIGHT);
-        Button clear = new Button("Clear");
-        Button save  = new Button("Save");
-        clear.setOnAction(e -> clearHba1c());
-        save.setOnAction(e -> saveHba1cToEMR());
-        buttons.getChildren().addAll(clear, save);
-
-        box.getChildren().addAll(new Label("Output:"), hba1cOutputArea,
-                new Separator(), inputs, buttons);
-
-        TitledPane tp = new TitledPane("HbA1c EMR", box);
-        tp.setExpanded(true);
-        return tp;
+        box.getChildren().addAll(new Separator(), inputs, buttons);
+        return new TitledPane("HbA1c EMR", box);
     }
 
     private void onHba1cInput(int index) {
@@ -250,16 +139,14 @@ public class IAIFreqFrame extends Stage {
         if (value.isEmpty()) return;
 
         if (index == 0) {
-            // "0" -> FBS, otherwise PP{minutes}
             hba1cOutputArea.appendText("\n   " + (value.equals("0") ? "FBS" : "PP" + value));
         } else if (index == 1) {
-            hba1cOutputArea.appendText("   [    " + value + "   ] mg/dL");
+            hba1cOutputArea.appendText("   [ " + value + " ] mg/dL");
         } else if (index == 2) {
             try {
-                double h = Double.parseDouble(value);
-                hba1cOutputArea.appendText("   HbA1c       [    " + value + "   ] %\n");
-                appendHba1cCalcs(h);
-                // autosave to O> and status to A>, then clear
+                double hba1c = Double.parseDouble(value);
+                hba1cOutputArea.appendText("   HbA1c [ " + value + " ] %\n");
+                appendHba1cCalculations(hba1c);
                 saveHba1cToEMR();
                 clearHba1c();
             } catch (NumberFormatException ex) {
@@ -268,202 +155,122 @@ public class IAIFreqFrame extends Stage {
         }
 
         hba1cInputs[index].clear();
-        if (index < hba1cInputs.length - 1) {
-            hba1cInputs[index + 1].requestFocus();
-        } else {
-            hba1cInputs[0].requestFocus();
-        }
+        int nextIndex = (index + 1) % hba1cInputs.length;
+        hba1cInputs[nextIndex].requestFocus();
     }
 
-    private void appendHba1cCalcs(double hba1c) {
+    private void appendHba1cCalculations(double hba1c) {
         double ifcc = (hba1c - 2.15) * 10.929;
         double eagMgDl = (28.7 * hba1c) - 46.7;
-        double eagMmolL = eagMgDl / 18.01559;
+        hba1cOutputArea.appendText(String.format("\n\tIFCC HbA1c: [ %.0f ] mmol/mol\n\teAG: [ %.0f ] mg/dL\n", ifcc, eagMgDl));
 
-        hba1cOutputArea.appendText(String.format(
-                "\n\tIFCC HbA1c: [ %.0f ] mmol/mol" +
-                "\n\teAG: [ %.0f ] mg/dL" +
-                "\n\teAG: [ %.2f ] mmol/L\n",
-                ifcc, eagMgDl, eagMmolL));
-
-        // Status line -> A> (index 7), first match by threshold
-        for (String[] status : GLUCOSE_STATUS) {
-            if (hba1c > Double.parseDouble(status[0])) {
-                if (!bridgeReady()) return;
-                final String line = "\n...now [ " + status[1] + " ] controlled glucose status";
-                IAIMain.getTextAreaManager().focusArea(9); // A>
-                IAIMain.getTextAreaManager().insertLineIntoFocusedArea(line);
-                break;
-            }
-        }
+        String status = (hba1c > 9.0) ? "Very poor" : (hba1c > 8.5) ? "Poor" : (hba1c > 7.5) ? "Fair" : (hba1c > 6.5) ? "Good" : "Excellent";
+        IAIMain.getTextAreaManager().insertLineIntoArea(IAITextAreaManager.AREA_A, "\n...now [ " + status + " ] controlled glucose status", true);
     }
 
     private void clearHba1c() {
         hba1cOutputArea.clear();
-        for (TextField f : hba1cInputs) f.clear();
+        for (TextField field : hba1cInputs) field.clear();
         hba1cInputs[0].requestFocus();
     }
 
     private void saveHba1cToEMR() {
-        String text = hba1cOutputArea.getText().trim();
-        if (text.isEmpty()) return;
-        if (!bridgeReady()) {
-            showError("Cannot save HbA1c: EMR text areas not ready.");
-            return;
-        }
-        // O> index 5 (Objective)
-        IAIMain.getTextAreaManager().focusArea(5);
-        if (text.contains("\n")) {
-            IAIMain.getTextAreaManager().insertBlockIntoFocusedArea(text + "\n");
-        } else {
-            IAIMain.getTextAreaManager().insertLineIntoFocusedArea(text);
+        String text = hba1cOutputArea.getText();
+        if (text != null && !text.isBlank()) {
+            IAIMain.getTextAreaManager().insertBlockIntoArea(IAITextAreaManager.AREA_O, text, true);
         }
     }
 
-    // ============================================================
-    // Vital signs
-    // ============================================================
     private TitledPane createVitalsPane() {
-        VBox box = new VBox(6);
-        box.setPadding(new Insets(6));
-
-        vsInputField = new TextField();
-        vsInputField.setPromptText("Enter code (h/o/g/l/r/i/t36.5) or numbers (SBP→DBP→PR→BT→RR)");
-        vsInputField.setPrefHeight(30);
+        vsInputField = new TextField("Enter code (h/o/g/l/r/i/t36.5) or numbers (SBP→DBP→PR→BT→RR)");
         vsInputField.setOnAction(e -> {
             handleVitalsInput(vsInputField.getText().trim().toLowerCase());
             vsInputField.clear();
         });
 
         vsDescriptionArea = new TextArea(" at GDS : Regular pulse, Right Seated Position");
-        vsDescriptionArea.setEditable(false);
-        vsDescriptionArea.setWrapText(true);
         vsDescriptionArea.setPrefRowCount(2);
-
         vsOutputArea = new TextArea();
-        vsOutputArea.setEditable(false);
-        vsOutputArea.setWrapText(true);
         vsOutputArea.setPrefRowCount(5);
 
-        HBox buttons = new HBox(8);
+        HBox buttons = new HBox(8, createButton("Clear", e -> resetVitalsFields()), createButton("Save", e -> saveVitalsToEMR()));
         buttons.setAlignment(Pos.CENTER_RIGHT);
-        Button clear = new Button("Clear");
-        Button save  = new Button("Save");
-        clear.setOnAction(e -> resetVitalsFields());
-        save.setOnAction(e -> saveVitalsToEMR());
-        buttons.getChildren().addAll(clear, save);
 
-        box.getChildren().addAll(vsInputField,
-                new Label("Description:"), vsDescriptionArea,
-                new Label("Output:"), vsOutputArea,
-                buttons);
-
-        TitledPane tp = new TitledPane("Vital Sign Tracker", box);
-        tp.setExpanded(true);
-        return tp;
+        VBox box = new VBox(6, new Label("Input:"), vsInputField, new Label("Description:"), vsDescriptionArea, new Label("Output:"), vsOutputArea, buttons);
+        return new TitledPane("Vital Sign Tracker", box);
     }
 
     private void initializeVitalsValidInputs() {
-        vsValidInputs = new HashSet<>();
-        vsValidInputs.add("h"); // Home
-        vsValidInputs.add("o"); // Other clinic
-        vsValidInputs.add("g"); // GDS
-        vsValidInputs.add("l"); // Left position
-        vsValidInputs.add("r"); // Right position
-        vsValidInputs.add("i"); // Irregular pulse
-        vsValidInputs.add("t"); // Temperature prefix (e.g., t36.5)
+        vsValidInputs = new HashSet<>(List.of("h", "o", "g", "l", "r", "i"));
     }
 
     private void handleVitalsInput(String input) {
         if (input.isEmpty()) return;
 
-        if (vsValidInputs.contains(input) || input.startsWith("t")) {
-            if (input.startsWith("t")) {
-                handleVitalsTemperatureInput(input);
-            } else {
-                updateVitalsDescription(input);
-            }
+        if (vsValidInputs.contains(input)) {
+            updateVitalsDescription(input);
+        } else if (input.startsWith("t")) {
+            handleVitalsTemperatureInput(input);
         } else {
-            // numeric sequence handler: SBP -> DBP -> PR -> BT -> RR
             try {
-                double value = Double.parseDouble(input);
-                processVitalsNumeric(value);
+                processVitalsNumeric(Double.parseDouble(input));
             } catch (NumberFormatException ex) {
-                vsOutputArea.setText("Invalid input. Enter a code (h/o/g/l/r/i/t#) or a number.");
+                vsOutputArea.setText("Invalid input. Enter a code or a number.");
             }
         }
     }
 
     private void updateVitalsDescription(String code) {
-        String cur = vsDescriptionArea.getText();
+        String current = vsDescriptionArea.getText();
         switch (code) {
             case "h" -> vsDescriptionArea.setText("   at home by self");
             case "o" -> vsDescriptionArea.setText("   at Other clinic");
             case "g" -> vsDescriptionArea.setText(" at GDS : Regular pulse, Right Seated Position");
-            case "l" -> vsDescriptionArea.setText(cur.replace("Right", "Left"));
-            case "r" -> vsDescriptionArea.setText(cur.replace("Left", "Right"));
-            case "i" -> vsDescriptionArea.setText(cur.replace("Regular", "Irregular"));
-            default -> { /* no-op */ }
+            case "l" -> vsDescriptionArea.setText(current.replace("Right", "Left"));
+            case "r" -> vsDescriptionArea.setText(current.replace("Left", "Right"));
+            case "i" -> vsDescriptionArea.setText(current.replace("Regular", "Irregular"));
         }
     }
 
     private void handleVitalsTemperatureInput(String input) {
         try {
-            double t = Double.parseDouble(input.substring(1));
+            double temp = Double.parseDouble(input.substring(1));
             vsDescriptionArea.setText(" at GDS : Forehead (Temporal Artery) Thermometer:");
-            vsOutputArea.setText("Body Temperature [ " + t + " ] ℃");
+            vsOutputArea.setText("Body Temperature [ " + temp + " ] ℃");
         } catch (RuntimeException ex) {
-            vsOutputArea.setText("Invalid temperature input. Use 't' followed by a number (e.g., t36.5).");
+            vsOutputArea.setText("Invalid temperature format. Use 't' followed by a number (e.g., t36.5).");
         }
     }
 
-    private void processVitalsNumeric(double v) {
+    private void processVitalsNumeric(double value) {
         if (sbp == null) {
-            sbp = (int) v;
-            vsOutputArea.setText("\tSBP [" + sbp + "] mmHg   ");
-            return;
-        }
-        if (dbp == null) {
-            dbp = (int) v;
-            vsOutputArea.setText("BP [" + sbp + " / " + dbp + "] mmHg   ");
-            return;
-        }
-        if (pulseRate == null) {
-            pulseRate = (int) v;
-            vsOutputArea.appendText("PR [" + pulseRate + "]/minute   ");
-            return;
-        }
-        if (bodyTemperature == null) {
-            bodyTemperature = v;
+            sbp = (int) value;
+            vsOutputArea.setText("\tSBP [" + sbp + "] mmHg");
+        } else if (dbp == null) {
+            dbp = (int) value;
+            vsOutputArea.setText("BP [" + sbp + " / " + dbp + "] mmHg");
+        } else if (pulseRate == null) {
+            pulseRate = (int) value;
+            vsOutputArea.appendText("   PR [" + pulseRate + "]/minute");
+        } else if (bodyTemperature == null) {
+            bodyTemperature = value;
             vsOutputArea.appendText("\n\tBody Temperature [" + bodyTemperature + "]℃");
-            return;
-        }
-        if (respirationRate == null) {
-            respirationRate = (int) v;
+        } else if (respirationRate == null) {
+            respirationRate = (int) value;
             vsOutputArea.appendText("\n\tRespiration Rate [" + respirationRate + "]/minute");
-            // complete set captured; reset for next cycle
-            resetVitalsStaged();
+            resetVitalsStagedValues();
         }
     }
 
     private void saveVitalsToEMR() {
-        final String desc = vsDescriptionArea.getText().trim();
-        final String out  = vsOutputArea.getText().trim();
-        if (desc.isEmpty() && out.isEmpty()) return;
+        String description = vsDescriptionArea.getText();
+        String output = vsOutputArea.getText();
+        if (description.isBlank() && output.isBlank()) return;
 
-        if (!bridgeReady()) {
-            showError("Cannot save vitals: EMR text areas not ready.");
-            return;
-        }
-
-        // Target O> index = 5
-        IAIMain.getTextAreaManager().focusArea(5);
-        if (!desc.isEmpty()) {
-            IAIMain.getTextAreaManager().insertLineIntoFocusedArea(desc);
-        }
-        if (!out.isEmpty()) {
-            IAIMain.getTextAreaManager().insertLineIntoFocusedArea("\t" + out);
-        }
+        IAITextAreaManager manager = IAIMain.getTextAreaManager();
+        manager.focusArea(IAITextAreaManager.AREA_O);
+        if (!description.isBlank()) manager.insertLineIntoFocusedArea(description);
+        if (!output.isBlank()) manager.insertLineIntoFocusedArea("\t" + output);
         resetVitalsFields();
     }
 
@@ -471,10 +278,10 @@ public class IAIFreqFrame extends Stage {
         vsInputField.clear();
         vsOutputArea.clear();
         vsDescriptionArea.setText(" at GDS : Regular pulse, Right Seated Position");
-        resetVitalsStaged();
+        resetVitalsStagedValues();
     }
 
-    private void resetVitalsStaged() {
+    private void resetVitalsStagedValues() {
         sbp = null;
         dbp = null;
         pulseRate = null;
@@ -482,33 +289,41 @@ public class IAIFreqFrame extends Stage {
         respirationRate = null;
     }
 
-    // ============================================================
-    // Bottom buttons (Quit)
-    // ============================================================
     private HBox createBottomButtons() {
-        Button quit = new Button("Quit All");
-        quit.setOnAction(e -> close());
-
-        HBox box = new HBox(8, quit);
+        Button quitButton = createButton("Quit All", e -> close());
+        HBox box = new HBox(8, quitButton);
         box.setAlignment(Pos.CENTER);
-        box.setPadding(new Insets(4, 0, 0, 0));
         return box;
     }
 
-    // ============================================================
-    // Helpers
-    // ============================================================
-    private static boolean bridgeReady() {
-        try {
-            return IAIMain.getTextAreaManager().isReady();
-        } catch (Throwable t) {
-            return false;
-        }
+    private void positionInTopRight() {
+        Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
+        setX(screenBounds.getMaxX() - getWidth() - 20);
+        setY(screenBounds.getMinY() + 10);
     }
 
-    private static void showError(String msg) {
-        Platform.runLater(() ->
-                new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK).showAndWait()
+    private void checkBridgeReady() {
+        IAIMain.getManagerSafely().ifPresentOrElse(
+                manager -> { /* Ready */ },
+                () -> showError("EMR connection not established. Please ensure the main application has initialized the IAIMain bridge.")
         );
+    }
+
+    private GridPane createFormGrid() {
+        GridPane grid = new GridPane();
+        grid.setHgap(8);
+        grid.setVgap(6);
+        grid.setPadding(new Insets(6));
+        return grid;
+    }
+
+    private Button createButton(String text, javafx.event.EventHandler<javafx.event.ActionEvent> handler) {
+        Button button = new Button(text);
+        button.setOnAction(handler);
+        return button;
+    }
+
+    private void showError(String message) {
+        Platform.runLater(() -> new Alert(Alert.AlertType.ERROR, message).showAndWait());
     }
 }

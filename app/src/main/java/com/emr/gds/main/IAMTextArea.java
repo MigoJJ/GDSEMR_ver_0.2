@@ -1,8 +1,13 @@
 package com.emr.gds.main;
 
+import com.emr.gds.input.IAIFxTextAreaManager;
+import com.emr.gds.input.IAIMain;
+import com.emr.gds.input.IAITextAreaManager;
+import com.emr.gds.soap.ChiefComplaintEditor;
+import com.emr.gds.soap.EMRPMH;
+import com.emr.gds.soap.IMSPresentIllness;
+import com.emr.gds.soap.IMSFollowUp.PlanFollowupAction;
 import javafx.application.Platform;
-import javafx.scene.Node;
-import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextFormatter;
@@ -11,47 +16,38 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
-import javafx.stage.Stage;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.emr.gds.input.IAIFxTextAreaManager;
-import com.emr.gds.input.IAIMain;
-import com.emr.gds.input.IAITextAreaManager;
-import com.emr.gds.soap.ChiefComplaintEditor;
-import com.emr.gds.soap.EMRPMH;
-import com.emr.gds.soap.IMSPresentIllness;
-import com.emr.gds.soap.IMSFollowUp.PlanFollowupAction;
-
 /**
- * Manages the central text areas in the EMR application.
- * - Stable, readable styles (focus/hover/unfocused)
- * - Abbreviation expansion (":key")
- * - Double-click handlers per section
- * - Template parsing/append
+ * Manages the central text areas in the EMR application, providing features like:
+ * - Consistent and readable styling for focus, hover, and unfocused states.
+ * - Automatic abbreviation expansion (e.g., ":key").
+ * - Section-specific double-click handlers for specialized editors.
+ * - Methods for template parsing and insertion.
  */
 public class IAMTextArea {
 
-    // ================================
-    // CONSTANTS
-    // ================================
+    // ================================ 
+    // Constants
+    // ================================ 
     public static final String[] TEXT_AREA_TITLES = {
             "CC>", "PI>", "ROS>", "PMH>", "S>",
             "O>", "Physical Exam>", "A>", "P>", "Comment>"
     };
 
-    private static final String BASE_TEXT_TWEAKS =
+    private static final String BASE_TEXT_TWEAKS = 
             "-fx-prompt-text-fill: rgba(0,0,0,0.55);" +
             "-fx-highlight-fill: rgba(0,0,0,0.15);" +
             "-fx-highlight-text-fill: #000000;";
 
-    // Unfocused: sun-washed sand/ochre
-    private static final String STYLE_UNFOCUSED =
+    // Style for unfocused text areas (sun-washed sand/ochre theme)
+    private static final String STYLE_UNFOCUSED = 
             "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #F7E6B5, #EED28A, #DCC06A);" +
             "-fx-text-fill: #0A2540;" +
             "-fx-border-color: #C97B2B;" +
@@ -62,8 +58,8 @@ public class IAMTextArea {
             "-fx-effect: dropshadow(gaussian, rgba(201,123,43,0.35), 6, 0.4, 0, 1);" +
             BASE_TEXT_TWEAKS;
 
-    // Focused: bold saffron → coral (high attention)
-    private static final String STYLE_FOCUSED =
+    // Style for focused text areas (bold saffron to coral for high attention)
+    private static final String STYLE_FOCUSED = 
             "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #FFD27E, #FFB45A, #FF8A4C);" +
             "-fx-text-fill: #0A2540;" +
             "-fx-border-color: #8C3B2E;" +
@@ -74,8 +70,8 @@ public class IAMTextArea {
             "-fx-effect: dropshadow(gaussian, rgba(140,59,46,0.45), 12, 0.25, 0, 2);" +
             BASE_TEXT_TWEAKS;
 
-    // Hover: tropical lagoon teals
-    private static final String STYLE_HOVER =
+    // Style for hovered text areas (tropical lagoon teals)
+    private static final String STYLE_HOVER = 
             "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #CFE9DF, #A7D8C6, #7FC6B3);" +
             "-fx-text-fill: #0A2540;" +
             "-fx-border-color: #2C8C7A;" +
@@ -86,27 +82,23 @@ public class IAMTextArea {
             "-fx-effect: dropshadow(gaussian, rgba(44,140,122,0.40), 10, 0.25, 0, 1);" +
             BASE_TEXT_TWEAKS;
 
-
-    // ================================
-    // INSTANCE VARIABLES
-    // ================================
+    // ================================ 
+    // Instance Variables
+    // ================================ 
     private final List<TextArea> areas = new ArrayList<>(10);
     private TextArea lastFocusedArea = null;
     private final Map<String, String> abbrevMap;
-    private IAMProblemAction problemAction;
+    private final IAMProblemAction problemAction;
     private final Map<Integer, TextAreaDoubleClickHandler> doubleClickHandlers = new HashMap<>();
 
-    // ================================
-    // INTERFACE FOR DOUBLE-CLICK HANDLERS
-    // ================================
     @FunctionalInterface
     public interface TextAreaDoubleClickHandler {
         void handle(TextArea textArea, int areaIndex);
     }
 
-    // ================================
-    // CONSTRUCTOR
-    // ================================
+    // ================================ 
+    // Constructor
+    // ================================ 
     public IAMTextArea(Map<String, String> abbrevMap, IAMProblemAction problemAction) {
         this.abbrevMap = Objects.requireNonNull(abbrevMap, "abbrevMap");
         this.problemAction = Objects.requireNonNull(problemAction, "problemAction");
@@ -114,9 +106,13 @@ public class IAMTextArea {
         initializeTextAreas();
     }
 
-    // ================================
-    // INITIALIZATION
-    // ================================
+    // ================================ 
+    // Initialization
+    // ================================ 
+
+    /**
+     * Sets up the default double-click handlers for each text area.
+     */
     private void initializeDoubleClickHandlers() {
         doubleClickHandlers.put(0, this::executeChiefComplaintHandler);
         doubleClickHandlers.put(1, this::executePresentIllnessHandler);
@@ -130,69 +126,47 @@ public class IAMTextArea {
         doubleClickHandlers.put(9, this::executeCommentHandler);
     }
 
+    /**
+     * Creates and configures the 10 main text areas.
+     */
     private void initializeTextAreas() {
         areas.clear();
         for (int i = 0; i < 10; i++) {
             final int idx = i;
-            TextArea ta = new TextArea();
-            ta.setWrapText(true);
-            ta.setFont(Font.font("Malgun Gothic", 12));
-            ta.setPrefRowCount(11);
-            ta.setPrefColumnCount(58);
-            ta.setPromptText(i < TEXT_AREA_TITLES.length ? TEXT_AREA_TITLES[i] : "Area " + (i + 1));
-            ta.setStyle(STYLE_UNFOCUSED);
+            TextArea ta = createStyledTextArea(i);
 
-            // Selection & caret are inherited from CSS above. No blank text.
-            // Focus: apply focused/unfocused style correctly.
-            ta.focusedProperty().addListener((obs, was, is) -> {
-                if (is) {
-                    ta.setStyle(STYLE_FOCUSED);
-                    lastFocusedArea = ta;
-                } else {
-                    ta.setStyle(STYLE_UNFOCUSED);
-                }
-            });
-
-            // Hover only affects style when not focused.
-            ta.addEventHandler(MouseEvent.MOUSE_ENTERED, e -> {
-                if (!ta.isFocused()) ta.setStyle(STYLE_HOVER);
-            });
-            ta.addEventHandler(MouseEvent.MOUSE_EXITED, e -> {
-                if (!ta.isFocused()) ta.setStyle(STYLE_UNFOCUSED);
-            });
-
-            // Scratchpad: live mirror by title
-            if (idx < TEXT_AREA_TITLES.length) {
-                ta.textProperty().addListener((o, oldV, newV) ->
-                        problemAction.updateAndRedrawScratchpad(TEXT_AREA_TITLES[idx], newV));
-            }
-
-            // Space-key abbreviation expansion. Only consume if we replaced.
-            ta.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
-                if (event.getCode() == KeyCode.SPACE) {
-                    boolean replaced = expandAbbreviationOnSpace(ta);
-                    if (replaced) event.consume();
-                }
-            });
-
-            // Double-click handler
-            ta.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
-                if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
-                    handleDoubleClick(ta, idx);
-                    event.consume();
-                }
-            });
-
-            // Filter control characters
-            ta.setTextFormatter(new TextFormatter<>(IAMTextFormatUtil.filterControlChars()));
+            // Add listeners for focus, hover, and input events
+            addFocusAndHoverListeners(ta);
+            addScratchpadListener(ta, idx);
+            addAbbreviationExpansionListener(ta);
+            addDoubleClickListener(ta, idx);
 
             areas.add(ta);
         }
     }
 
-    // ================================
-    // UI BUILDERS
-    // ================================
+    /**
+     * Creates a single styled TextArea.
+     */
+    private TextArea createStyledTextArea(int index) {
+        TextArea ta = new TextArea();
+        ta.setWrapText(true);
+        ta.setFont(Font.font("Malgun Gothic", 12));
+        ta.setPrefRowCount(11);
+        ta.setPrefColumnCount(58);
+        ta.setPromptText(index < TEXT_AREA_TITLES.length ? TEXT_AREA_TITLES[index] : "Area " + (index + 1));
+        ta.setStyle(STYLE_UNFOCUSED);
+        ta.setTextFormatter(new TextFormatter<>(IAMTextFormatUtil.filterControlChars()));
+        return ta;
+    }
+
+    // ================================ 
+    // UI Builders
+    // ================================ 
+
+    /**
+     * Constructs the central grid of text areas.
+     */
     public GridPane buildCenterAreas() {
         GridPane grid = new GridPane();
         grid.setHgap(10);
@@ -207,25 +181,67 @@ public class IAMTextArea {
         return grid;
     }
 
-    // ================================
-    // DOUBLE-CLICK
-    // ================================
-    private void handleDoubleClick(TextArea textArea, int areaIndex) {
-        TextAreaDoubleClickHandler handler = doubleClickHandlers.get(areaIndex);
-        if (handler == null) return;
-        try {
-            handler.handle(textArea, areaIndex);
-        } catch (Exception e) {
-            showErrorAlert("Handler Error",
-                    "Failed to execute handler for " + safeTitle(areaIndex),
-                    e.getMessage());
+    // ================================ 
+    // Event Listener Setup
+    // ================================ 
+
+    private void addFocusAndHoverListeners(TextArea ta) {
+        ta.focusedProperty().addListener((obs, was, is) -> {
+            ta.setStyle(is ? STYLE_FOCUSED : STYLE_UNFOCUSED);
+            if (is) lastFocusedArea = ta;
+        });
+
+        ta.addEventHandler(MouseEvent.MOUSE_ENTERED, e -> {
+            if (!ta.isFocused()) ta.setStyle(STYLE_HOVER);
+        });
+        ta.addEventHandler(MouseEvent.MOUSE_EXITED, e -> {
+            if (!ta.isFocused()) ta.setStyle(STYLE_UNFOCUSED);
+        });
+    }
+
+    private void addScratchpadListener(TextArea ta, int idx) {
+        if (idx < TEXT_AREA_TITLES.length) {
+            ta.textProperty().addListener((o, oldV, newV) -> 
+                    problemAction.updateAndRedrawScratchpad(TEXT_AREA_TITLES[idx], newV));
         }
     }
 
+    private void addAbbreviationExpansionListener(TextArea ta) {
+        ta.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.SPACE) {
+                if (expandAbbreviationOnSpace(ta)) event.consume();
+            }
+        });
+    }
+
+    private void addDoubleClickListener(TextArea ta, int idx) {
+        ta.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+            if (event.getButton() == MouseButton.PRIMARY && event.getClickCount() == 2) {
+                handleDoubleClick(ta, idx);
+                event.consume();
+            }
+        });
+    }
+
+    // ================================ 
+    // Double-Click Handling
+    // ================================ 
+
+    private void handleDoubleClick(TextArea textArea, int areaIndex) {
+        Optional.ofNullable(doubleClickHandlers.get(areaIndex)).ifPresent(handler -> {
+            try {
+                handler.handle(textArea, areaIndex);
+            } catch (Exception e) {
+                showErrorAlert("Handler Error", "Failed to execute handler for " + safeTitle(areaIndex), e.getMessage());
+            }
+        });
+    }
+
+    // --- Specific Double-Click Implementations ---
+
     private void executeChiefComplaintHandler(TextArea textArea, int index) {
         try {
-            ChiefComplaintEditor cc = new ChiefComplaintEditor(textArea);
-            cc.showAndWait();
+            new ChiefComplaintEditor(textArea).showAndWait();
         } catch (Exception e) {
             handleEditorException("Chief Complaint", textArea, index, e);
         }
@@ -233,11 +249,10 @@ public class IAMTextArea {
 
     private void executePresentIllnessHandler(TextArea textArea, int index) {
         try {
-        	IMSPresentIllness pi = new IMSPresentIllness(textArea);
-            pi.showAndWait();
+            new IMSPresentIllness(textArea).showAndWait();
         } catch (Exception e) {
-            handleEditorException("Chief Complaint", textArea, index, e);
-        }    
+            handleEditorException("Present Illness", textArea, index, e);
+        }
     }
 
     private void executeReviewOfSystemsHandler(TextArea textArea, int index) {
@@ -246,9 +261,7 @@ public class IAMTextArea {
 
     private void executePastMedicalHistoryHandler(TextArea textArea, int index) {
         try {
-            IAITextAreaManager manager = IAIMain.getTextAreaManager();
-            EMRPMH pmhEditor = new EMRPMH(manager);
-            pmhEditor.setVisible(true);
+            new EMRPMH(IAIMain.getTextAreaManager()).setVisible(true);
         } catch (Exception e) {
             handleEditorException("Past Medical History", textArea, index, e);
         }
@@ -272,17 +285,17 @@ public class IAMTextArea {
 
     private void executePlanHandler(TextArea textArea, int index) {
         try {
-            IAITextAreaManager manager = IAIMain.getTextAreaManager();
-            PlanFollowupAction planFollowupAction = new PlanFollowupAction(manager, problemAction);
-            planFollowupAction.showAndWait();
+            new PlanFollowupAction(IAIMain.getTextAreaManager(), problemAction).showAndWait();
         } catch (Exception e) {
             handleEditorException("Plan & Follow-up Assistant", textArea, index, e);
         }
     }
-     
+
     private void executeCommentHandler(TextArea textArea, int index) {
         executeReflectionBasedEditor("com.emr.gds.main.CommentEditor", "Comment", textArea, index);
     }
+
+    // --- Dynamic Editor Loading & Fallbacks ---
 
     private void executeReflectionBasedEditor(String className, String sectionName, TextArea textArea, int index) {
         try {
@@ -297,15 +310,13 @@ public class IAMTextArea {
     }
 
     private void handleEditorException(String sectionName, TextArea ta, int index, Exception e) {
-        showErrorAlert("Editor Error",
-                "Failed to open " + sectionName + " Editor",
-                e.getMessage());
+        showErrorAlert("Editor Error", "Failed to open " + sectionName + " Editor", e.getMessage());
         showDefaultDoubleClick(sectionName, ta, index);
     }
 
     private void showDefaultDoubleClick(String sectionName, TextArea ta, int index) {
-        String message = "Double-clicked on " + sectionName + " (Area " + (index + 1) + ")\n" +
-                "Current text length: " + ta.getText().length() + " characters";
+        String message = String.format("Double-clicked on %s (Area %d)\nCurrent text length: %d characters",
+                sectionName, index + 1, ta.getText().length());
         Platform.runLater(() -> {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Double-Click Action");
@@ -315,22 +326,9 @@ public class IAMTextArea {
         });
     }
 
-    // ================================
-    // PUBLIC ACTIONS
-    // ================================
-    public void setDoubleClickHandler(int areaIndex, TextAreaDoubleClickHandler handler) {
-        if (areaIndex < 0 || areaIndex >= TEXT_AREA_TITLES.length)
-            throw new IllegalArgumentException("Invalid area index: " + areaIndex);
-        doubleClickHandlers.put(areaIndex, handler);
-    }
-
-    public void removeDoubleClickHandler(int areaIndex) {
-        doubleClickHandlers.remove(areaIndex);
-    }
-
-    public TextAreaDoubleClickHandler getDoubleClickHandler(int areaIndex) {
-        return doubleClickHandlers.get(areaIndex);
-    }
+    // ================================ 
+    // Public API for Text Manipulation
+    // ================================ 
 
     public void insertTemplateIntoFocusedArea(IAMButtonAction.TemplateLibrary t) {
         insertBlockIntoFocusedArea(t.body());
@@ -341,40 +339,41 @@ public class IAMTextArea {
     }
 
     public void insertBlockIntoFocusedArea(String block) {
-        TextArea ta = getFocusedArea();
-        if (ta == null) return;
-        String expandedBlock = expandAbbreviations(block);
-        int caret = ta.getCaretPosition();
-        ta.insertText(caret, expandedBlock);
-        Platform.runLater(ta::requestFocus);
+        Optional.ofNullable(getFocusedArea()).ifPresent(ta -> {
+            String expandedBlock = expandAbbreviations(block);
+            ta.insertText(ta.getCaretPosition(), expandedBlock);
+            Platform.runLater(ta::requestFocus);
+        });
     }
 
     public void formatCurrentArea() {
-        TextArea ta = getFocusedArea();
-        if (ta == null) return;
-        ta.setText(IAMTextFormatUtil.autoFormat(ta.getText()));
+        Optional.ofNullable(getFocusedArea()).ifPresent(ta ->
+                ta.setText(IAMTextFormatUtil.autoFormat(ta.getText())));
     }
 
     public void clearAllTextAreas() {
         areas.forEach(TextArea::clear);
     }
 
+    /**
+     * Parses a multi-section template and appends the content to the corresponding text areas.
+     */
     public void parseAndAppendTemplate(String templateContent) {
         if (templateContent == null || templateContent.isBlank()) return;
 
-        templateContent = expandAbbreviations(templateContent);
+        String expandedContent = expandAbbreviations(templateContent);
 
         Map<String, TextArea> areaMap = new HashMap<>();
         for (int i = 0; i < TEXT_AREA_TITLES.length && i < areas.size(); i++) {
             areaMap.put(TEXT_AREA_TITLES[i], areas.get(i));
         }
 
+        // Regex to split the content by section titles
         String patternString = "(?=(" + String.join("|", TEXT_AREA_TITLES)
                 .replace(">", "\\>")
                 .replace(" ", "\\s") + "))";
-
         Pattern pattern = Pattern.compile(patternString);
-        String[] parts = pattern.split(templateContent);
+        String[] parts = pattern.split(expandedContent);
 
         int sectionsLoaded = 0;
         for (String part : parts) {
@@ -387,8 +386,7 @@ public class IAMTextArea {
                     if (target != null) {
                         String body = p.substring(title.length()).trim();
                         if (!body.isEmpty()) {
-                            if (!target.getText().isBlank()) target.appendText("\n" + body);
-                            else target.setText(body);
+                            target.setText(target.getText().isBlank() ? body : target.getText() + "\n" + body);
                             sectionsLoaded++;
                         }
                     }
@@ -397,98 +395,87 @@ public class IAMTextArea {
             }
         }
 
+        // If no sections were matched, insert the whole block into the focused area
         if (sectionsLoaded == 0) {
-            insertBlockIntoFocusedArea(templateContent);
+            insertBlockIntoFocusedArea(expandedContent);
         }
     }
 
-    // ================================
-    // ABBREVIATIONS
-    // ================================
+    // ================================ 
+    // Abbreviation Expansion
+    // ================================ 
+
     private boolean expandAbbreviationOnSpace(TextArea ta) {
         int caret = ta.getCaretPosition();
         String upToCaret = ta.getText(0, caret);
         int start = Math.max(upToCaret.lastIndexOf(' '), upToCaret.lastIndexOf('\n')) + 1;
-        if (start < 0 || start > caret) return false;
 
-        String word = upToCaret.substring(start);
+        String word = upToCaret.substring(start).trim();
         if (!word.startsWith(":")) return false;
 
         String key = word.substring(1);
         String replacement = getAbbreviationReplacement(key);
         if (replacement == null) return false;
 
-        ta.deleteText(start, caret);
-        ta.insertText(start, replacement + " ");
+        Platform.runLater(() -> {
+            ta.deleteText(start, caret);
+            ta.insertText(start, replacement + " ");
+        });
         return true;
     }
 
     private String expandAbbreviations(String text) {
         StringBuilder out = new StringBuilder();
-        int i = 0;
-        while (i < text.length()) {
-            char c = text.charAt(i);
-            if (c == ':' && (i == 0 || Character.isWhitespace(text.charAt(i - 1)))) {
-                int start = i + 1;
-                int j = start;
-                while (j < text.length() && !Character.isWhitespace(text.charAt(j))) j++;
-                String key = text.substring(start, j);
-                String rep = getAbbreviationReplacement(key);
-                out.append(rep != null ? rep : ":" + key);
-                i = j;
-            } else {
-                out.append(c);
-                i++;
-            }
+        Pattern abbrevPattern = Pattern.compile(":([\\S]+)");
+        Matcher matcher = abbrevPattern.matcher(text);
+
+        while (matcher.find()) {
+            String key = matcher.group(1);
+            String replacement = getAbbreviationReplacement(key);
+            matcher.appendReplacement(out, replacement != null ? Matcher.quoteReplacement(replacement) : matcher.group(0));
         }
+        matcher.appendTail(out);
         return out.toString();
     }
 
     private String getAbbreviationReplacement(String key) {
-        if ("cd".equals(key)) {
+        if ("cd".equalsIgnoreCase(key)) {
             return LocalDate.now().format(DateTimeFormatter.ISO_DATE);
         }
         return abbrevMap.get(key);
     }
 
-    // ================================
-    // HELPERS
-    // ================================
+    // ================================ 
+    // Getters and Helpers
+    // ================================ 
+
     private TextArea getFocusedArea() {
-        for (TextArea ta : areas) if (ta.isFocused()) return ta;
-        return (lastFocusedArea != null) ? lastFocusedArea : (areas.isEmpty() ? null : areas.get(0));
+        return areas.stream().filter(TextArea::isFocused).findFirst().orElse(lastFocusedArea);
     }
 
     public void focusArea(int idx) {
         if (idx >= 0 && idx < areas.size()) {
-            areas.get(idx).requestFocus();
+            Platform.runLater(() -> areas.get(idx).requestFocus());
             lastFocusedArea = areas.get(idx);
         }
     }
 
     public List<TextArea> getTextAreas() {
         IAIMain.setTextAreaManager(new IAIFxTextAreaManager(areas));
-        return this.areas;
-    }
-
-    public String getUniqueLines(String text) {
-        return IAMTextFormatUtil.getUniqueLines(text);
-    }
-
-    public static String normalizeLine(String s) {
-        return IAMTextFormatUtil.normalizeLine(s);
+        return Collections.unmodifiableList(this.areas);
     }
 
     private void showErrorAlert(String title, String header, String content) {
-        Alert errorAlert = new Alert(Alert.AlertType.ERROR);
-        errorAlert.setTitle(title);
-        errorAlert.setHeaderText(header);
-        errorAlert.setContentText(content);
-        errorAlert.showAndWait();
+        Platform.runLater(() -> {
+            Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+            errorAlert.setTitle(title);
+            errorAlert.setHeaderText(header);
+            errorAlert.setContentText(content);
+            errorAlert.showAndWait();
+        });
     }
 
     private String safeTitle(int index) {
-        if (index >= 0 && index < TEXT_AREA_TITLES.length) return TEXT_AREA_TITLES[index];
-        return "Area " + (index + 1);
+        return (index >= 0 && index < TEXT_AREA_TITLES.length) ? TEXT_AREA_TITLES[index] : "Area " + (index + 1);
     }
 }

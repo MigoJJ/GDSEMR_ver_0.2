@@ -5,58 +5,61 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Global holder for the TextAreaManager bridge.
- * Register once after the 10 TextAreas are created.
+ * A final utility class that serves as a global, thread-safe holder for the single
+ * instance of the {@link IAITextAreaManager}.
+ * This provides a centralized access point for the text area manager bridge.
  */
 public final class IAIMain {
 
-    /** The single, thread-safe instance of the manager. */
-    private static final AtomicReference<IAITextAreaManager> MANAGER = new AtomicReference<>(null);
+    /**
+     * The atomic reference holding the single instance of the text area manager.
+     */
+    private static final AtomicReference<IAITextAreaManager> MANAGER_INSTANCE = new AtomicReference<>(null);
 
-    /** Private constructor to prevent instantiation of this utility class. */
+    /**
+     * Private constructor to prevent instantiation of this utility class.
+     */
     private IAIMain() {}
 
     /**
-     * Registers the bridge.
-     * This must be called exactly once after the 10 EMR TextAreas have been created.
+     * Registers the singleton instance of the text area manager.
+     * This method should be called exactly once after the EMR text areas have been created.
      *
      * @param manager The non-null instance of IAITextAreaManager.
      * @throws NullPointerException if the provided manager is null.
      */
     public static void setTextAreaManager(IAITextAreaManager manager) {
-        Objects.requireNonNull(manager, "TextAreaManager must not be null");
-        MANAGER.set(manager);
+        Objects.requireNonNull(manager, "The TextAreaManager instance cannot be null.");
+        MANAGER_INSTANCE.set(manager);
     }
 
     /**
-     * Retrieves the bridge.
+     * Retrieves the registered text area manager instance.
      *
-     * @return The registered instance of IAITextAreaManager.
-     * @throws IllegalStateException if the manager has not been set.
+     * @return The singleton instance of IAITextAreaManager.
+     * @throws IllegalStateException if the manager has not yet been set.
      */
     public static IAITextAreaManager getTextAreaManager() {
-        IAITextAreaManager m = MANAGER.get();
-        if (m == null) {
-            throw new IllegalStateException(
-                "TextAreaManager not set. Call IAIMain.setTextAreaManager(...) after creating the 10 EMR TextAreas."
-            );
+        IAITextAreaManager manager = MANAGER_INSTANCE.get();
+        if (manager == null) {
+            throw new IllegalStateException("The TextAreaManager has not been set. Ensure IAIMain.setTextAreaManager() is called during application startup.");
         }
-        return m;
+        return manager;
     }
 
     /**
-     * Provides an optional getter for the manager, avoiding an exception if it is not yet set.
+     * Provides a safe, optional getter for the text area manager, which avoids throwing an exception.
      *
-     * @return An Optional containing the manager, or an empty Optional if it is not set.
+     * @return An {@link Optional} containing the manager if it has been set, or an empty Optional otherwise.
      */
-    public static Optional<IAITextAreaManager> maybeManager() {
-        return Optional.ofNullable(MANAGER.get());
+    public static Optional<IAITextAreaManager> getManagerSafely() {
+        return Optional.ofNullable(MANAGER_INSTANCE.get());
     }
 
     /**
-     * Clears the registered manager, typically used during application shutdown.
+     * Clears the registered manager instance. This is typically used during application shutdown to release resources.
      */
-    public static void clear() {
-        MANAGER.set(null);
+    public static void clearManager() {
+        MANAGER_INSTANCE.set(null);
     }
 }
