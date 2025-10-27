@@ -172,14 +172,19 @@ public class IAMButtonAction {
         return b;
     }
 
+    private com.emr.gds.fourgate.KCDdatabase.KCDDatabaseManagerJavaFX kcdDatabaseManager;
     private Button createKCD9Button(String title) {
         Button b = new Button(title);
         b.setOnAction(e -> {
             try {
-                javax.swing.SwingUtilities.invokeLater(() -> {
-                    com.emr.gds.fourgate.KCDdatabase.KCDDatabaseManagerSwing frame = new com.emr.gds.fourgate.KCDdatabase.KCDDatabaseManagerSwing();
-                    frame.setVisible(true);
-                });
+                if (kcdDatabaseManager == null) {
+                    kcdDatabaseManager = new com.emr.gds.fourgate.KCDdatabase.KCDDatabaseManagerJavaFX();
+                    Stage stage = new Stage();
+                    kcdDatabaseManager.start(stage);
+                    stage.show();
+                } else {
+                    kcdDatabaseManager.getStage().toFront();
+                }
             } catch (Exception ex) {
                 System.err.println("Failed to launch KCD-9 application:");
                 ex.printStackTrace();

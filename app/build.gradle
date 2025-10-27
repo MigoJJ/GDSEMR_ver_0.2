@@ -9,7 +9,7 @@ repositories {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
@@ -31,18 +31,20 @@ dependencies {
 
 application {
     mainClass = 'com.emr.gds.IttiaApp'
+    applicationDefaultJvmArgs = ["--add-opens", "javafx.base/com.emr.gds.fourgate.KCDdatabase=ALL-UNNAMED"]
 }
 
 javafx {
-    // OpenJFX version
-    version = '21.0.4'
-    // NOTE: JFXPanel 사용을 위해 javafx-swing 추가
+    // Latest LTS release (as of Oct 2025)
+    version = '25.0.1'
+
+    // JavaFX modules — include swing for JFXPanel usage
     modules = [
         'javafx.controls',
         'javafx.fxml',
         'javafx.graphics',
         'javafx.base',
-        'javafx.swing'    // ← 추가 (JFXPanel 초기화용)
+        'javafx.swing'
     ]
 }
 

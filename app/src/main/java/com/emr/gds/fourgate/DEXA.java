@@ -28,9 +28,7 @@ public class DEXA extends Application {
     private ToggleGroup scoreTypeToggleGroup;
     private RadioButton tScoreRadioButton, zScoreRadioButton;
 
-    public static void main(String[] args) {
-        launch(args);
-    }
+
 
     @Override
     public void start(Stage primaryStage) {
@@ -79,7 +77,15 @@ public class DEXA extends Application {
 
     private BorderPane createLayout() {
         BorderPane borderPane = new BorderPane();
-        borderPane.setTop(new ScrollPane(outputTextArea));
+        outputTextArea = new TextArea();
+        outputTextArea.setEditable(false);
+        outputTextArea.setStyle("-fx-control-inner-background: #FAFAFA;");
+        outputTextArea.setPrefHeight(200); // Set an initial preferred height
+
+        ScrollPane scrollPane = new ScrollPane(outputTextArea);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true);
+        borderPane.setTop(scrollPane);
         borderPane.setLeft(createWestPanel());
         borderPane.setCenter(createInputPanel());
         borderPane.setBottom(createButtonPanel());

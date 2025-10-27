@@ -286,7 +286,5 @@ public class EKG extends JFrame {
         @Override public void changedUpdate(DocumentEvent e) { updateSummary(); }
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new EKG().setVisible(true));
-    }
+
 }
