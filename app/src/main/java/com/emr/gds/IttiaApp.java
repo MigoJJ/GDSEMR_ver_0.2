@@ -234,10 +234,14 @@ public class IttiaApp extends Application {
         vitalButton.setOnAction(e -> openVitalWindow());
         
         Button dexaButton = new Button("DEXA");
-        dexaButton.setOnAction(e -> DEXA.main(null));
+        dexaButton.setOnAction(e -> {
+            DEXA dexaApp = new DEXA();
+            Stage dexaStage = new Stage();
+            dexaApp.start(dexaStage);
+        });
         
         Button ekgButton = new Button("EKG");
-        ekgButton.setOnAction(e -> EKG.main(null));
+        ekgButton.setOnAction(e -> SwingUtilities.invokeLater(() -> new EKG().setVisible(true)));
         
         Button cpaButton = new Button("ChestPA");
         cpaButton.setOnAction(event -> {

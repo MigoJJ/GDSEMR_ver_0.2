@@ -55,7 +55,7 @@ public class IAIFreqFrame extends Stage {
         );
         root.setCenter(content);
 
-        setScene(new Scene(root, 360, 710));
+        setScene(new Scene(root, 360, 760));
         setOnShown(e -> positionInTopRight());
 
         initializeVitalsValidInputs();
