@@ -2,11 +2,16 @@ package com.emr.gds.soap;
 
 import com.emr.gds.input.IAIMain;
 import com.emr.gds.input.IAITextAreaManager;
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.scene.text.Font;
+import javafx.stage.Stage;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.ItemEvent;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -17,24 +22,18 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Arrays;
+import java.util.*;
+import java.util.stream.Collectors;
 
-/**
- * A Swing-based dialog for inputting and managing a patient's Past Medical History (PMH).
- */
-public class EMRPMH extends JFrame {
-
+public class EMRPMH extends Application {
     private final IAITextAreaManager textAreaManager;
-    private final JTextArea selectedArea = createTextArea(6, 10);
-    private final JTextArea outputArea = createTextArea(12, 50);
-    private final JPanel checkBoxPanel = new JPanel(new GridLayout(0, 3, 6, 6));
-
+    private TextArea selectedArea;
+    private TextArea outputArea;
+    private GridPane checkBoxPanel;
     private final Map<String, String> abbrevMap = new HashMap<>();
-    private final Map<String, JCheckBox> checkBoxes = new LinkedHashMap<>();
+    private final Map<String, CheckBox> checkBoxes = new LinkedHashMap<>();
     private final Map<String, Boolean> selectionMap = new LinkedHashMap<>();
+    private Stage emrpmhStage;
 
     private static final String[][] CONDITIONS = {
             {"Dyslipidemia", "Hypertension", "Diabetes Mellitus"},
@@ -50,67 +49,160 @@ public class EMRPMH extends JFrame {
 
     public EMRPMH(IAITextAreaManager manager) {
         this.textAreaManager = manager;
-        initialize();
     }
 
-    private void initialize() {
+    public EMRPMH() {
+        this.textAreaManager = null;
+    }
+
+    public void showEMRPMH(Stage stage) {
+        this.emrpmhStage = stage;
+        emrpmhStage.show();
+    }
+
+    private Stage primaryStage;
+
+    @Override
+    public void start(Stage primaryStage) {
+        this.primaryStage = primaryStage;
+        showWindow();
+    }
+
+    public void showWindow() {
         initAbbrevDatabase();
-        initFrame();
-        buildCheckBoxes();
-        layoutUI();
+
+        if (primaryStage == null) {
+            primaryStage = new Stage();
+        }
+
+        primaryStage.setTitle("EMR Past Medical History");
+        primaryStage.setWidth(820);
+        primaryStage.setHeight(820);
+
+        BorderPane root = new BorderPane();
+        root.setPadding(new Insets(8));
+
+        initComponents(root);
+
+        Scene scene = new Scene(root);
+        primaryStage.setScene(scene);
+        primaryStage.setOnCloseRequest(e -> primaryStage.close());
+
         refreshSelectionSummary();
+        primaryStage.show();
+
+        // link main stage reference for closing later
+        this.emrpmhStage = primaryStage;
     }
 
-    private void initFrame() {
-        setTitle("EMR Past Medical History");
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setSize(820, 820);
-        setLocationRelativeTo(null);
-        selectedArea.setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
-        outputArea.setFont(new Font("Malgun Gothic", Font.PLAIN, 12));
-    }
-
-    private void buildCheckBoxes() {
-        for (String[] row : CONDITIONS) {
-            for (String item : row) {
-                if (item == null || item.isBlank()) continue;
-                JCheckBox cb = new JCheckBox(item);
-                cb.addItemListener(this::onCheckboxToggle);
-                checkBoxes.put(item, cb);
-                selectionMap.put(item, false);
-                checkBoxPanel.add(cb);
-            }
+    public void setVisible(boolean visible) {
+        if (visible) {
+            Platform.runLater(this::showWindow);
+        } else {
+            Platform.runLater(() -> {
+                if (primaryStage != null) {
+                    primaryStage.close();
+                }
+            });
         }
     }
 
-    private void layoutUI() {
-        JPanel topPanel = new JPanel(new GridLayout(2, 1, 6, 6));
-        topPanel.add(new JScrollPane(selectedArea));
-        topPanel.add(new JScrollPane(outputArea));
+    private void initComponents(BorderPane root) {
+        selectedArea = createTextArea(6, 10);
+        selectedArea.setFont(Font.font("Malgun Gothic", 12));
+        selectedArea.setEditable(false);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonPanel.add(createButton("Family History", e -> openFamilyHistoryForm()));
-        buttonPanel.add(createButton("Clear", e -> onClear()));
-        buttonPanel.add(createButton("Generate Report", e -> onGenerateReport()));
-        buttonPanel.add(createButton("Save & Quit", e -> onSaveAndQuit()));
-        buttonPanel.add(createButton("Quit", e -> dispose()));
+        outputArea = createTextArea(12, 50);
+        outputArea.setFont(Font.font("Malgun Gothic", 12));
+        outputArea.setEditable(false);
 
-        setLayout(new BorderLayout(8, 8));
-        add(topPanel, BorderLayout.NORTH);
-        add(new JScrollPane(checkBoxPanel), BorderLayout.CENTER);
-        add(buttonPanel, BorderLayout.SOUTH);
+        VBox topPanel = new VBox(6);
+        topPanel.getChildren().addAll(new ScrollPane(selectedArea), new ScrollPane(outputArea));
+
+        checkBoxPanel = new GridPane();
+        checkBoxPanel.setHgap(6);
+        checkBoxPanel.setVgap(6);
+        checkBoxPanel.setPadding(new Insets(10));
+
+        buildCheckBoxes();
+        ScrollPane checkBoxScrollPane = new ScrollPane(checkBoxPanel);
+        checkBoxScrollPane.setFitToWidth(true);
+
+        HBox buttonPanel = createButtonPanel();
+
+        root.setTop(topPanel);
+        root.setCenter(checkBoxScrollPane);
+        root.setBottom(buttonPanel);
     }
 
-    private void onCheckboxToggle(ItemEvent e) {
-        JCheckBox source = (JCheckBox) e.getItemSelectable();
-        selectionMap.put(source.getText(), e.getStateChange() == ItemEvent.SELECTED);
+    private void buildCheckBoxes() {
+        int row = 0;
+        for (String[] conditionRow : CONDITIONS) {
+            int col = 0;
+            for (String item : conditionRow) {
+                if (item == null || item.isBlank()) continue;
+                CheckBox cb = new CheckBox(item);
+                cb.setOnAction(e -> onCheckboxToggle(cb));
+                checkBoxes.put(item, cb);
+                selectionMap.put(item, false);
+                checkBoxPanel.add(cb, col, row);
+                col++;
+            }
+            row++;
+        }
+    }
+
+    private HBox createButtonPanel() {
+        Button familyHistoryBtn = new Button("Family History");
+        Button clearBtn = new Button("Clear");
+        Button generateBtn = new Button("Generate Report");
+        Button saveQuitBtn = new Button("Save & Quit");
+        Button quitBtn = new Button("Quit");
+
+        familyHistoryBtn.setOnAction(e -> openFamilyHistoryForm());
+        clearBtn.setOnAction(e -> onClear());
+        generateBtn.setOnAction(e -> onGenerateReport());
+        saveQuitBtn.setOnAction(e -> onSaveAndQuit());
+        quitBtn.setOnAction(e -> {
+            if (emrpmhStage != null) {
+                emrpmhStage.close();
+            }
+        });
+
+        HBox buttonPanel = new HBox(10);
+        buttonPanel.setAlignment(Pos.CENTER_RIGHT);
+        buttonPanel.setPadding(new Insets(10));
+        buttonPanel.getChildren().addAll(
+            familyHistoryBtn, clearBtn, generateBtn, saveQuitBtn, quitBtn
+        );
+
+        return buttonPanel;
+    }
+
+    private TextArea createTextArea(int rows, int cols) {
+        TextArea ta = new TextArea();
+        ta.setPrefRowCount(rows);
+        ta.setPrefColumnCount(cols);
+        ta.setWrapText(true);
+        return ta;
+    }
+
+    private void onCheckboxToggle(CheckBox checkBox) {
+        selectionMap.put(checkBox.getText(), checkBox.isSelected());
         refreshSelectionSummary();
     }
 
     private void openFamilyHistoryForm() {
         try {
             if (IAIMain.getTextAreaManager() != null && IAIMain.getTextAreaManager().isReady()) {
-                SwingUtilities.invokeLater(() -> new EMRFMH(IAIMain.getTextAreaManager()).setVisible(true));
+                Platform.runLater(() -> {
+                    try {
+                        EMRFMH familyHistory = new EMRFMH(IAIMain.getTextAreaManager());
+                        familyHistory.setVisible(true);
+                    } catch (Exception ex) {
+                        showError("Failed to open Family History: " + ex.getMessage());
+                    }
+                });
             } else {
                 showError("The text area manager is not ready.");
             }
@@ -135,13 +227,18 @@ public class EMRPMH extends JFrame {
             showError("Cannot save: EMR connection not available.");
             return;
         }
-        String report = expandAbbreviations(outputArea.getText());
-        if (report.isBlank()) {
-            showError("Nothing to save.");
+        if (outputArea.getText().isBlank()) {
+            showError("Please click 'Generate Report' before saving.");
             return;
         }
-        textAreaManager.insertBlockIntoArea(IAITextAreaManager.AREA_PMH, report, true);
-        dispose();
+
+        String report = expandAbbreviations(outputArea.getText());
+        Platform.runLater(() -> {
+            textAreaManager.insertBlockIntoArea(IAITextAreaManager.AREA_PMH, report, true);
+            if (emrpmhStage != null) {
+                emrpmhStage.close();
+            }
+        });
     }
 
     private void refreshSelectionSummary() {
@@ -168,14 +265,20 @@ public class EMRPMH extends JFrame {
     private void initAbbrevDatabase() {
         try {
             Path dbFile = Paths.get("app/db/abbreviations.db").toAbsolutePath();
-            if (!Files.exists(dbFile)) return;
+            if (!Files.exists(dbFile)) {
+                System.out.println("Abbreviation database not found at: " + dbFile);
+                return;
+            }
             String url = "jdbc:sqlite:" + dbFile;
-            try (Connection conn = DriverManager.getConnection(url); Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery("SELECT * FROM abbreviations")) {
+            try (Connection conn = DriverManager.getConnection(url);
+                 Statement stmt = conn.createStatement();
+                 ResultSet rs = stmt.executeQuery("SELECT * FROM abbreviations")) {
                 while (rs.next()) {
                     abbrevMap.put(rs.getString("short"), rs.getString("full"));
                 }
+                System.out.println("Loaded " + abbrevMap.size() + " abbreviations");
             }
-        } catch (SQLException | HeadlessException e) {
+        } catch (SQLException e) {
             showError("Failed to initialize abbreviation database: " + e.getMessage());
         }
     }
@@ -184,30 +287,39 @@ public class EMRPMH extends JFrame {
         return Arrays.stream(text.split("((?<= )|(?= ))"))
                 .map(word -> {
                     String cleanWord = word.trim();
-                    if (":cd".equals(cleanWord)) return LocalDate.now().format(DateTimeFormatter.ISO_DATE);
-                    return cleanWord.startsWith(":") ? abbrevMap.getOrDefault(cleanWord.substring(1), word) : word;
+                    if (":cd".equals(cleanWord)) {
+                        return LocalDate.now().format(DateTimeFormatter.ISO_DATE);
+                    }
+                    if (cleanWord.startsWith(":")) {
+                        return abbrevMap.getOrDefault(cleanWord.substring(1), word);
+                    }
+                    return word;
                 })
-                .collect(java.util.stream.Collectors.joining());
-    }
-
-    private JTextArea createTextArea(int rows, int cols) {
-        JTextArea ta = new JTextArea(rows, cols);
-        ta.setLineWrap(true);
-        ta.setWrapStyleWord(true);
-        return ta;
-    }
-
-    private JButton createButton(String text, java.awt.event.ActionListener listener) {
-        JButton button = new JButton(text);
-        button.addActionListener(listener);
-        return button;
+                .collect(Collectors.joining());
     }
 
     private void showError(String message) {
-        JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText(null);
+            alert.setContentText(message);
+            alert.showAndWait();
+        });
+    }
+
+    public static void show(IAITextAreaManager manager) {
+        Platform.runLater(() -> {
+            try {
+                EMRPMH pmh = new EMRPMH(manager);
+                pmh.setVisible(true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new EMRPMH(null).setVisible(true));
+        launch(args);
     }
 }
