@@ -1252,3 +1252,174 @@ BUILD SUCCESSFUL in 40s
 14 actionable tasks: 1 executed, 13 up-to-date
 [0;32m[INFO][0m Gradle task 'run' completed successfully!
 [0;32m[INFO][0m Gradle task 'run' completed successfully!
+===========================================================
+===========================================================
+Gradle Project Runner - 2025-11-03 20:46:15
+Gradle Project Runner - 2025-11-03 20:46:15
+Project: /home/migowj/git/GDSEMR_ver_0.2
+Project: /home/migowj/git/GDSEMR_ver_0.2
+===========================================================
+===========================================================
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Executing: ./gradlew run
+[0;32m[INFO][0m Executing: ./gradlew run
+Starting a Gradle Daemon, 2 incompatible and 4 stopped Daemons could not be reused, use --status for details
+> Task :build-logic:extractPluginRequests UP-TO-DATE
+> Task :build-logic:generatePluginAdapters UP-TO-DATE
+> Task :build-logic:compileJava UP-TO-DATE
+> Task :build-logic:compileGroovy NO-SOURCE
+> Task :build-logic:compileGroovyPlugins UP-TO-DATE
+> Task :build-logic:pluginDescriptors UP-TO-DATE
+> Task :build-logic:processResources UP-TO-DATE
+> Task :build-logic:classes UP-TO-DATE
+> Task :build-logic:jar UP-TO-DATE
+> Task :utilities:processResources NO-SOURCE
+> Task :app:processResources UP-TO-DATE
+> Task :list:compileJava UP-TO-DATE
+> Task :list:processResources NO-SOURCE
+> Task :list:classes UP-TO-DATE
+> Task :list:jar UP-TO-DATE
+> Task :utilities:compileJava UP-TO-DATE
+> Task :utilities:classes UP-TO-DATE
+> Task :utilities:jar UP-TO-DATE
+
+> Task :app:compileJava
+Note: /home/migowj/git/GDSEMR_ver_0.2/app/src/main/java/com/emr/gds/soap/EMRFMH.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :app:classes
+
+> Task :app:run
+WARNING: package com.emr.gds.fourgate.KCDdatabase not in javafx.base
+[DB PATH] abbreviations -> /home/migowj/git/GDSEMR_ver_0.2/app/db/abbreviations.db
+[DB PATH] prolist -> /home/migowj/git/GDSEMR_ver_0.2/app/db/prolist.db
+CSV not found: templates/abbr/default_abbr.csv
+No IAITextAreaManager found, using fallback CSV expander
+No IAITextAreaManager found, using fallback CSV expander
+No IAITextAreaManager found, using fallback CSV expander
+No IAITextAreaManager found, using fallback CSV expander
+No IAITextAreaManager found, using fallback CSV expander
+No IAITextAreaManager found, using fallback CSV expander
+No IAITextAreaManager found, using fallback CSV expander
+No IAITextAreaManager found, using fallback CSV expander
+No IAITextAreaManager found, using fallback CSV expander
+No IAITextAreaManager found, using fallback CSV expander
+No IAITextAreaManager found, using fallback CSV expander
+No IAITextAreaManager found, using fallback CSV expander
+No IAITextAreaManager found, using fallback CSV expander
+No IAITextAreaManager found, using fallback CSV expander
+No IAITextAreaManager found, using fallback CSV expander
+Database connection closed.
+
+[Incubating] Problems report is available at: file:///home/migowj/git/GDSEMR_ver_0.2/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 37s
+14 actionable tasks: 2 executed, 12 up-to-date
+[0;32m[INFO][0m Gradle task 'run' completed successfully!
+[0;32m[INFO][0m Gradle task 'run' completed successfully!
+===========================================================
+===========================================================
+Gradle Project Runner - 2025-11-03 20:50:01
+Gradle Project Runner - 2025-11-03 20:50:01
+Project: /home/migowj/git/GDSEMR_ver_0.2
+Project: /home/migowj/git/GDSEMR_ver_0.2
+===========================================================
+===========================================================
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Executing: ./gradlew run
+[0;32m[INFO][0m Executing: ./gradlew run
+> Task :build-logic:extractPluginRequests UP-TO-DATE
+> Task :build-logic:generatePluginAdapters UP-TO-DATE
+> Task :build-logic:compileJava UP-TO-DATE
+> Task :build-logic:compileGroovy NO-SOURCE
+> Task :build-logic:compileGroovyPlugins UP-TO-DATE
+> Task :build-logic:pluginDescriptors UP-TO-DATE
+> Task :build-logic:processResources UP-TO-DATE
+> Task :build-logic:classes UP-TO-DATE
+> Task :build-logic:jar UP-TO-DATE
+> Task :utilities:processResources NO-SOURCE
+> Task :app:processResources UP-TO-DATE
+> Task :list:compileJava UP-TO-DATE
+> Task :list:processResources NO-SOURCE
+> Task :list:classes UP-TO-DATE
+> Task :list:jar UP-TO-DATE
+> Task :utilities:compileJava UP-TO-DATE
+> Task :utilities:classes UP-TO-DATE
+> Task :utilities:jar UP-TO-DATE
+
+> Task :app:compileJava
+Note: /home/migowj/git/GDSEMR_ver_0.2/app/src/main/java/com/emr/gds/soap/EMRFMH.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :app:classes
+
+> Task :app:run
+WARNING: package com.emr.gds.fourgate.KCDdatabase not in javafx.base
+[DB PATH] abbreviations -> /home/migowj/git/GDSEMR_ver_0.2/app/db/abbreviations.db
+[DB PATH] prolist -> /home/migowj/git/GDSEMR_ver_0.2/app/db/prolist.db
+Failed to load abbreviations from database: path to 'app/db/abbreviations.db': '/home/migowj/git/GDSEMR_ver_0.2/app/app' does not exist
+Database connection closed.
+
+[Incubating] Problems report is available at: file:///home/migowj/git/GDSEMR_ver_0.2/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 29s
+14 actionable tasks: 2 executed, 12 up-to-date
+[0;32m[INFO][0m Gradle task 'run' completed successfully!
+[0;32m[INFO][0m Gradle task 'run' completed successfully!
+===========================================================
+===========================================================
+Gradle Project Runner - 2025-11-03 20:55:07
+Gradle Project Runner - 2025-11-03 20:55:07
+Project: /home/migowj/git/GDSEMR_ver_0.2
+Project: /home/migowj/git/GDSEMR_ver_0.2
+===========================================================
+===========================================================
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Executing: ./gradlew run
+[0;32m[INFO][0m Executing: ./gradlew run
+> Task :build-logic:extractPluginRequests UP-TO-DATE
+> Task :build-logic:generatePluginAdapters UP-TO-DATE
+> Task :build-logic:compileJava UP-TO-DATE
+> Task :build-logic:compileGroovy NO-SOURCE
+> Task :build-logic:compileGroovyPlugins UP-TO-DATE
+> Task :build-logic:pluginDescriptors UP-TO-DATE
+> Task :build-logic:processResources UP-TO-DATE
+> Task :build-logic:classes UP-TO-DATE
+> Task :build-logic:jar UP-TO-DATE
+> Task :utilities:processResources NO-SOURCE
+> Task :app:processResources UP-TO-DATE
+> Task :list:compileJava UP-TO-DATE
+> Task :list:processResources NO-SOURCE
+> Task :list:classes UP-TO-DATE
+> Task :list:jar UP-TO-DATE
+> Task :utilities:compileJava UP-TO-DATE
+> Task :utilities:classes UP-TO-DATE
+> Task :utilities:jar UP-TO-DATE
+
+> Task :app:compileJava
+Note: /home/migowj/git/GDSEMR_ver_0.2/app/src/main/java/com/emr/gds/soap/EMRFMH.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :app:classes
+
+> Task :app:run
+WARNING: package com.emr.gds.fourgate.KCDdatabase not in javafx.base
+[DB PATH] abbreviations -> /home/migowj/git/GDSEMR_ver_0.2/app/db/abbreviations.db
+[DB PATH] prolist -> /home/migowj/git/GDSEMR_ver_0.2/app/db/prolist.db
+Database connection closed.
+
+[Incubating] Problems report is available at: file:///home/migowj/git/GDSEMR_ver_0.2/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 21s
+14 actionable tasks: 2 executed, 12 up-to-date
+[0;32m[INFO][0m Gradle task 'run' completed successfully!
+[0;32m[INFO][0m Gradle task 'run' completed successfully!

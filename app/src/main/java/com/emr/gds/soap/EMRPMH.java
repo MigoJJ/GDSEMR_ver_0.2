@@ -19,6 +19,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -117,8 +121,8 @@ public class EMRPMH extends Application {
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(8));
 
-        // Load abbreviations once (used only for CSV fallback)
-        loadAbbreviationsFromCsv("templates/abbr/default_abbr.csv");
+        // Load abbreviations from the database
+        loadAbbreviationsFromDb();
 
         // Header - compact
         Label title = new Label("Past Medical History");
@@ -352,30 +356,24 @@ public class EMRPMH extends Application {
      * - Keys are stored lowercased.
      * - Both "key" and ":key" will map to the same expansion.
      */
-    private void loadAbbreviationsFromCsv(String classpathCsv) {
-        try (InputStream in = getClass().getClassLoader().getResourceAsStream(classpathCsv)) {
-            if (in == null) {
-                System.err.println("CSV not found: " + classpathCsv);
-                return;
-            }
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                br.lines()
-                        .map(String::trim)
-                        .filter(line -> !line.isEmpty() && !line.startsWith("#"))
-                        .forEach(line -> {
-                            int idx = line.indexOf(',');
-                            if (idx > 0 && idx < line.length() - 1) {
-                                String key = line.substring(0, idx).trim().toLowerCase(Locale.ROOT);
-                                String val = line.substring(idx + 1).trim();
-                                if (!key.isEmpty() && !val.isEmpty()) {
-                                    abbrMap.put(key, val);
-                                    abbrMap.put(":" + key, val); // Allow colon prefix form
-                                }
-                            }
-                        });
+    private void loadAbbreviationsFromDb() {
+        String dbPath = "/home/migowj/git/GDSEMR_ver_0.2/app/db/abbreviations.db";
+        String url = "jdbc:sqlite:" + dbPath;
+
+        try (Connection conn = DriverManager.getConnection(url);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT short, full FROM abbreviations")) {
+
+            while (rs.next()) {
+                String key = rs.getString("short").toLowerCase(Locale.ROOT);
+                String val = rs.getString("full");
+                if (!key.isEmpty() && !val.isEmpty()) {
+                    abbrMap.put(key, val);
+                    abbrMap.put(":" + key, val); // Allow colon prefix form
+                }
             }
         } catch (Exception e) {
-            System.err.println("Failed to load CSV: " + e.getMessage());
+            System.err.println("Failed to load abbreviations from database: " + e.getMessage());
         }
     }
 
@@ -453,18 +451,14 @@ public class EMRPMH extends Application {
      * This works even if EMRFMH is a completely independent JavaFX {@code Application}.
      */
     private void openEMRFMH() {
-        // Run the launch on the JavaFX thread – otherwise the new Application
-        // would be started from a non-JavaFX thread and would throw an exception.
-        Platform.runLater(() -> {
+        // EMRFMH is a Swing JFrame, so it should be created and shown on the
+        // Swing Event Dispatch Thread (EDT).
+        javax.swing.SwingUtilities.invokeLater(() -> {
             try {
-                // EMRFMH extends Application, so its main class is EMRFMH itself.
-                // We pass a dummy argument array (null is fine) and start a *new*
-                // instance of the Application.
-            	EMRFMH.main(null);
+                // Pass the textAreaManager to the EMRFMH constructor if it's available
+                new EMRFMH(textAreaManager).setVisible(true);
             } catch (Throwable t) {
-                // IllegalStateException is thrown when launch() is called from
-                // an already-running Application, which is exactly what we want
-                // to catch here.
+                // Log the error if the window fails to open
                 showError("Unable to open EMRFMH", t);
             }
         });
