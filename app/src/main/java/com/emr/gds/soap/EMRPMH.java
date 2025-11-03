@@ -14,11 +14,6 @@ import javafx.scene.text.Font;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -285,67 +280,13 @@ public class EMRPMH extends Application {
     // =========================
 
     /**
-     * Try to attach the SAME abbreviation behavior used by IttiaApp’s text areas
-     * via IAITextAreaManager. If not possible, fall back to local CSV expander.
+     * Attach the SAME abbreviation behavior used by IttiaApp’s text areas.
+     * Since IAITextAreaManager does not directly provide a method to attach
+     * abbreviation expansion to external TextAreas, we directly use the local
+     * abbreviation expansion logic, which is functionally equivalent to IttiaApp's.
      */
     private void attachAbbreviationLikeIttia(TextArea ta) {
-        boolean bound = tryBindViaManager(ta);
-        if (!bound) {
-            // Fallback: local CSV-based expansion
-            attachAbbreviationExpansion(ta);
-        }
-    }
-
-    /**
-     * Uses reflection to discover a binding method on IAITextAreaManager that
-     * your app likely uses in IttiaApp.java to wire abbreviations to TextAreas.
-     *
-     * Tries common method names/signatures.
-     *
-     * Returns true if a manager method was found and invoked.
-     */
-    private boolean tryBindViaManager(TextArea ta) {
-        if (textAreaManager == null) return false;
-        try {
-            Class<?> mgrCls = textAreaManager.getClass();
-            String[] methodNames = {
-                    "attachAbbreviationExpansion",
-                    "registerAbbreviationExpansion",
-                    "bindAbbreviationsTo",
-                    "expandOnKey",
-                    "enableAbbreviation",
-                    "addAutoExpand"
-            };
-            for (String name : methodNames) {
-                // Try to find and invoke the method
-                Optional<Method> methodOpt = findMatchingMethod(mgrCls, name, ta.getClass());
-                if (methodOpt.isPresent()) {
-                    Method method = methodOpt.get();
-                    method.setAccessible(true);
-                    method.invoke(textAreaManager, ta);
-                    return true;
-                }
-            }
-        } catch (Throwable t) {
-            // Log error but fail silently; fallback will handle it
-            System.err.println("Failed to bind via manager: " + t.getMessage());
-        }
-        return false;
-    }
-
-    private Optional<Method> findMatchingMethod(Class<?> cls, String name, Class<?> paramType) {
-        try {
-            return Optional.of(cls.getMethod(name, paramType));
-        } catch (NoSuchMethodException e) {
-            // Fallback to superclass (TextInputControl)
-            try {
-                return Optional.of(cls.getMethod(name, TextInputControl.class));
-            } catch (NoSuchMethodException ignored) {
-                return Arrays.stream(cls.getMethods())
-                        .filter(m -> m.getName().equals(name) && m.getParameterCount() == 1 && m.getParameterTypes()[0].isAssignableFrom(paramType))
-                        .findFirst();
-            }
-        }
+        attachAbbreviationExpansion(ta);
     }
 
     // -------- CSV Fallback --------
@@ -357,7 +298,7 @@ public class EMRPMH extends Application {
      * - Both "key" and ":key" will map to the same expansion.
      */
     private void loadAbbreviationsFromDb() {
-        String dbPath = "/home/migowj/git/GDSEMR_ver_0.2/app/db/abbreviations.db";
+        String dbPath = System.getProperty("user.dir") + "/db/abbreviations.db";
         String url = "jdbc:sqlite:" + dbPath;
 
         try (Connection conn = DriverManager.getConnection(url);
