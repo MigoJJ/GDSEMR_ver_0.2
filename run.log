@@ -1658,3 +1658,130 @@ BUILD SUCCESSFUL in 1m 12s
 14 actionable tasks: 2 executed, 12 up-to-date
 [0;32m[INFO][0m Gradle task 'run' completed successfully!
 [0;32m[INFO][0m Gradle task 'run' completed successfully!
+===========================================================
+===========================================================
+Gradle Project Runner - 2025-11-04 07:46:38
+Gradle Project Runner - 2025-11-04 07:46:38
+Project: /home/migowj/git/GDSEMR_ver_0.2
+Project: /home/migowj/git/GDSEMR_ver_0.2
+===========================================================
+===========================================================
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Executing: ./gradlew run
+[0;32m[INFO][0m Executing: ./gradlew run
+> Task :build-logic:extractPluginRequests UP-TO-DATE
+> Task :build-logic:generatePluginAdapters UP-TO-DATE
+> Task :build-logic:compileJava UP-TO-DATE
+> Task :build-logic:compileGroovy NO-SOURCE
+> Task :build-logic:compileGroovyPlugins UP-TO-DATE
+> Task :build-logic:pluginDescriptors UP-TO-DATE
+> Task :build-logic:processResources UP-TO-DATE
+> Task :build-logic:classes UP-TO-DATE
+> Task :build-logic:jar UP-TO-DATE
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+A problem occurred configuring project ':list'.
+> Could not resolve all artifacts for configuration 'classpath'.
+   > Failed to transform build-logic.jar (project :build-logic) to match attributes {artifactType=jar, org.gradle.category=library, org.gradle.dependency.bundling=external, org.gradle.internal.instrumented=instrumented-only, org.gradle.jvm.version=25, org.gradle.libraryelements=jar, org.gradle.usage=java-runtime}.
+      > Execution failed for ProjectDependencyInstrumentingArtifactTransform: /home/migowj/git/GDSEMR_ver_0.2/build-logic/build/libs/build-logic.jar.
+         > Failed to create Jar file /home/migowj/.gradle/caches/9.0.0/transforms/4f9509e65a4bc98d72116deae70ed999-b09b98cf-4fc7-4519-a5f8-5e731a286662/transformed/instrumented/instrumented-build-logic.jar.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 827ms
+7 actionable tasks: 7 up-to-date
+[0;31m[ERROR][0m Gradle task 'run' failed. See log above.
+===========================================================
+===========================================================
+Gradle Project Runner - 2025-11-04 07:48:38
+Gradle Project Runner - 2025-11-04 07:48:38
+Project: /home/migowj/git/GDSEMR_ver_0.2
+Project: /home/migowj/git/GDSEMR_ver_0.2
+===========================================================
+===========================================================
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Executing: ./gradlew run
+[0;32m[INFO][0m Executing: ./gradlew run
+> Task :build-logic:extractPluginRequests UP-TO-DATE
+> Task :build-logic:generatePluginAdapters UP-TO-DATE
+> Task :build-logic:compileJava FROM-CACHE
+> Task :build-logic:compileGroovy NO-SOURCE
+> Task :build-logic:compileGroovyPlugins FROM-CACHE
+> Task :build-logic:pluginDescriptors UP-TO-DATE
+> Task :build-logic:processResources UP-TO-DATE
+> Task :build-logic:classes UP-TO-DATE
+> Task :build-logic:jar
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+A problem occurred configuring project ':list'.
+> Could not resolve all artifacts for configuration 'classpath'.
+   > Failed to transform build-logic.jar (project :build-logic) to match attributes {artifactType=jar, org.gradle.category=library, org.gradle.dependency.bundling=external, org.gradle.internal.instrumented=instrumented-only, org.gradle.jvm.version=25, org.gradle.libraryelements=jar, org.gradle.usage=java-runtime}.
+      > Execution failed for ProjectDependencyInstrumentingArtifactTransform: /home/migowj/git/GDSEMR_ver_0.2/build-logic/build/libs/build-logic.jar.
+         > Failed to create Jar file /home/migowj/.gradle/caches/9.0.0/transforms/4f9509e65a4bc98d72116deae70ed999-72ec18dc-58c4-497b-b1d7-d9be5bab7bdc/transformed/instrumented/instrumented-build-logic.jar.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1s
+7 actionable tasks: 1 executed, 2 from cache, 4 up-to-date
+[0;31m[ERROR][0m Gradle task 'run' failed. See log above.
+===========================================================
+===========================================================
+Gradle Project Runner - 2025-11-04 11:03:53
+Gradle Project Runner - 2025-11-04 11:03:53
+Project: /home/migowj/git/GDSEMR_ver_0.2
+Project: /home/migowj/git/GDSEMR_ver_0.2
+===========================================================
+===========================================================
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Executing: ./gradlew run
+[0;32m[INFO][0m Executing: ./gradlew run
+Starting a Gradle Daemon, 2 incompatible Daemons could not be reused, use --status for details
+> Task :build-logic:extractPluginRequests UP-TO-DATE
+> Task :build-logic:generatePluginAdapters UP-TO-DATE
+> Task :build-logic:compileJava FROM-CACHE
+> Task :build-logic:compileGroovy NO-SOURCE
+> Task :build-logic:compileGroovyPlugins FROM-CACHE
+> Task :build-logic:pluginDescriptors UP-TO-DATE
+> Task :build-logic:processResources UP-TO-DATE
+> Task :build-logic:classes UP-TO-DATE
+> Task :build-logic:jar
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+A problem occurred configuring project ':list'.
+> Could not resolve all artifacts for configuration 'classpath'.
+   > Failed to transform build-logic.jar (project :build-logic) to match attributes {artifactType=jar, org.gradle.category=library, org.gradle.dependency.bundling=external, org.gradle.internal.instrumented=instrumented-only, org.gradle.jvm.version=25, org.gradle.libraryelements=jar, org.gradle.usage=java-runtime}.
+      > Execution failed for ProjectDependencyInstrumentingArtifactTransform: /home/migowj/git/GDSEMR_ver_0.2/build-logic/build/libs/build-logic.jar.
+         > Failed to create Jar file /home/migowj/.gradle/caches/9.0.0/transforms/4f9509e65a4bc98d72116deae70ed999-97d389d4-b3fb-4a9b-a089-7b18846b8f43/transformed/instrumented/instrumented-build-logic.jar.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 21s
+7 actionable tasks: 1 executed, 2 from cache, 4 up-to-date
+[0;31m[ERROR][0m Gradle task 'run' failed. See log above.
