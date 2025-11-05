@@ -1,67 +1,52 @@
 package com.emr.gds.fourgate.KCDdatabase;
 
 import com.emr.gds.input.IAIMain;
-
 import javafx.application.Platform;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.FlowPane;
-import javafx.scene.layout.GridPane;
-import javafx.stage.Modality;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class KCDDatabaseManagerJavaFX {
 
     private Stage stage;
-
-    public Stage getStage() {
-        return stage;
-    }
+    public Stage getStage() { return stage; }
 
     private static final String DB_PATH = "/home/migowj/git/GDSEMR_ver_0.2/app/src/main/resources/database/kcd_database.db";
     public static final String JDBC_URL = "jdbc:sqlite:" + DB_PATH;
     private static final DateTimeFormatter ISO_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     private TableView<KCDRecord> table;
-    private ObservableList<KCDRecord> tableData = FXCollections.observableArrayList();
+    private final ObservableList<KCDRecord> tableData = FXCollections.observableArrayList();
     private TextField searchField;
     private ComboBox<String> searchColumnCombo;
-    private Button addButton, updateButton, deleteButton, refreshButton, copyButton, saveToEmrButton, quitButton; // Quit button declaration
+    private Button addButton, editButton, deleteButton, refreshButton, copyButton, saveToEmrButton, quitButton;
     private Label statusLabel;
 
-    private final String[] columnNames = {
-            "Classification", "Disease Code", "Check Field",
-            "Korean Name", "English Name", "Note"
-    };
-
+    private final String[] columnNames = {"Classification", "Disease Code", "Check Field", "Korean Name", "English Name", "Note"};
+    private final double[] columnWidths = {100, 100, 80, 250, 250, 300};
 
     public void start(Stage primaryStage) {
         this.stage = primaryStage;
-        // The stage title is now ideally set by the caller (IAMButtonAction)
-        // initializeStage(primaryStage); // Removed: Title setting is handled by the caller.
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
 
@@ -77,90 +62,68 @@ public class KCDDatabaseManagerJavaFX {
         loadInitialData();
     }
 
-    // Removed: Title setting is handled by the caller (IAMButtonAction).
-    // private void initializeStage(Stage stage) {
-    //    stage.setTitle("KCD Database Manager");
-    // }
-
     private TableView<KCDRecord> createTable() {
         table = new TableView<>();
-        for (String colName : columnNames) {
-            TableColumn<KCDRecord, String> column = new TableColumn<>(colName);
-            column.setCellValueFactory(new PropertyValueFactory<>(toCamelCase(colName)));
+        for (int i = 0; i < columnNames.length; i++) {
+            TableColumn<KCDRecord, String> column = new TableColumn<>(columnNames[i]);
+            column.setCellValueFactory(new PropertyValueFactory<>(toCamelCase(columnNames[i])));
+            column.setPrefWidth(columnWidths[i]);
             table.getColumns().add(column);
         }
         table.setItems(tableData);
         return table;
     }
 
-    private FlowPane createSearchPanel() {
-        FlowPane panel = new FlowPane(10, 10);
-        panel.setPadding(new Insets(10));
+    private HBox createSearchPanel() {
+        HBox searchPanel = new HBox(10);
+        searchPanel.setPadding(new Insets(10));
+        searchPanel.setAlignment(Pos.CENTER_LEFT);
         searchField = new TextField();
         searchField.setPromptText("Search...");
+        searchField.setPrefWidth(300);
         searchColumnCombo = new ComboBox<>();
         searchColumnCombo.getItems().addAll("All Columns", "Classification", "Disease Code", "Check Field", "Korean Name", "English Name", "Note");
         searchColumnCombo.getSelectionModel().selectFirst();
-        panel.getChildren().addAll(new Label("Search:"), searchField, searchColumnCombo);
-        return panel;
+        searchPanel.getChildren().addAll(new Label("Search:"), searchField, searchColumnCombo);
+        return searchPanel;
     }
 
-    private FlowPane createButtonPanel() {
-        FlowPane panel = new FlowPane(10, 10);
-        panel.setPadding(new Insets(10));
+    private VBox createButtonPanel() {
+        HBox topButtons = new HBox(10);
         addButton = new Button("Add");
-        updateButton = new Button("Update");
+        editButton = new Button("Edit");
         deleteButton = new Button("Delete");
         refreshButton = new Button("Refresh");
-        copyButton = new Button("Copy");
+        topButtons.getChildren().addAll(addButton, editButton, deleteButton, refreshButton);
+
+        HBox bottomButtons = new HBox(10);
+        copyButton = new Button("Copy to Clipboard");
         saveToEmrButton = new Button("Save to EMR");
-        quitButton = new Button("Quit"); // Quit button creation
+        quitButton = new Button("Quit");
+        bottomButtons.getChildren().addAll(copyButton, saveToEmrButton, quitButton);
+
         statusLabel = new Label("Ready");
-        panel.getChildren().addAll(addButton, updateButton, deleteButton, refreshButton, copyButton, saveToEmrButton, quitButton, statusLabel);
-        return panel;
+        HBox statusPanel = new HBox(statusLabel);
+        HBox.setHgrow(statusPanel, Priority.ALWAYS);
+        statusPanel.setAlignment(Pos.CENTER_LEFT);
+
+        VBox buttonLayout = new VBox(10, topButtons, bottomButtons, new Separator(), statusPanel);
+        buttonLayout.setPadding(new Insets(10));
+        return buttonLayout;
     }
 
     private void setupEventHandlers() {
-        addButton.setOnAction(e -> showAddDialog());
-        updateButton.setOnAction(e -> showUpdateDialog());
+        addButton.setOnAction(e -> showEditDialog(null));
+        editButton.setOnAction(e -> showEditDialog(table.getSelectionModel().getSelectedItem()));
         deleteButton.setOnAction(e -> deleteSelectedRecord());
         refreshButton.setOnAction(e -> loadInitialData());
         copyButton.setOnAction(e -> copySelectedToClipboard());
         saveToEmrButton.setOnAction(e -> saveSelectedToEMR());
-        quitButton.setOnAction(e -> {
-            // Perform any specific cleanup for this manager before closing the stage
-            // For example, if it had an open database connection unique to this instance:
-            // if (this.localDbConnection != null) {
-            //     try {
-            //         this.localDbConnection.close();
-            //     } catch (SQLException ex) {
-            //         System.err.println("Error closing KCD manager's DB connection: " + ex.getMessage());
-            //     }
-            // }
-            stage.close(); // Closes the primary stage of this manager
-        });
+        quitButton.setOnAction(e -> stage.close());
 
         FilteredList<KCDRecord> filteredData = new FilteredList<>(tableData, p -> true);
-        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
-            filteredData.setPredicate(record -> {
-                if (newValue == null || newValue.isEmpty()) {
-                    return true;
-                }
-                String lowerCaseFilter = newValue.toLowerCase();
-                int selectedIndex = searchColumnCombo.getSelectionModel().getSelectedIndex();
-                if (selectedIndex <= 0) { // All columns
-                    return record.toString().toLowerCase().contains(lowerCaseFilter);
-                } else {
-                    String property = toCamelCase(columnNames[selectedIndex - 1]);
-                    try {
-                        return ((String) record.getClass().getMethod("get" + property.substring(0, 1).toUpperCase() + property.substring(1)).invoke(record)).toLowerCase().contains(lowerCaseFilter);
-                    } catch (Exception ex) {
-                        System.err.println("Error during search filtering: " + ex.getMessage());
-                        return false;
-                    }
-                }
-            });
-        });
+        searchField.textProperty().addListener((obs, ov, nv) -> filteredData.setPredicate(createPredicate(nv)));
+        searchColumnCombo.getSelectionModel().selectedItemProperty().addListener((obs, ov, nv) -> filteredData.setPredicate(createPredicate(searchField.getText())));
 
         SortedList<KCDRecord> sortedData = new SortedList<>(filteredData);
         sortedData.comparatorProperty().bind(table.comparatorProperty());
@@ -168,11 +131,36 @@ public class KCDDatabaseManagerJavaFX {
 
         table.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             boolean rowSelected = newSelection != null;
-            updateButton.setDisable(!rowSelected);
+            editButton.setDisable(!rowSelected);
             deleteButton.setDisable(!rowSelected);
             copyButton.setDisable(!rowSelected);
             saveToEmrButton.setDisable(!rowSelected);
         });
+        editButton.setDisable(true);
+        deleteButton.setDisable(true);
+        copyButton.setDisable(true);
+        saveToEmrButton.setDisable(true);
+    }
+
+    private java.util.function.Predicate<KCDRecord> createPredicate(String filterText) {
+        return record -> {
+            if (filterText == null || filterText.isEmpty()) return true;
+            String lowerCaseFilter = filterText.toLowerCase();
+            int selectedIndex = searchColumnCombo.getSelectionModel().getSelectedIndex();
+
+            if (selectedIndex <= 0) { // All Columns
+                return record.toString().toLowerCase().contains(lowerCaseFilter);
+            } else {
+                String property = toCamelCase(columnNames[selectedIndex - 1]);
+                try {
+                    String value = (String) record.getClass().getMethod("get" + property.substring(0, 1).toUpperCase() + property.substring(1)).invoke(record);
+                    return value != null && value.toLowerCase().contains(lowerCaseFilter);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    return false;
+                }
+            }
+        };
     }
 
     private void loadInitialData() {
@@ -195,30 +183,25 @@ public class KCDDatabaseManagerJavaFX {
         new Thread(task).start();
     }
 
-    private void showAddDialog() {
-        KCDRecordDialog dialog = new KCDRecordDialog("Add New Record", null);
-        dialog.showAndWait().ifPresent(record -> {
+    private void showEditDialog(KCDRecord recordToEdit) {
+        boolean isUpdate = recordToEdit != null;
+        String title = isUpdate ? "Edit Record" : "Add New Record";
+        KCDRecordDialog dialog = new KCDRecordDialog(title, recordToEdit);
+        if (isUpdate) {
+            dialog.setDiseaseCodeEditable(false);
+        }
+
+        Optional<KCDRecord> result = dialog.showAndWait();
+        result.ifPresent(record -> {
             try {
-                DatabaseManager.addRecord(record);
+                if (isUpdate) {
+                    DatabaseManager.updateRecord(recordToEdit.getDiseaseCode(), record);
+                } else {
+                    DatabaseManager.addRecord(record);
+                }
                 loadInitialData();
             } catch (SQLException e) {
-                showErrorDialog("Database Error", "Could not add record: " + e.getMessage());
-                e.printStackTrace();
-            }
-        });
-    }
-
-    private void showUpdateDialog() {
-        KCDRecord selectedRecord = table.getSelectionModel().getSelectedItem();
-        if (selectedRecord == null) return;
-
-        KCDRecordDialog dialog = new KCDRecordDialog("Update Record", selectedRecord);
-        dialog.showAndWait().ifPresent(record -> {
-            try {
-                DatabaseManager.updateRecord(selectedRecord.getDiseaseCode(), record);
-                loadInitialData();
-            } catch (SQLException e) {
-                showErrorDialog("Database Error", "Could not update record: " + e.getMessage());
+                showErrorDialog("Database Error", "Could not save record: " + e.getMessage());
                 e.printStackTrace();
             }
         });

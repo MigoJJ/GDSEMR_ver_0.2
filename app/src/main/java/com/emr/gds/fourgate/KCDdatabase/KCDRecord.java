@@ -30,4 +30,9 @@ public class KCDRecord {
     public String toEMRFormat() {
         return toFormattedString();
     }
+
+    @Override
+    public String toString() {
+        return classification + " " + diseaseCode + " " + checkField + " " + koreanName + " " + englishName + " " + note;
+    }
 }
