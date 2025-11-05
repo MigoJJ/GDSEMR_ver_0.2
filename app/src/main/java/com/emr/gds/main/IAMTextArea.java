@@ -261,7 +261,7 @@ public class IAMTextArea {
 
     private void executePastMedicalHistoryHandler(TextArea textArea, int index) {
         try {
-        	new EMRPMH(IAIMain.getTextAreaManager(), textArea).showDialog();
+        	new EMRPMH(IAIMain.getTextAreaManager(), textArea, abbrevMap).showDialog();
         } catch (Exception e) {
             handleEditorException("Past Medical History", textArea, index, e);
         }

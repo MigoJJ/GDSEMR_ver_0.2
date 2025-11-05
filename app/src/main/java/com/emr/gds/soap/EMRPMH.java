@@ -56,7 +56,7 @@ public class EMRPMH extends Application {
 
     private final Map<String, CheckBox> pmhChecks = new LinkedHashMap<>();
     private final Map<String, TextArea> pmhNotes = new LinkedHashMap<>();
-    private final Map<String, String> abbrMap = new HashMap<>();
+    private final Map<String, String> abbrevMap;
 
     // UPGRADE: More comprehensive list of conditions from the Swing example
     private static final String[] CATEGORIES = {
@@ -76,11 +76,13 @@ public class EMRPMH extends Application {
     private static final int NUM_COLUMNS = 3;
 
     // -------- Constructors --------
-    public EMRPMH() { this(null, null); }
-    public EMRPMH(IAITextAreaManager manager) { this(manager, null); }
-    public EMRPMH(IAITextAreaManager manager, TextArea externalTarget) {
+    public EMRPMH() { this(null, null, Collections.emptyMap()); }
+    public EMRPMH(IAITextAreaManager manager) { this(manager, null, Collections.emptyMap()); }
+    public EMRPMH(IAITextAreaManager manager, TextArea externalTarget) { this(manager, externalTarget, Collections.emptyMap()); }
+    public EMRPMH(IAITextAreaManager manager, TextArea externalTarget, Map<String, String> abbrevMap) {
         this.textAreaManager = manager;
         this.externalTarget = externalTarget;
+        this.abbrevMap = (abbrevMap != null) ? abbrevMap : Collections.emptyMap();
     }
 
     // -------- JavaFX lifecycle --------
@@ -105,8 +107,6 @@ public class EMRPMH extends Application {
         s.setTitle("EMR - Past Medical History (PMH) - Upgraded");
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
-
-        loadAbbreviationsFromDb();
 
         Label title = new Label("Past Medical History");
         title.setFont(Font.font(18));
@@ -149,7 +149,7 @@ public class EMRPMH extends Application {
             cb.selectedProperty().addListener((obs, oldVal, newVal) -> updateLiveSummary());
             ta.textProperty().addListener((obs, oldVal, newVal) -> updateLiveSummary());
 
-            attachAbbreviationLikeIttia(ta);
+            addAbbreviationExpansionListener(ta);
 
             col++;
             if (col >= NUM_COLUMNS) {
@@ -300,82 +300,38 @@ public class EMRPMH extends Application {
     // ===============================================
     // Abbreviation & Other Helper Methods (Unchanged)
     // ===============================================
-    private void loadAbbreviationsFromDb() {
-        String dbPath = System.getProperty("user.dir") + "/db/abbreviations.db";
-        String url = "jdbc:sqlite:" + dbPath;
-
-        try (Connection conn = DriverManager.getConnection(url);
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT short, full FROM abbreviations")) {
-
-            while (rs.next()) {
-                String key = rs.getString("short").toLowerCase(Locale.ROOT);
-                String val = rs.getString("full");
-                if (!key.isEmpty() && !val.isEmpty()) {
-                    abbrMap.put(key, val);
-                    abbrMap.put(":" + key, val);
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Failed to load abbreviations from database: " + e.getMessage());
-        }
-    }
-
-    private void attachAbbreviationLikeIttia(TextArea ta) {
-        ta.setOnKeyReleased(ev -> {
-            KeyCode code = ev.getCode();
-            String text = ev.getText();
-            if (code == KeyCode.SPACE || code == KeyCode.ENTER || code == KeyCode.TAB ||
-                    (text != null && isPunctuation(text))) {
-                Platform.runLater(() -> expandTokenAtCaret(ta));
+    private void addAbbreviationExpansionListener(TextArea ta) {
+        ta.addEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.SPACE) {
+                if (expandAbbreviationOnSpace(ta)) event.consume();
             }
         });
     }
 
-    private boolean isPunctuation(String s) {
-        return s != null && s.length() == 1 && ",.;:!?)]}".contains(s);
-    }
-
-    private void expandTokenAtCaret(TextArea ta) {
+    private boolean expandAbbreviationOnSpace(TextArea ta) {
         int caret = ta.getCaretPosition();
-        String txt = ta.getText();
-        if (txt == null || txt.isEmpty() || caret == 0) return;
+        String upToCaret = ta.getText(0, caret);
+        int start = Math.max(upToCaret.lastIndexOf(' '), upToCaret.lastIndexOf('\n')) + 1;
 
-        int start = caret - 1;
-        while (start >= 0 && !Character.isWhitespace(txt.charAt(start))) {
-            start--;
-        }
-        start = Math.max(start + 1, 0);
+        String word = upToCaret.substring(start).trim();
+        if (!word.startsWith(":")) return false;
 
-        int end = caret;
-        String trailing = "";
-        if (end > 0 && isPunctuation(String.valueOf(txt.charAt(end - 1)))) {
-            trailing = String.valueOf(txt.charAt(end - 1));
-            end--;
-        }
+        String key = word.substring(1);
+        String replacement = abbrevMap.get(key);
+        if (replacement == null) return false;
 
-        if (end <= start) return;
-        String token = txt.substring(start, end).trim();
-        if (token.isEmpty()) return;
-
-        String lookup = token.toLowerCase(Locale.ROOT);
-        String expansion = abbrMap.get(lookup);
-        if (expansion == null && lookup.startsWith(":")) {
-            expansion = abbrMap.get(lookup.substring(1));
-        }
-
-        if (expansion != null) {
-            ta.selectRange(start, caret);
-            ta.replaceSelection(expansion + (trailing.isEmpty() ? " " : trailing));
-        }
+        Platform.runLater(() -> {
+            ta.deleteText(start, caret);
+            ta.insertText(start, replacement + " ");
+        });
+        return true;
     }
 
     private void openEMRFMH() {
         javax.swing.SwingUtilities.invokeLater(() -> {
             try {
                 // Assuming EMRFMH is a Swing JFrame
-                // new EMRFMH(textAreaManager).setVisible(true); // Example instantiation
-                showInfo("EMRFMH Dialog", "Functionality to open the Family History dialog would go here.");
+                new EMRFMH(textAreaManager).setVisible(true); // Example instantiation
             } catch (Throwable t) {
                 showError("Unable to open EMRFMH", t);
             }
@@ -383,17 +339,21 @@ public class EMRPMH extends Application {
     }
 
     private void showError(String header, Throwable t) {
-        Alert a = new Alert(Alert.AlertType.ERROR);
-        a.setHeaderText(header);
-        a.setContentText(t.getClass().getSimpleName() + ": " + Optional.ofNullable(t.getMessage()).orElse(""));
-        a.showAndWait();
+        Platform.runLater(() -> {
+            Alert a = new Alert(Alert.AlertType.ERROR);
+            a.setHeaderText(header);
+            a.setContentText(t.getClass().getSimpleName() + ": " + Optional.ofNullable(t.getMessage()).orElse(""));
+            a.showAndWait();
+        });
     }
 
     private void showInfo(String header, String content) {
-        Alert a = new Alert(Alert.AlertType.INFORMATION);
-        a.setHeaderText(header);
-        a.setContentText(content);
-        a.showAndWait();
+        Platform.runLater(() -> {
+            Alert a = new Alert(Alert.AlertType.INFORMATION);
+            a.setHeaderText(header);
+            a.setContentText(content);
+            a.showAndWait();
+        });
     }
 
     public static void main(String[] args) {
