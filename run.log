@@ -2709,3 +2709,49 @@ BUILD SUCCESSFUL in 1m
 14 actionable tasks: 2 executed, 12 up-to-date
 [0;32m[INFO][0m Gradle task 'run' completed successfully!
 [0;32m[INFO][0m Gradle task 'run' completed successfully!
+===========================================================
+===========================================================
+Gradle Project Runner - 2025-11-06 18:04:35
+Gradle Project Runner - 2025-11-06 18:04:35
+Project: /home/migowj/git/GDSEMR_ver_0.2
+Project: /home/migowj/git/GDSEMR_ver_0.2
+===========================================================
+===========================================================
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Executing: ./gradlew run
+[0;32m[INFO][0m Executing: ./gradlew run
+Starting a Gradle Daemon, 1 busy and 1 incompatible and 1 stopped Daemons could not be reused, use --status for details
+> Task :build-logic:extractPluginRequests UP-TO-DATE
+> Task :build-logic:generatePluginAdapters UP-TO-DATE
+> Task :build-logic:compileJava UP-TO-DATE
+> Task :build-logic:compileGroovy NO-SOURCE
+> Task :build-logic:compileGroovyPlugins UP-TO-DATE
+> Task :build-logic:pluginDescriptors UP-TO-DATE
+> Task :build-logic:processResources UP-TO-DATE
+> Task :build-logic:classes UP-TO-DATE
+> Task :build-logic:jar UP-TO-DATE
+> Task :utilities:processResources NO-SOURCE
+> Task :list:compileJava FROM-CACHE
+> Task :list:processResources NO-SOURCE
+> Task :list:classes UP-TO-DATE
+> Task :app:processResources
+> Task :utilities:compileJava FROM-CACHE
+> Task :utilities:classes UP-TO-DATE
+> Task :list:jar
+> Task :utilities:jar
+> Task :app:compileJava FROM-CACHE
+> Task :app:classes
+
+> Task :app:run
+WARNING: package com.emr.gds.fourgate.KCDdatabase not in javafx.base
+[DB PATH] abbreviations -> /home/migowj/git/GDSEMR_ver_0.2/app/db/abbreviations.db
+[DB PATH] prolist -> /home/migowj/git/GDSEMR_ver_0.2/app/db/prolist.db
+Database connection closed.
+
+BUILD SUCCESSFUL in 24s
+14 actionable tasks: 4 executed, 3 from cache, 7 up-to-date
+[0;32m[INFO][0m Gradle task 'run' completed successfully!
+[0;32m[INFO][0m Gradle task 'run' completed successfully!
