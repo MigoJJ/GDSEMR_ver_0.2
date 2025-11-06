@@ -332,7 +332,7 @@ public class EMRPMH extends Application {
         javax.swing.SwingUtilities.invokeLater(() -> {
             try {
                 // Assuming EMRFMH is a Swing JFrame
-                new EMRFMH(textAreaManager).setVisible(true); // Example instantiation
+                new EMRFMH(textAreaManager, abbrevMap).setVisible(true); // Example instantiation
             } catch (Throwable t) {
                 showError("Unable to open EMRFMH", t);
             }
