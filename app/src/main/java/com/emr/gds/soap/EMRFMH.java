@@ -24,7 +24,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Enhanced EMR Family Medical History (FMH) input frame with:
@@ -37,6 +39,8 @@ public class EMRFMH extends JFrame {
 
     private final JTextArea historyTextArea;
     private final IAITextAreaManager textAreaManager;
+	private final Map<String, String> abbrevMap;
+
 
     private ObservableList<String> endocrineConditions;
     private ObservableList<String> cancerConditions;
@@ -54,8 +58,9 @@ public class EMRFMH extends JFrame {
     private TextArea notesTextArea;
     private GridPane conditionsGrid;
 
-    public EMRFMH(IAITextAreaManager textAreaManager) {
+    public EMRFMH(IAITextAreaManager textAreaManager, Map<String, String> abbrevMap) {
         this.textAreaManager = textAreaManager;
+		this.abbrevMap = (abbrevMap != null) ? abbrevMap : Collections.emptyMap();
 
         // -----------------------------------------------------------------
         // 1. Create the JTextArea **right here** so the final field is set
@@ -64,6 +69,7 @@ public class EMRFMH extends JFrame {
         historyTextArea.setFont(new Font("Monospaced", Font.PLAIN, 13));
         historyTextArea.setLineWrap(true);
         historyTextArea.setWrapStyleWord(true);
+		addAbbreviationExpansionListener(historyTextArea);
 
         initializeData();   // load condition files
         initializeUI();     // build the rest of the UI (uses historyTextArea)
@@ -171,6 +177,7 @@ public class EMRFMH extends JFrame {
         notesTextArea.setPromptText("e.g., Age of onset, lifestyle factors, treatment...");
         notesTextArea.setPrefRowCount(3);
         notesTextArea.setWrapText(true);
+		addAbbreviationExpansionListener(notesTextArea);
 
         grid.add(new Label("Relationship:"), 0, 0);
         grid.add(relationshipComboBox, 1, 0);
@@ -421,6 +428,80 @@ public class EMRFMH extends JFrame {
     }
 
     // ======================
+    // Abbreviation Expansion
+    // ======================
+    private void addAbbreviationExpansionListener(JTextArea ta) {
+        ta.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent e) {
+                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_SPACE) {
+                    if (expandAbbreviationOnSpace(ta)) {
+                        e.consume();
+                    }
+                }
+            }
+        });
+    }
+
+    private boolean expandAbbreviationOnSpace(JTextArea ta) {
+        try {
+            int caret = ta.getCaretPosition();
+            javax.swing.text.Element root = ta.getDocument().getDefaultRootElement();
+            int line = root.getElementIndex(caret);
+            int start = root.getElement(line).getStartOffset();
+            String lineText = ta.getDocument().getText(start, caret - start);
+
+            int wordStart = Math.max(lineText.lastIndexOf(' '), lineText.lastIndexOf('\n')) + 1;
+            String word = lineText.substring(wordStart).trim();
+
+            if (!word.startsWith(":")) return false;
+
+            String key = word.substring(1);
+            String replacement = abbrevMap.get(key);
+            if (replacement == null) return false;
+
+            final int finalWordStart = start + wordStart;
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    ta.getDocument().remove(finalWordStart, caret - finalWordStart);
+                    ta.getDocument().insertString(finalWordStart, replacement + " ", null);
+                } catch (javax.swing.text.BadLocationException e) {
+                    // ignore
+                }
+            });
+            return true;
+        } catch (javax.swing.text.BadLocationException e) {
+            return false;
+        }
+    }
+
+    private void addAbbreviationExpansionListener(TextArea ta) {
+        ta.addEventHandler(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == javafx.scene.input.KeyCode.SPACE) {
+                if (expandAbbreviationOnSpace(ta)) event.consume();
+            }
+        });
+    }
+
+    private boolean expandAbbreviationOnSpace(TextArea ta) {
+        int caret = ta.getCaretPosition();
+        String upToCaret = ta.getText(0, caret);
+        int start = Math.max(upToCaret.lastIndexOf(' '), upToCaret.lastIndexOf('\n')) + 1;
+
+        String word = upToCaret.substring(start).trim();
+        if (!word.startsWith(":")) return false;
+
+        String key = word.substring(1);
+        String replacement = abbrevMap.get(key);
+        if (replacement == null) return false;
+
+        Platform.runLater(() -> {
+            ta.deleteText(start, caret);
+            ta.insertText(start, replacement + " ");
+        });
+        return true;
+    }
+
+    // ======================
     // Main
     // ======================
     public static void main(String[] args) {
@@ -428,7 +509,7 @@ public class EMRFMH extends JFrame {
             try {
                 UIManager.setLookAndFeel(UIManager.getLookAndFeel());
             } catch (Exception ignored) {}
-            new EMRFMH(null).setVisible(true);
+            new EMRFMH(null, Collections.emptyMap()).setVisible(true);
         });
     }
 
