@@ -156,6 +156,19 @@ public class ChestPA extends Stage {
             customAreas[i] = createCustomLungTextArea();
             tabs.getTabs().add(createLungTab(titles[i], checkLists[i], customAreas[i]));
         }
+        rulfCheckList = checkLists[0];
+        rmlfCheckList = checkLists[1];
+        rllfCheckList = checkLists[2];
+        lulfCheckList = checkLists[3];
+        lmlfCheckList = checkLists[4];
+        lllfCheckList = checkLists[5];
+        customRulfArea = customAreas[0];
+        customRmlfArea = customAreas[1];
+        customRllfArea = customAreas[2];
+        customLulfArea = customAreas[3];
+        customLmlfArea = customAreas[4];
+        customLllfArea = customAreas[5];
+
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         return tabs;
     }
