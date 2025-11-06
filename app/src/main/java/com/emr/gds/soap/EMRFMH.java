@@ -76,7 +76,7 @@ public class EMRFMH extends JFrame {
     private void initializeUI() {
         setTitle("Endocrinology - Family Medical History");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setPreferredSize(new Dimension(1000, 800));
+        setPreferredSize(new Dimension(1000, 900));
         setMinimumSize(new Dimension(800, 600));
 
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
@@ -84,7 +84,7 @@ public class EMRFMH extends JFrame {
 
         // ----- JavaFX panel ------------------------------------------------
         JFXPanel fxPanel = new JFXPanel();
-        fxPanel.setPreferredSize(new Dimension(0, 450));
+        fxPanel.setPreferredSize(new Dimension(0, 650));
         Platform.runLater(() -> fxPanel.setScene(new Scene(createJavaFXForm())));
 
         JScrollPane fxScrollPane = new JScrollPane(fxPanel);
@@ -97,7 +97,7 @@ public class EMRFMH extends JFrame {
         mainPanel.add(textScrollPane, BorderLayout.CENTER);
 
         // ----- Buttons ----------------------------------------------------
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 5));
         buttonPanel.add(createButton("Clear", e -> historyTextArea.setText("")));
         buttonPanel.add(createButton("Save", e -> onSave()));
         buttonPanel.add(createButton("Quit", e -> dispose()));
@@ -189,8 +189,8 @@ public class EMRFMH extends JFrame {
 
         grid.add(createConditionColumn("Endocrine", endocrineConditions), 0, 0);
         grid.add(createConditionColumn("Cancer", cancerConditions), 1, 0);
-        grid.add(createConditionColumn("Cardiovascular", cardiovascularConditions), 0, 1);
-        grid.add(createConditionColumn("Genetic", geneticConditions), 1, 1);
+        grid.add(createConditionColumn("Cardiovascular", cardiovascularConditions), 2, 0);
+        grid.add(createConditionColumn("Genetic", geneticConditions), 3, 0);
 
         return grid;
     }

@@ -68,7 +68,8 @@ public class EMRPMH extends Application {
             "Cancer Hx", "Operation Hx",
             "GERD", "Hepatitis A / B",
             "Depression",
-            "Allergy", "Food Allergy", "Injection Allergy", "Medication Allergy", "All denied allergies...",
+            "Allergy", "Food Allergy", "Injection Allergy", "Medication Allergy", 
+            "All denied allergies...Food, Medication, Injection",
             "Others"
     };
     
@@ -171,7 +172,7 @@ public class EMRPMH extends Application {
         outputArea.setPromptText("Live summary of selected PMH will appear here.");
         root.setBottom(buildFooter(outputArea));
 
-        Scene scene = new Scene(root, 1100, 750); // Increased default size
+        Scene scene = new Scene(root, 1000, 970); // Increased default size
         scene.setOnKeyPressed(e -> {
             if (e.getCode() == KeyCode.ESCAPE) { onQuit(); e.consume(); }
             if (e.isControlDown() && e.getCode() == KeyCode.ENTER) { onSave(); e.consume(); }
@@ -257,7 +258,7 @@ public class EMRPMH extends Application {
      * @return The formatted summary string.
      */
     private String buildSummaryText(boolean applySaveLogic) {
-        StringBuilder sb = new StringBuilder("PMH>\n");
+        StringBuilder sb = new StringBuilder("Past Mdedical History-----------\n");
         boolean hasContent = false;
 
         boolean allDeniedSelected = pmhChecks.getOrDefault("All denied allergies...", new CheckBox()).isSelected();
