@@ -31,11 +31,7 @@ public class MedsMain extends Application {
 
     private Button btnEdit, btnDelete, btnSave;
 
- // Inside MedsMain class
-    public static void openInNewWindow() {
-        new Thread(() -> Application.launch(MedsMain.class)).start();
-    }
-    /* ------------------------------------------------------------------ */
+        /* ------------------------------------------------------------------ */
     
     
     @Override
@@ -351,7 +347,7 @@ public class MedsMain extends Application {
                 CREATE TABLE IF NOT EXISTS SubCategories (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     category_id INTEGER NOT NULL,
-                    name TEXT NOT NOT NULL,
+                    name TEXT NOT NULL,
                     sort_order INTEGER,
                     FOREIGN KEY (category_id) REFERENCES Categories (id)
                 );

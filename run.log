@@ -3042,3 +3042,382 @@ BUILD SUCCESSFUL in 11s
 14 actionable tasks: 1 executed, 13 up-to-date
 [0;32m[INFO][0m Gradle task 'run' completed successfully!
 [0;32m[INFO][0m Gradle task 'run' completed successfully!
+===========================================================
+===========================================================
+Gradle Project Runner - 2025-11-11 22:45:36
+Gradle Project Runner - 2025-11-11 22:45:36
+Project: /home/migowj/git/GDSEMR_ver_0.2
+Project: /home/migowj/git/GDSEMR_ver_0.2
+===========================================================
+===========================================================
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Executing: ./gradlew run
+[0;32m[INFO][0m Executing: ./gradlew run
+Starting a Gradle Daemon, 2 incompatible and 2 stopped Daemons could not be reused, use --status for details
+> Task :build-logic:extractPluginRequests UP-TO-DATE
+> Task :build-logic:generatePluginAdapters UP-TO-DATE
+> Task :build-logic:compileJava UP-TO-DATE
+> Task :build-logic:compileGroovy NO-SOURCE
+> Task :build-logic:compileGroovyPlugins UP-TO-DATE
+> Task :build-logic:pluginDescriptors UP-TO-DATE
+> Task :build-logic:processResources UP-TO-DATE
+> Task :build-logic:classes UP-TO-DATE
+> Task :build-logic:jar UP-TO-DATE
+> Task :utilities:processResources NO-SOURCE
+> Task :app:processResources UP-TO-DATE
+> Task :list:compileJava UP-TO-DATE
+> Task :list:processResources NO-SOURCE
+> Task :list:classes UP-TO-DATE
+> Task :list:jar UP-TO-DATE
+> Task :utilities:compileJava UP-TO-DATE
+> Task :utilities:classes UP-TO-DATE
+> Task :utilities:jar UP-TO-DATE
+
+> Task :app:compileJava
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :app:classes
+
+> Task :app:run
+WARNING: package com.emr.gds.fourgate.KCDdatabase not in javafx.base
+[DB PATH] abbreviations -> /home/migowj/git/GDSEMR_ver_0.2/app/db/abbreviations.db
+[DB PATH] prolist -> /home/migowj/git/GDSEMR_ver_0.2/app/db/prolist.db
+java.lang.RuntimeException: org.sqlite.SQLiteException: [SQLITE_ERROR] SQL error or missing database (near "NOT": syntax error)
+	at com.emr.gds.diagnosis.medication.MedsMain$DatabaseManager.createTables(MedsMain.java:500)
+	at com.emr.gds.diagnosis.medication.MedsMain.init(MedsMain.java:52)
+	at com.emr.gds.diagnosis.medication.MedsMain.lambda$openInNewWindow$0(MedsMain.java:39)
+	at javafx.graphics@25.0.1/com.sun.javafx.application.PlatformImpl.lambda$runLater$0(PlatformImpl.java:424)
+	at javafx.graphics@25.0.1/com.sun.glass.ui.InvokeLaterDispatcher$Future.run(InvokeLaterDispatcher.java:95)
+	at javafx.graphics@25.0.1/com.sun.glass.ui.gtk.GtkApplication._runLoop(Native Method)
+	at javafx.graphics@25.0.1/com.sun.glass.ui.gtk.GtkApplication.lambda$runLoop$0(GtkApplication.java:240)
+	at java.base/java.lang.Thread.run(Thread.java:1474)
+Caused by: org.sqlite.SQLiteException: [SQLITE_ERROR] SQL error or missing database (near "NOT": syntax error)
+	at org.sqlite.core.DB.newSQLException(DB.java:1179)
+	at org.sqlite.core.DB.newSQLException(DB.java:1190)
+	at org.sqlite.core.DB.throwex(DB.java:1150)
+	at org.sqlite.core.NativeDB.prepare_utf8(Native Method)
+	at org.sqlite.core.NativeDB.prepare(NativeDB.java:132)
+	at org.sqlite.core.DB.prepare(DB.java:264)
+	at org.sqlite.jdbc3.JDBC3Statement.lambda$execute$0(JDBC3Statement.java:54)
+	at org.sqlite.jdbc3.JDBC3Statement.withConnectionTimeout(JDBC3Statement.java:454)
+	at org.sqlite.jdbc3.JDBC3Statement.execute(JDBC3Statement.java:43)
+	at com.emr.gds.diagnosis.medication.MedsMain$DatabaseManager.createTables(MedsMain.java:498)
+	... 7 more
+Database connection closed.
+
+[Incubating] Problems report is available at: file:///home/migowj/git/GDSEMR_ver_0.2/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 28s
+14 actionable tasks: 2 executed, 12 up-to-date
+[0;32m[INFO][0m Gradle task 'run' completed successfully!
+[0;32m[INFO][0m Gradle task 'run' completed successfully!
+===========================================================
+===========================================================
+Gradle Project Runner - 2025-11-11 22:48:47
+Gradle Project Runner - 2025-11-11 22:48:47
+Project: /home/migowj/git/GDSEMR_ver_0.2
+Project: /home/migowj/git/GDSEMR_ver_0.2
+===========================================================
+===========================================================
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Executing: ./gradlew run
+[0;32m[INFO][0m Executing: ./gradlew run
+> Task :build-logic:extractPluginRequests UP-TO-DATE
+> Task :build-logic:generatePluginAdapters UP-TO-DATE
+> Task :build-logic:compileJava UP-TO-DATE
+> Task :build-logic:compileGroovy NO-SOURCE
+> Task :build-logic:compileGroovyPlugins UP-TO-DATE
+> Task :build-logic:pluginDescriptors UP-TO-DATE
+> Task :build-logic:processResources UP-TO-DATE
+> Task :build-logic:classes UP-TO-DATE
+> Task :build-logic:jar UP-TO-DATE
+> Task :utilities:processResources NO-SOURCE
+> Task :app:processResources UP-TO-DATE
+> Task :list:compileJava UP-TO-DATE
+> Task :list:processResources NO-SOURCE
+> Task :list:classes UP-TO-DATE
+> Task :list:jar UP-TO-DATE
+> Task :utilities:compileJava UP-TO-DATE
+> Task :utilities:classes UP-TO-DATE
+> Task :utilities:jar UP-TO-DATE
+
+> Task :app:compileJava
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :app:classes
+
+> Task :app:run
+WARNING: package com.emr.gds.fourgate.KCDdatabase not in javafx.base
+[DB PATH] abbreviations -> /home/migowj/git/GDSEMR_ver_0.2/app/db/abbreviations.db
+[DB PATH] prolist -> /home/migowj/git/GDSEMR_ver_0.2/app/db/prolist.db
+java.lang.RuntimeException: org.sqlite.SQLiteException: [SQLITE_ERROR] SQL error or missing database (near "NOT": syntax error)
+	at com.emr.gds.diagnosis.medication.MedsMain$DatabaseManager.createTables(MedsMain.java:512)
+	at com.emr.gds.diagnosis.medication.MedsMain.lambda$openInNewWindow$0(MedsMain.java:40)
+	at com.emr.gds.diagnosis.medication.MedsMain.openInNewWindow(MedsMain.java:55)
+	at com.emr.gds.main.IAMButtonAction.lambda$createMedsMainButton$0(IAMButtonAction.java:285)
+	at javafx.base@25.0.1/com.sun.javafx.event.CompositeEventHandler.dispatchBubblingEvent(CompositeEventHandler.java:86)
+	at javafx.base@25.0.1/com.sun.javafx.event.EventHandlerManager.dispatchBubblingEvent(EventHandlerManager.java:232)
+	at javafx.base@25.0.1/com.sun.javafx.event.EventHandlerManager.dispatchBubblingEvent(EventHandlerManager.java:189)
+	at javafx.base@25.0.1/com.sun.javafx.event.CompositeEventDispatcher.dispatchBubblingEvent(CompositeEventDispatcher.java:59)
+	at javafx.base@25.0.1/com.sun.javafx.event.BasicEventDispatcher.dispatchEvent(BasicEventDispatcher.java:58)
+	at javafx.base@25.0.1/com.sun.javafx.event.EventDispatchChainImpl.dispatchEvent(EventDispatchChainImpl.java:114)
+	at javafx.base@25.0.1/com.sun.javafx.event.BasicEventDispatcher.dispatchEvent(BasicEventDispatcher.java:56)
+	at javafx.base@25.0.1/com.sun.javafx.event.EventDispatchChainImpl.dispatchEvent(EventDispatchChainImpl.java:114)
+	at javafx.base@25.0.1/com.sun.javafx.event.BasicEventDispatcher.dispatchEvent(BasicEventDispatcher.java:56)
+	at javafx.base@25.0.1/com.sun.javafx.event.EventDispatchChainImpl.dispatchEvent(EventDispatchChainImpl.java:114)
+	at javafx.base@25.0.1/com.sun.javafx.event.BasicEventDispatcher.dispatchEvent(BasicEventDispatcher.java:56)
+	at javafx.base@25.0.1/com.sun.javafx.event.EventDispatchChainImpl.dispatchEvent(EventDispatchChainImpl.java:114)
+	at javafx.base@25.0.1/com.sun.javafx.event.EventUtil.fireEventImpl(EventUtil.java:74)
+	at javafx.base@25.0.1/com.sun.javafx.event.EventUtil.fireEvent(EventUtil.java:49)
+	at javafx.base@25.0.1/javafx.event.Event.fireEvent(Event.java:199)
+	at javafx.graphics@25.0.1/javafx.scene.Node.fireEvent(Node.java:9026)
+	at javafx.controls@25.0.1/javafx.scene.control.Button.fire(Button.java:203)
+	at javafx.controls@25.0.1/com.sun.javafx.scene.control.behavior.ButtonBehavior.mouseReleased(ButtonBehavior.java:207)
+	at javafx.controls@25.0.1/com.sun.javafx.scene.control.inputmap.InputMap.handle(InputMap.java:274)
+	at javafx.base@25.0.1/com.sun.javafx.event.CompositeEventHandler$NormalEventHandlerRecord.handleBubblingEvent(CompositeEventHandler.java:247)
+	at javafx.base@25.0.1/com.sun.javafx.event.CompositeEventHandler.dispatchBubblingEvent(CompositeEventHandler.java:80)
+	at javafx.base@25.0.1/com.sun.javafx.event.EventHandlerManager.dispatchBubblingEvent(EventHandlerManager.java:232)
+	at javafx.base@25.0.1/com.sun.javafx.event.EventHandlerManager.dispatchBubblingEvent(EventHandlerManager.java:189)
+	at javafx.base@25.0.1/com.sun.javafx.event.CompositeEventDispatcher.dispatchBubblingEvent(CompositeEventDispatcher.java:59)
+	at javafx.base@25.0.1/com.sun.javafx.event.BasicEventDispatcher.dispatchEvent(BasicEventDispatcher.java:58)
+	at javafx.base@25.0.1/com.sun.javafx.event.EventDispatchChainImpl.dispatchEvent(EventDispatchChainImpl.java:114)
+	at javafx.base@25.0.1/com.sun.javafx.event.BasicEventDispatcher.dispatchEvent(BasicEventDispatcher.java:56)
+	at javafx.base@25.0.1/com.sun.javafx.event.EventDispatchChainImpl.dispatchEvent(EventDispatchChainImpl.java:114)
+	at javafx.base@25.0.1/com.sun.javafx.event.BasicEventDispatcher.dispatchEvent(BasicEventDispatcher.java:56)
+	at javafx.base@25.0.1/com.sun.javafx.event.EventDispatchChainImpl.dispatchEvent(EventDispatchChainImpl.java:114)
+	at javafx.base@25.0.1/com.sun.javafx.event.BasicEventDispatcher.dispatchEvent(BasicEventDispatcher.java:56)
+	at javafx.base@25.0.1/com.sun.javafx.event.EventDispatchChainImpl.dispatchEvent(EventDispatchChainImpl.java:114)
+	at javafx.base@25.0.1/com.sun.javafx.event.EventUtil.fireEventImpl(EventUtil.java:74)
+	at javafx.base@25.0.1/com.sun.javafx.event.EventUtil.fireEvent(EventUtil.java:54)
+	at javafx.base@25.0.1/javafx.event.Event.fireEvent(Event.java:199)
+	at javafx.graphics@25.0.1/javafx.scene.Scene$MouseHandler.process(Scene.java:4061)
+	at javafx.graphics@25.0.1/javafx.scene.Scene.processMouseEvent(Scene.java:1947)
+	at javafx.graphics@25.0.1/javafx.scene.Scene$ScenePeerListener.mouseEvent(Scene.java:2784)
+	at javafx.graphics@25.0.1/com.sun.javafx.tk.quantum.GlassViewEventHandler$MouseEventNotification.get(GlassViewEventHandler.java:353)
+	at javafx.graphics@25.0.1/com.sun.javafx.tk.quantum.GlassViewEventHandler$MouseEventNotification.get(GlassViewEventHandler.java:255)
+	at javafx.graphics@25.0.1/com.sun.javafx.tk.quantum.QuantumToolkit.runWithoutRenderLock(QuantumToolkit.java:424)
+	at javafx.graphics@25.0.1/com.sun.javafx.tk.quantum.GlassViewEventHandler.handleMouseEvent(GlassViewEventHandler.java:387)
+	at javafx.graphics@25.0.1/com.sun.glass.ui.View.handleMouseEvent(View.java:573)
+	at javafx.graphics@25.0.1/com.sun.glass.ui.View.notifyMouse(View.java:975)
+	at javafx.graphics@25.0.1/com.sun.glass.ui.gtk.GtkApplication._runLoop(Native Method)
+	at javafx.graphics@25.0.1/com.sun.glass.ui.gtk.GtkApplication.lambda$runLoop$0(GtkApplication.java:240)
+	at java.base/java.lang.Thread.run(Thread.java:1474)
+Caused by: org.sqlite.SQLiteException: [SQLITE_ERROR] SQL error or missing database (near "NOT": syntax error)
+	at org.sqlite.core.DB.newSQLException(DB.java:1179)
+	at org.sqlite.core.DB.newSQLException(DB.java:1190)
+	at org.sqlite.core.DB.throwex(DB.java:1150)
+	at org.sqlite.core.NativeDB.prepare_utf8(Native Method)
+	at org.sqlite.core.NativeDB.prepare(NativeDB.java:132)
+	at org.sqlite.core.DB.prepare(DB.java:264)
+	at org.sqlite.jdbc3.JDBC3Statement.lambda$execute$0(JDBC3Statement.java:54)
+	at org.sqlite.jdbc3.JDBC3Statement.withConnectionTimeout(JDBC3Statement.java:454)
+	at org.sqlite.jdbc3.JDBC3Statement.execute(JDBC3Statement.java:43)
+	at com.emr.gds.diagnosis.medication.MedsMain$DatabaseManager.createTables(MedsMain.java:510)
+	... 50 more
+Database connection closed.
+
+[Incubating] Problems report is available at: file:///home/migowj/git/GDSEMR_ver_0.2/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 13s
+14 actionable tasks: 2 executed, 12 up-to-date
+[0;32m[INFO][0m Gradle task 'run' completed successfully!
+[0;32m[INFO][0m Gradle task 'run' completed successfully!
+===========================================================
+===========================================================
+Gradle Project Runner - 2025-11-11 22:50:52
+Gradle Project Runner - 2025-11-11 22:50:52
+Project: /home/migowj/git/GDSEMR_ver_0.2
+Project: /home/migowj/git/GDSEMR_ver_0.2
+===========================================================
+===========================================================
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Executing: ./gradlew run
+[0;32m[INFO][0m Executing: ./gradlew run
+> Task :build-logic:extractPluginRequests UP-TO-DATE
+> Task :build-logic:generatePluginAdapters UP-TO-DATE
+> Task :build-logic:compileJava UP-TO-DATE
+> Task :build-logic:compileGroovy NO-SOURCE
+> Task :build-logic:compileGroovyPlugins UP-TO-DATE
+> Task :build-logic:pluginDescriptors UP-TO-DATE
+> Task :build-logic:processResources UP-TO-DATE
+> Task :build-logic:classes UP-TO-DATE
+> Task :build-logic:jar UP-TO-DATE
+> Task :utilities:processResources NO-SOURCE
+> Task :app:processResources UP-TO-DATE
+> Task :list:compileJava UP-TO-DATE
+> Task :list:processResources NO-SOURCE
+> Task :list:classes UP-TO-DATE
+> Task :list:jar UP-TO-DATE
+> Task :utilities:compileJava UP-TO-DATE
+> Task :utilities:classes UP-TO-DATE
+> Task :utilities:jar UP-TO-DATE
+
+> Task :app:compileJava
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :app:classes
+
+> Task :app:run
+WARNING: package com.emr.gds.fourgate.KCDdatabase not in javafx.base
+[DB PATH] abbreviations -> /home/migowj/git/GDSEMR_ver_0.2/app/db/abbreviations.db
+[DB PATH] prolist -> /home/migowj/git/GDSEMR_ver_0.2/app/db/prolist.db
+Failed to open MedsMain application: org.sqlite.SQLiteException: [SQLITE_ERROR] SQL error or missing database (near "NOT": syntax error)
+java.lang.RuntimeException: org.sqlite.SQLiteException: [SQLITE_ERROR] SQL error or missing database (near "NOT": syntax error)
+	at com.emr.gds.diagnosis.medication.MedsMain$DatabaseManager.createTables(MedsMain.java:488)
+	at com.emr.gds.diagnosis.medication.MedsMain.init(MedsMain.java:40)
+	at com.emr.gds.main.IAMButtonAction.lambda$createMedsMainButton$1(IAMButtonAction.java:284)
+	at javafx.graphics@25.0.1/com.sun.javafx.application.PlatformImpl.lambda$runLater$0(PlatformImpl.java:424)
+	at javafx.graphics@25.0.1/com.sun.glass.ui.InvokeLaterDispatcher$Future.run(InvokeLaterDispatcher.java:95)
+	at javafx.graphics@25.0.1/com.sun.glass.ui.gtk.GtkApplication._runLoop(Native Method)
+	at javafx.graphics@25.0.1/com.sun.glass.ui.gtk.GtkApplication.lambda$runLoop$0(GtkApplication.java:240)
+	at java.base/java.lang.Thread.run(Thread.java:1474)
+Caused by: org.sqlite.SQLiteException: [SQLITE_ERROR] SQL error or missing database (near "NOT": syntax error)
+	at org.sqlite.core.DB.newSQLException(DB.java:1179)
+	at org.sqlite.core.DB.newSQLException(DB.java:1190)
+	at org.sqlite.core.DB.throwex(DB.java:1150)
+	at org.sqlite.core.NativeDB.prepare_utf8(Native Method)
+	at org.sqlite.core.NativeDB.prepare(NativeDB.java:132)
+	at org.sqlite.core.DB.prepare(DB.java:264)
+	at org.sqlite.jdbc3.JDBC3Statement.lambda$execute$0(JDBC3Statement.java:54)
+	at org.sqlite.jdbc3.JDBC3Statement.withConnectionTimeout(JDBC3Statement.java:454)
+	at org.sqlite.jdbc3.JDBC3Statement.execute(JDBC3Statement.java:43)
+	at com.emr.gds.diagnosis.medication.MedsMain$DatabaseManager.createTables(MedsMain.java:486)
+	... 7 more
+Database connection closed.
+
+[Incubating] Problems report is available at: file:///home/migowj/git/GDSEMR_ver_0.2/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 13s
+14 actionable tasks: 2 executed, 12 up-to-date
+[0;32m[INFO][0m Gradle task 'run' completed successfully!
+[0;32m[INFO][0m Gradle task 'run' completed successfully!
+===========================================================
+===========================================================
+Gradle Project Runner - 2025-11-11 22:51:54
+Gradle Project Runner - 2025-11-11 22:51:54
+Project: /home/migowj/git/GDSEMR_ver_0.2
+Project: /home/migowj/git/GDSEMR_ver_0.2
+===========================================================
+===========================================================
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Executing: ./gradlew run
+[0;32m[INFO][0m Executing: ./gradlew run
+> Task :build-logic:extractPluginRequests UP-TO-DATE
+> Task :build-logic:generatePluginAdapters UP-TO-DATE
+> Task :build-logic:compileJava UP-TO-DATE
+> Task :build-logic:compileGroovy NO-SOURCE
+> Task :build-logic:compileGroovyPlugins UP-TO-DATE
+> Task :build-logic:pluginDescriptors UP-TO-DATE
+> Task :build-logic:processResources UP-TO-DATE
+> Task :build-logic:classes UP-TO-DATE
+> Task :build-logic:jar UP-TO-DATE
+> Task :utilities:processResources NO-SOURCE
+> Task :app:processResources UP-TO-DATE
+> Task :list:compileJava UP-TO-DATE
+> Task :list:processResources NO-SOURCE
+> Task :list:classes UP-TO-DATE
+> Task :list:jar UP-TO-DATE
+> Task :utilities:compileJava UP-TO-DATE
+> Task :utilities:classes UP-TO-DATE
+> Task :utilities:jar UP-TO-DATE
+> Task :app:compileJava UP-TO-DATE
+> Task :app:classes UP-TO-DATE
+
+> Task :app:run
+WARNING: package com.emr.gds.fourgate.KCDdatabase not in javafx.base
+[DB PATH] abbreviations -> /home/migowj/git/GDSEMR_ver_0.2/app/db/abbreviations.db
+[DB PATH] prolist -> /home/migowj/git/GDSEMR_ver_0.2/app/db/prolist.db
+Failed to open MedsMain application: org.sqlite.SQLiteException: [SQLITE_ERROR] SQL error or missing database (near "NOT": syntax error)
+java.lang.RuntimeException: org.sqlite.SQLiteException: [SQLITE_ERROR] SQL error or missing database (near "NOT": syntax error)
+	at com.emr.gds.diagnosis.medication.MedsMain$DatabaseManager.createTables(MedsMain.java:488)
+	at com.emr.gds.diagnosis.medication.MedsMain.init(MedsMain.java:40)
+	at com.emr.gds.main.IAMButtonAction.lambda$createMedsMainButton$1(IAMButtonAction.java:284)
+	at javafx.graphics@25.0.1/com.sun.javafx.application.PlatformImpl.lambda$runLater$0(PlatformImpl.java:424)
+	at javafx.graphics@25.0.1/com.sun.glass.ui.InvokeLaterDispatcher$Future.run(InvokeLaterDispatcher.java:95)
+	at javafx.graphics@25.0.1/com.sun.glass.ui.gtk.GtkApplication._runLoop(Native Method)
+	at javafx.graphics@25.0.1/com.sun.glass.ui.gtk.GtkApplication.lambda$runLoop$0(GtkApplication.java:240)
+	at java.base/java.lang.Thread.run(Thread.java:1474)
+Caused by: org.sqlite.SQLiteException: [SQLITE_ERROR] SQL error or missing database (near "NOT": syntax error)
+	at org.sqlite.core.DB.newSQLException(DB.java:1179)
+	at org.sqlite.core.DB.newSQLException(DB.java:1190)
+	at org.sqlite.core.DB.throwex(DB.java:1150)
+	at org.sqlite.core.NativeDB.prepare_utf8(Native Method)
+	at org.sqlite.core.NativeDB.prepare(NativeDB.java:132)
+	at org.sqlite.core.DB.prepare(DB.java:264)
+	at org.sqlite.jdbc3.JDBC3Statement.lambda$execute$0(JDBC3Statement.java:54)
+	at org.sqlite.jdbc3.JDBC3Statement.withConnectionTimeout(JDBC3Statement.java:454)
+	at org.sqlite.jdbc3.JDBC3Statement.execute(JDBC3Statement.java:43)
+	at com.emr.gds.diagnosis.medication.MedsMain$DatabaseManager.createTables(MedsMain.java:486)
+	... 7 more
+Database connection closed.
+
+BUILD SUCCESSFUL in 13s
+14 actionable tasks: 1 executed, 13 up-to-date
+[0;32m[INFO][0m Gradle task 'run' completed successfully!
+[0;32m[INFO][0m Gradle task 'run' completed successfully!
+===========================================================
+===========================================================
+Gradle Project Runner - 2025-11-11 22:52:55
+Gradle Project Runner - 2025-11-11 22:52:55
+Project: /home/migowj/git/GDSEMR_ver_0.2
+Project: /home/migowj/git/GDSEMR_ver_0.2
+===========================================================
+===========================================================
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Starting Gradle build and run...
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Check full log at: /home/migowj/git/GDSEMR_ver_0.2/run.log
+[0;32m[INFO][0m Executing: ./gradlew run
+[0;32m[INFO][0m Executing: ./gradlew run
+> Task :build-logic:extractPluginRequests UP-TO-DATE
+> Task :build-logic:generatePluginAdapters UP-TO-DATE
+> Task :build-logic:compileJava UP-TO-DATE
+> Task :build-logic:compileGroovy NO-SOURCE
+> Task :build-logic:compileGroovyPlugins UP-TO-DATE
+> Task :build-logic:pluginDescriptors UP-TO-DATE
+> Task :build-logic:processResources UP-TO-DATE
+> Task :build-logic:classes UP-TO-DATE
+> Task :build-logic:jar UP-TO-DATE
+> Task :utilities:processResources NO-SOURCE
+> Task :app:processResources UP-TO-DATE
+> Task :list:compileJava UP-TO-DATE
+> Task :list:processResources NO-SOURCE
+> Task :list:classes UP-TO-DATE
+> Task :list:jar UP-TO-DATE
+> Task :utilities:compileJava UP-TO-DATE
+> Task :utilities:classes UP-TO-DATE
+> Task :utilities:jar UP-TO-DATE
+
+> Task :app:compileJava
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :app:classes
+
+> Task :app:run
+WARNING: package com.emr.gds.fourgate.KCDdatabase not in javafx.base
+[DB PATH] abbreviations -> /home/migowj/git/GDSEMR_ver_0.2/app/db/abbreviations.db
+[DB PATH] prolist -> /home/migowj/git/GDSEMR_ver_0.2/app/db/prolist.db
+Database connection closed.
+
+[Incubating] Problems report is available at: file:///home/migowj/git/GDSEMR_ver_0.2/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 10s
+14 actionable tasks: 2 executed, 12 up-to-date
+[0;32m[INFO][0m Gradle task 'run' completed successfully!
+[0;32m[INFO][0m Gradle task 'run' completed successfully!

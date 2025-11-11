@@ -275,14 +275,21 @@ public class IAMButtonAction {
         return b;
     }
 
-    /**
-     * Creates a button that opens MedsMain in a **new** JavaFX window.
-     * Works with the public class:
-     *     public class MedsMain extends Application { … }
-     */
     private Button createMedsMainButton(String title) {
         Button b = new Button(title);
-        b.setOnAction(e -> MedsMain.openInNewWindow());
+        b.setOnAction(e -> {
+            Platform.runLater(() -> {
+                try {
+                    MedsMain medsApp = new MedsMain();
+                    medsApp.init(); // We need to call this manually
+                    Stage medsStage = new Stage();
+                    medsApp.start(medsStage); // This will set up and show the window
+                } catch (Exception ex) {
+                    System.err.println("Failed to open MedsMain application: " + ex.getMessage());
+                    ex.printStackTrace();
+                }
+            });
+        });
         return b;
     }
     
