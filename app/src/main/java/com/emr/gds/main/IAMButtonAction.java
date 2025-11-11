@@ -1,13 +1,16 @@
 package com.emr.gds.main;
 
 import com.emr.gds.IttiaApp;
+import com.emr.gds.diagnosis.medication.MedsMain;
 import com.emr.gds.diagnosis.thyroid.Thyroid;
 import com.emr.gds.input.IAITextAreaManager;
 
+import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -145,7 +148,8 @@ public class IAMButtonAction {
         tb.getItems().add(createVaccineButton("Vaccine"));
         tb.getItems().add(createKCD9Button("KCD-9")); // KCD-9 button creation
         tb.getItems().add(createThyroidButton("Thyroid"));
-        tb.setPadding(new Insets(8, 0, 0, 0));
+        tb.getItems().add(createMedsMainButton("MedsMain"));
+        tb.setPadding(new Insets(9, 0, 0, 0));
         return tb;
     }
 
@@ -270,6 +274,18 @@ public class IAMButtonAction {
         });
         return b;
     }
+
+    /**
+     * Creates a button that opens MedsMain in a **new** JavaFX window.
+     * Works with the public class:
+     *     public class MedsMain extends Application { … }
+     */
+    private Button createMedsMainButton(String title) {
+        Button b = new Button(title);
+        b.setOnAction(e -> MedsMain.openInNewWindow());
+        return b;
+    }
+    
     /**
      * Opens the abbreviation manager dialog.
      */
