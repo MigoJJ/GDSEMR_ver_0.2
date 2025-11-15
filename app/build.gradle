@@ -56,9 +56,6 @@ application {
     //       precise and avoids leaking the flags to other tasks.
     // --------------------------------------------------------------
     applicationDefaultJvmArgs = [
-        // Existing reflection opening for your KCD code
-        '--add-opens=javafx.base/com.emr.gds.fourgate.KCDdatabase=ALL-UNNAMED',
-
         // Native-access permissions
         '--enable-native-access=javafx.graphics',
         '--enable-native-access=ALL-UNNAMED'
