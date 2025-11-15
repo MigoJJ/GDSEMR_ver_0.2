@@ -119,6 +119,7 @@ public class IttiaApp extends Application {
             // Build the main layout
             BorderPane root = buildRootLayout();
             Scene scene = new Scene(root, SCENE_WIDTH, SCENE_HEIGHT);
+            scene.getStylesheets().add(getClass().getResource("/com/emr/gds/emr-styles.css").toExternalForm());
             
             primaryStage.setScene(scene);
             primaryStage.show();

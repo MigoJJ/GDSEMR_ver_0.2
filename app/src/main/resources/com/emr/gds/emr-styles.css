@@ -1,0 +1,32 @@
+.text-area {
+    -fx-prompt-text-fill: rgba(0,0,0,0.55);
+    -fx-highlight-fill: rgba(0,0,0,0.15);
+    -fx-highlight-text-fill: #000000;
+    -fx-background-insets: 0;
+    -fx-background-radius: 9;
+    -fx-border-radius: 9;
+}
+
+.text-area:unfocused {
+    -fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #F7E6B5, #EED28A, #DCC06A);
+    -fx-text-fill: #0A2540;
+    -fx-border-color: #C97B2B;
+    -fx-border-width: 1.5;
+    -fx-effect: dropshadow(gaussian, rgba(201,123,43,0.35), 6, 0.4, 0, 1);
+}
+
+.text-area:focused {
+    -fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #FFD27E, #FFB45A, #FF8A4C);
+    -fx-text-fill: #0A2540;
+    -fx-border-color: #8C3B2E;
+    -fx-border-width: 3;
+    -fx-effect: dropshadow(gaussian, rgba(140,59,46,0.45), 12, 0.25, 0, 2);
+}
+
+.text-area:hover {
+    -fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #CFE9DF, #A7D8C6, #7FC6B3);
+    -fx-text-fill: #0A2540;
+    -fx-border-color: #2C8C7A;
+    -fx-border-width: 2;
+    -fx-effect: dropshadow(gaussian, rgba(44,140,122,0.40), 10, 0.25, 0, 1);
+}

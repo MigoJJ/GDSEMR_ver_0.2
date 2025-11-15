@@ -41,46 +41,7 @@ public class IAMTextArea {
             "O>", "Physical Exam>", "A>", "P>", "Comment>"
     };
 
-    private static final String BASE_TEXT_TWEAKS = 
-            "-fx-prompt-text-fill: rgba(0,0,0,0.55);" +
-            "-fx-highlight-fill: rgba(0,0,0,0.15);" +
-            "-fx-highlight-text-fill: #000000;";
 
-    // Style for unfocused text areas (sun-washed sand/ochre theme)
-    private static final String STYLE_UNFOCUSED = 
-            "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #F7E6B5, #EED28A, #DCC06A);" +
-            "-fx-text-fill: #0A2540;" +
-            "-fx-border-color: #C97B2B;" +
-            "-fx-border-width: 1.5;" +
-            "-fx-background-insets: 0;" +
-            "-fx-background-radius: 9;" +
-            "-fx-border-radius: 9;" +
-            "-fx-effect: dropshadow(gaussian, rgba(201,123,43,0.35), 6, 0.4, 0, 1);" +
-            BASE_TEXT_TWEAKS;
-
-    // Style for focused text areas (bold saffron to coral for high attention)
-    private static final String STYLE_FOCUSED = 
-            "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #FFD27E, #FFB45A, #FF8A4C);" +
-            "-fx-text-fill: #0A2540;" +
-            "-fx-border-color: #8C3B2E;" +
-            "-fx-border-width: 3;" +
-            "-fx-background-insets: 0;" +
-            "-fx-background-radius: 9;" +
-            "-fx-border-radius: 9;" +
-            "-fx-effect: dropshadow(gaussian, rgba(140,59,46,0.45), 12, 0.25, 0, 2);" +
-            BASE_TEXT_TWEAKS;
-
-    // Style for hovered text areas (tropical lagoon teals)
-    private static final String STYLE_HOVER = 
-            "-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #CFE9DF, #A7D8C6, #7FC6B3);" +
-            "-fx-text-fill: #0A2540;" +
-            "-fx-border-color: #2C8C7A;" +
-            "-fx-border-width: 2;" +
-            "-fx-background-insets: 0;" +
-            "-fx-background-radius: 9;" +
-            "-fx-border-radius: 9;" +
-            "-fx-effect: dropshadow(gaussian, rgba(44,140,122,0.40), 10, 0.25, 0, 1);" +
-            BASE_TEXT_TWEAKS;
 
     // ================================ 
     // Instance Variables
@@ -155,7 +116,7 @@ public class IAMTextArea {
         ta.setPrefRowCount(11);
         ta.setPrefColumnCount(58);
         ta.setPromptText(index < TEXT_AREA_TITLES.length ? TEXT_AREA_TITLES[index] : "Area " + (index + 1));
-        ta.setStyle(STYLE_UNFOCUSED);
+        ta.getStyleClass().add("text-area"); // Add base style class
         ta.setTextFormatter(new TextFormatter<>(IAMTextFormatUtil.filterControlChars()));
         return ta;
     }
@@ -187,15 +148,20 @@ public class IAMTextArea {
 
     private void addFocusAndHoverListeners(TextArea ta) {
         ta.focusedProperty().addListener((obs, was, is) -> {
-            ta.setStyle(is ? STYLE_FOCUSED : STYLE_UNFOCUSED);
-            if (is) lastFocusedArea = ta;
+            if (is) {
+                ta.getStyleClass().add("focused");
+                ta.getStyleClass().remove("hover"); // Remove hover if focused
+                lastFocusedArea = ta;
+            } else {
+                ta.getStyleClass().remove("focused");
+            }
         });
 
         ta.addEventHandler(MouseEvent.MOUSE_ENTERED, e -> {
-            if (!ta.isFocused()) ta.setStyle(STYLE_HOVER);
+            if (!ta.isFocused()) ta.getStyleClass().add("hover");
         });
         ta.addEventHandler(MouseEvent.MOUSE_EXITED, e -> {
-            if (!ta.isFocused()) ta.setStyle(STYLE_UNFOCUSED);
+            if (!ta.isFocused()) ta.getStyleClass().remove("hover");
         });
     }
 
