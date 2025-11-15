@@ -11,6 +11,7 @@ import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextFormatter;
+import javafx.scene.input.InputMethodEvent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
@@ -102,6 +103,14 @@ public class IAMTextArea {
             addAbbreviationExpansionListener(ta);
             addDoubleClickListener(ta, idx);
 
+            // --- Debugging IME Input ---
+            ta.addEventHandler(InputMethodEvent.INPUT_METHOD_TEXT_CHANGED, event -> {
+                if (event.getCommitted().length() > 0) {
+                    System.out.println("IME Committed Text: '" + event.getCommitted() + "'");
+                }
+            });
+            // --- End Debugging IME Input ---
+
             areas.add(ta);
         }
     }
@@ -175,6 +184,9 @@ public class IAMTextArea {
     private void addAbbreviationExpansionListener(TextArea ta) {
         ta.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.SPACE) {
+                int caret = ta.getCaretPosition();
+                String upToCaret = ta.getText(0, caret);
+
                 if (expandAbbreviationOnSpace(ta)) event.consume();
             }
         });
